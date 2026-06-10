@@ -225,9 +225,64 @@ input,textarea{font-family:inherit;font-size:inherit;}
   #pdf-print-area,#pdf-print-area *{visibility:visible;}
   #pdf-print-area{display:block!important;position:fixed;top:0;left:0;width:100%;background:#fff;}
 }
+/* ── ケンタくん ── */
+.kenta-bubble{
+  position:fixed;bottom:80px;left:50%;transform:translateX(-50%);
+  z-index:500;display:flex;align-items:flex-end;gap:10px;
+  padding:0 16px;width:100%;max-width:380px;
+  animation:kentaIn 0.4s ease;
+}
+@keyframes kentaIn{from{opacity:0;transform:translateX(-50%) translateY(12px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}
+.kenta-bubble.hidden{display:none;}
+.kenta-char{flex-shrink:0;width:60px;height:60px;}
+.kenta-char svg{width:100%;height:100%;}
+.kenta-text{
+  background:#fff;border:2px solid #1C4ED8;
+  border-radius:16px 16px 16px 4px;
+  padding:10px 13px;font-size:13px;line-height:1.6;color:#111827;
+  box-shadow:0 4px 16px rgba(0,0,0,0.15);
+  cursor:pointer;flex:1;
+}
+.kenta-name{font-size:10px;font-weight:700;color:#1C4ED8;margin-bottom:3px;}
+.kenta-tap{font-size:11px;color:#6B7280;margin-top:5px;}
 </style>
 </head>
 <body>
+
+<!-- ケンタくんバブル -->
+<div id="kenta-bubble" class="kenta-bubble hidden" onclick="kentaNext()">
+  <div class="kenta-char">
+    <svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+      <!-- ヘルメット -->
+      <ellipse cx="30" cy="18" rx="16" ry="10" fill="#F59E0B"/>
+      <rect x="14" y="22" width="32" height="5" rx="2" fill="#F59E0B"/>
+      <rect x="12" y="25" width="36" height="3" rx="1.5" fill="#D97706"/>
+      <!-- 顔 -->
+      <ellipse cx="30" cy="34" rx="13" ry="12" fill="#FDE68A"/>
+      <!-- 目 -->
+      <ellipse cx="25" cy="32" rx="2" ry="2.5" fill="#1C4ED8"/>
+      <ellipse cx="35" cy="32" rx="2" ry="2.5" fill="#1C4ED8"/>
+      <!-- ハイライト -->
+      <circle cx="26" cy="31" r="0.8" fill="#fff"/>
+      <circle cx="36" cy="31" r="0.8" fill="#fff"/>
+      <!-- 口 -->
+      <path d="M25 38 Q30 42 35 38" stroke="#D97706" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+      <!-- ほっぺ -->
+      <ellipse cx="22" cy="36" rx="3" ry="2" fill="#FCA5A5" opacity="0.6"/>
+      <ellipse cx="38" cy="36" rx="3" ry="2" fill="#FCA5A5" opacity="0.6"/>
+      <!-- 体 -->
+      <rect x="22" y="46" width="16" height="12" rx="4" fill="#1C4ED8"/>
+      <!-- 腕 -->
+      <rect x="12" y="47" width="10" height="5" rx="2.5" fill="#1C4ED8"/>
+      <rect x="38" y="47" width="10" height="5" rx="2.5" fill="#1C4ED8"/>
+    </svg>
+  </div>
+  <div class="kenta-text">
+    <div class="kenta-name">🪖 ケンタくん</div>
+    <div id="kenta-msg"></div>
+    <div class="kenta-tap">タップして次へ →</div>
+  </div>
+</div>
 
 <!-- ══ 画面1: プロジェクト一覧 ══ -->
 <div id="screen-list" class="screen active">
@@ -295,6 +350,9 @@ input,textarea{font-family:inherit;font-size:inherit;}
 <!-- ══ 画面4: 撮影プレビュー ══ -->
 <div id="screen-preview" class="screen">
   <img id="preview-img" src="" alt="プレビュー" style="flex:1;object-fit:contain;width:100%;">
+  <div style="background:#1C4ED8;color:#fff;padding:10px 16px;font-size:13px;text-align:center;line-height:1.5;flex-shrink:0;">
+    📥 写真を長押し →「写真に保存」でカメラロールにも保存できます
+  </div>
   <div class="preview-controls">
     <button class="btn-outline" style="color:#fff;border-color:rgba(255,255,255,.3);" onclick="retakePhoto()">撮り直す</button>
     <button class="btn-primary" onclick="acceptPhoto()">この写真を使う</button>
@@ -412,6 +470,11 @@ const photoFileRef   = document.getElementById('photo-file-input');
 window.addEventListener('load', async () => {
   projects = await dbAll() || [];
   renderProjectList();
+  // 初回のみウェルカム表示
+  if (!localStorage.getItem('kenta_welcomed')) {
+    setTimeout(() => kentaShow('welcome'), 600);
+    localStorage.setItem('kenta_welcomed', '1');
+  }
 });
 
 // ══ 画面切替 ══════════════════════════════════════════════════
@@ -447,6 +510,7 @@ function openNewProject() {
   document.getElementById('input-name').value = '';
   document.getElementById('input-address').value = '';
   document.getElementById('overlay-new-project').classList.add('open');
+  setTimeout(() => kentaShow('newProject'), 300);
 }
 function closeNewProject(e) {
   if (e && !e.target.classList.contains('overlay')) return;
@@ -501,6 +565,9 @@ function renderDrawing() {
   document.getElementById('upload-zone').style.display       = hasDrawing ? 'none' : 'block';
   document.getElementById('drawing-container').style.display = hasDrawing ? 'block' : 'none';
   document.getElementById('drawing-change-btn').style.display= hasDrawing ? 'block' : 'none';
+  if (!hasDrawing) {
+    setTimeout(() => kentaShow('drawingUpload'), 400);
+  }
   if (hasDrawing) {
     document.getElementById('drawing-img').src = activeProject.drawing;
     renderPins();
@@ -542,6 +609,7 @@ function handleDrawingFile(input) {
       activeProject.drawing = e.target.result;
       await dbSave(activeProject);
       renderDrawing();
+      setTimeout(() => kentaShow('drawingReady'), 400);
     };
     reader.readAsDataURL(file);
   }
@@ -570,6 +638,7 @@ function handleDrawingTap(e) {
 // ══ カメラ ════════════════════════════════════════════════════
 async function startCamera() {
   showScreen('screen-camera');
+  setTimeout(() => kentaShow('camera'), 400);
   try {
     mediaStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});
     document.getElementById('camera-video').srcObject = mediaStream;
@@ -595,6 +664,7 @@ function takePicture() {
   stopCamera();
   document.getElementById('preview-img').src = capturedPhoto;
   showScreen('screen-preview');
+  setTimeout(() => kentaShow('preview'), 400);
 }
 function retakePhoto() {
   capturedPhoto = null; pendingPin = null;
@@ -606,6 +676,7 @@ function acceptPhoto() {
   document.getElementById('input-comment').value     = '';
   document.getElementById('overlay-comment').classList.add('open');
   showScreen('screen-project');
+  setTimeout(() => kentaShow('comment'), 300);
 }
 function handleFilePhoto(input) {
   const file = input.files[0];
@@ -640,6 +711,21 @@ async function savePhoto() {
   activeProject.photos = [...(activeProject.photos||[]), entry];
   await dbSave(activeProject);
   document.getElementById('overlay-comment').classList.remove('open');
+
+  // カメラロールに保存
+  if (capturedPhoto) {
+    try {
+      const a = document.createElement('a');
+      a.href = capturedPhoto;
+      a.download = `施工フォト_${activeProject.name}_${num}.jpg`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch(e) {
+      // 保存失敗しても続行
+    }
+  }
+
   capturedPhoto = null; pendingPin = null;
   renderPins();
 }
@@ -870,6 +956,72 @@ function esc(s) {
   return String(s)
     .replace(/&/g,'&amp;').replace(/</g,'&lt;')
     .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ══ ケンタくん ════════════════════════════════════════════════
+const KENTA_SCRIPTS = {
+  welcome: [
+    'はじめまして！ぼくケンタくん！施工フォトのナビゲーターだよ🪖',
+    'まずは「＋ 新規」ボタンをタップして、物件名を登録してね！',
+    'わからないことがあったらいつでも呼んでね！'
+  ],
+  newProject: [
+    '物件名と所在地を入力して「作成」をタップしてね！（所在地は任意だよ）',
+  ],
+  drawingUpload: [
+    'ここに図面をアップロードするよ！タップして画像を選んでね📄',
+    '図面はJPGやPNGの画像ファイルがオススメだよ！',
+  ],
+  drawingReady: [
+    '図面のアップロード完了！📐',
+    '調査したい場所を図面上でタップするとカメラが起動するよ📷',
+    'ピン①②③…と番号が自動でつくよ！',
+  ],
+  camera: [
+    '白いボタンを押して撮影してね📷',
+    '撮り直したい場合は「撮り直す」をタップしてね！',
+  ],
+  comment: [
+    '調査項目と特記事項を入力して「保存」をタップしてね✏️',
+    '「外壁ひび割れ」「補修必要」など具体的に書くと報告書が作りやすくなるよ！',
+  ],
+  preview: [
+    '写真を長押しして「写真に保存」するとカメラロールにも保存されるよ📥',
+    'バックアップとして保存しておくのがオススメ！',
+  ],
+  pdf: [
+    'PDF出力をタップすると関係写真のHTMLファイルがダウンロードされるよ🖨️',
+    'ダウンロードしたファイルをSafariで開いて「印刷/PDF保存」ボタンを押してね！',
+  ],
+};
+
+let kentaQueue = [];
+let kentaIndex = 0;
+let kentaShown = false;
+
+function kentaShow(scriptKey) {
+  const msgs = KENTA_SCRIPTS[scriptKey];
+  if (!msgs) return;
+  kentaQueue = msgs;
+  kentaIndex = 0;
+  const bubble = document.getElementById('kenta-bubble');
+  document.getElementById('kenta-msg').textContent = kentaQueue[0];
+  bubble.classList.remove('hidden');
+  bubble.style.animation = 'none';
+  requestAnimationFrame(() => { bubble.style.animation = ''; bubble.classList.remove('hidden'); });
+}
+
+function kentaNext() {
+  kentaIndex++;
+  if (kentaIndex >= kentaQueue.length) {
+    document.getElementById('kenta-bubble').classList.add('hidden');
+    return;
+  }
+  document.getElementById('kenta-msg').textContent = kentaQueue[kentaIndex];
+}
+
+function kentaHide() {
+  document.getElementById('kenta-bubble').classList.add('hidden');
 }
 </script>
 </body>
