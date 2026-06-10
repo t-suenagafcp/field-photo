@@ -334,6 +334,9 @@ input,textarea{font-family:inherit;font-size:inherit;}
     <button class="tab" onclick="exportPDF()">
       <span class="tab-icon">🖨️</span>PDF出力
     </button>
+    <button class="tab" onclick="exportJSON()">
+      <span class="tab-icon">📤</span>Excel連携
+    </button>
   </div>
 </div>
 
@@ -349,7 +352,19 @@ input,textarea{font-family:inherit;font-size:inherit;}
 
 <!-- ══ 画面4: 撮影プレビュー ══ -->
 <div id="screen-preview" class="screen">
-  <img id="preview-img" src="" alt="プレビュー" style="flex:1;object-fit:contain;width:100%;">
+  <div style="flex:1;position:relative;overflow:hidden;">
+    <img id="preview-img" src="" alt="プレビュー" style="width:100%;height:100%;object-fit:contain;display:block;">
+    <div id="preview-save-hint" style="
+      position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+      background:rgba(0,0,0,0.65);color:#fff;
+      border-radius:14px;padding:12px 18px;
+      font-size:13px;line-height:1.6;text-align:center;
+      display:none;pointer-events:none;
+      max-width:80%;
+    ">
+      📥 写真を<strong>長押し</strong>して<br>「写真に保存」でカメラロールに保存できるよ！
+    </div>
+  </div>
   <div style="background:#1C4ED8;color:#fff;padding:10px 16px;font-size:13px;text-align:center;line-height:1.5;flex-shrink:0;">
     📥 写真を長押し →「写真に保存」でカメラロールにも保存できます
   </div>
@@ -664,6 +679,10 @@ function takePicture() {
   stopCamera();
   document.getElementById('preview-img').src = capturedPhoto;
   showScreen('screen-preview');
+  // 写真中央にヒント表示（3秒後に消える）
+  const hint = document.getElementById('preview-save-hint');
+  hint.style.display = 'block';
+  setTimeout(() => { hint.style.display = 'none'; }, 3500);
   setTimeout(() => kentaShow('preview'), 400);
 }
 function retakePhoto() {
@@ -711,21 +730,6 @@ async function savePhoto() {
   activeProject.photos = [...(activeProject.photos||[]), entry];
   await dbSave(activeProject);
   document.getElementById('overlay-comment').classList.remove('open');
-
-  // カメラロールに保存
-  if (capturedPhoto) {
-    try {
-      const a = document.createElement('a');
-      a.href = capturedPhoto;
-      a.download = `施工フォト_${activeProject.name}_${num}.jpg`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    } catch(e) {
-      // 保存失敗しても続行
-    }
-  }
-
   capturedPhoto = null; pendingPin = null;
   renderPins();
 }
@@ -951,7 +955,41 @@ ${pages.map((pair, pi) => `
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-// ══ ユーティリティ ════════════════════════════════════════════
+// ══ Excelエクスポート用JSON出力 ══════════════════════════════
+function exportJSON() {
+  const photos = activeProject?.photos || [];
+  if (!photos.length) { alert('写真がありません'); return; }
+
+  const data = {
+    exportedAt: new Date().toLocaleString('ja-JP'),
+    project: {
+      name: activeProject.name,
+      address: activeProject.address || '',
+    },
+    photos: photos.map(ph => ({
+      num: ph.num,
+      inspectionItem: ph.inspectionItem || '',
+      comment: ph.comment || '',
+      date: ph.date,
+      pinX: Math.round(ph.x * 10) / 10,
+      pinY: Math.round(ph.y * 10) / 10,
+      photo: ph.photo || null,
+    }))
+  };
+
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], {type: 'application/json;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `施工フォト_${activeProject.name}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+  alert(`📤 「施工フォト_${activeProject.name}.json」をダウンロードしました。\nPCに転送してExcel自動入力スクリプトで使ってください。`);
+}
 function esc(s) {
   return String(s)
     .replace(/&/g,'&amp;').replace(/</g,'&lt;')
