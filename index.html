@@ -755,9 +755,7 @@ function exportPDF() {
       </div>
       <div class="pdf-slot-body">
         <div class="pdf-photo-area">
-          ${ph.photo
-            ? `<img src="${ph.photo}" alt="">`
-            : `<div class="pdf-photo-none">写真なし</div>`}
+          ${ph.photo ? `<img src="${ph.photo}" alt="">` : `<div class="pdf-photo-none">写真なし</div>`}
         </div>
         <div class="pdf-comment-area">
           <div class="pdf-comment-label">特記事項</div>
@@ -768,25 +766,66 @@ function exportPDF() {
     </div>`;
   };
 
-  document.getElementById('pdf-print-area').innerHTML =
-    pages.map((pair, pi) => `
-      <div class="pdf-page">
-        <div class="pdf-page-header">
-          <span class="pdf-page-header-left">別添２</span>
-          <span class="pdf-page-header-title">関係写真</span>
-          <span class="pdf-page-header-right">${esc(activeProject.name)}<br>${esc(activeProject.address||'')}</span>
-        </div>
-        ${slot(pair[0])}
-        ${slot(pair[1])}
-        <div class="pdf-footer">${pi+1} / ${pages.length}</div>
-      </div>`).join('');
+  // 独立したHTMLとして生成（写真をbase64で埋め込み済み）
+  const html = `<!DOCTYPE html>
+<html lang="ja"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>関係写真 - ${esc(activeProject.name)}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'ＭＳ 明朝','MS Mincho','Hiragino Mincho Pro',serif;font-size:9pt;color:#000;background:#fff;padding:10mm;}
+@page{size:A4;margin:15mm 12mm;}
+@media print{body{padding:0;}.print-btn{display:none!important;}}
+.print-btn{position:fixed;bottom:20px;right:20px;background:#1C4ED8;color:#fff;border:none;border-radius:12px;padding:14px 22px;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.25);}
+.pdf-page{width:100%;display:flex;flex-direction:column;page-break-after:always;margin-bottom:10mm;}
+.pdf-page:last-child{page-break-after:auto;}
+.pdf-page-header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:2mm;font-size:9pt;}
+.pdf-page-header-title{font-size:12pt;text-align:center;flex:1;}
+.pdf-slot{border:1px solid #000;margin-bottom:3mm;}
+.pdf-slot-empty{border:1px dashed #ccc;height:100mm;margin-bottom:3mm;}
+.pdf-slot-head{display:flex;border-bottom:1px solid #000;}
+.pdf-slot-head-left{display:flex;flex:1;border-right:1px solid #000;}
+.pdf-head-cell{padding:1mm 2mm;border-right:1px solid #000;}
+.pdf-head-cell:last-child{border-right:none;flex:1;}
+.pdf-head-label{font-size:7.5pt;color:#333;}
+.pdf-head-value{font-size:8.5pt;font-family:'ＭＳ ゴシック','MS Gothic',sans-serif;}
+.pdf-head-butsui{width:10mm;}
+.pdf-head-bangou{width:22mm;}
+.pdf-slot-head-right{width:42mm;padding:1mm 2mm;font-size:7.5pt;color:#333;}
+.pdf-slot-body{display:flex;height:100mm;}
+.pdf-photo-area{flex:1;border-right:1px solid #000;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#fafafa;}
+.pdf-photo-area img{width:100%;height:100%;object-fit:contain;}
+.pdf-photo-none{color:#aaa;font-size:10pt;}
+.pdf-comment-area{width:42mm;padding:2mm;display:flex;flex-direction:column;}
+.pdf-comment-label{font-size:8pt;border-bottom:1px solid #ccc;padding-bottom:1mm;margin-bottom:2mm;}
+.pdf-comment-text{font-size:8.5pt;line-height:1.5;flex:1;word-break:break-all;}
+.pdf-date-text{font-size:7pt;color:#555;margin-top:2mm;text-align:right;}
+.pdf-footer{text-align:center;font-size:7.5pt;color:#555;margin-top:1mm;}
+</style></head><body>
+<button class="print-btn" onclick="window.print()">🖨️ 印刷 / PDF保存</button>
+${pages.map((pair, pi) => `
+<div class="pdf-page">
+  <div class="pdf-page-header">
+    <span>別添２</span>
+    <span class="pdf-page-header-title">関係写真</span>
+    <span style="text-align:right;font-size:8pt;">${esc(activeProject.name)}<br>${esc(activeProject.address||'')}</span>
+  </div>
+  ${slot(pair[0])}
+  ${slot(pair[1])}
+  <div class="pdf-footer">${pi+1} / ${pages.length}</div>
+</div>`).join('')}
+</body></html>`;
 
-  document.getElementById('pdf-print-btn').style.display = 'block';
-  window.print();
-  setTimeout(() => {
-    document.getElementById('pdf-print-area').innerHTML = '';
-    document.getElementById('pdf-print-btn').style.display = 'none';
-  }, 3000);
+  // Blobとしてダウンロード
+  const blob = new Blob([html], {type:'text/html;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `関係写真_${activeProject.name}.html`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 // ══ ユーティリティ ════════════════════════════════════════════
