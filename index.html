@@ -166,14 +166,14 @@ input,textarea{font-family:inherit;font-size:inherit;}
   border-right:1px solid #000;
   white-space:nowrap;
 }
-.pdf-head-cell:last-child{border-right:none;}
+.pdf-head-cell:last-child{border-right:none;flex:1;min-width:40mm;}
 .pdf-head-label{font-size:8pt;color:#333;}
 .pdf-head-value{font-size:8.5pt;font-family:'ＭＳ ゴシック','MS Gothic','Hiragino Sans',sans-serif;}
 .pdf-head-butsui{width:8mm;}
 .pdf-head-bangou{width:22mm;}
 .pdf-head-item{flex:1;}
 .pdf-slot-head-right{
-  width:42mm;
+  width:38mm;
   padding:1mm 2mm;
   font-size:8pt;
 }
@@ -191,7 +191,7 @@ input,textarea{font-family:inherit;font-size:inherit;}
   position:relative;
 }
 .pdf-photo-area img{
-  width:100%;height:100%;object-fit:contain;
+  width:100%;height:100%;object-fit:cover;
 }
 .pdf-photo-none{
   color:#aaa;font-size:10pt;
@@ -791,10 +791,11 @@ body{font-family:'ＭＳ 明朝','MS Mincho','Hiragino Mincho Pro',serif;font-si
 .pdf-head-value{font-size:8.5pt;font-family:'ＭＳ ゴシック','MS Gothic',sans-serif;}
 .pdf-head-butsui{width:10mm;}
 .pdf-head-bangou{width:22mm;}
-.pdf-slot-head-right{width:42mm;padding:1mm 2mm;font-size:7.5pt;color:#333;}
+.pdf-head-cell:last-child{border-right:none;flex:1;min-width:40mm;}
+.pdf-slot-head-right{width:38mm;padding:1mm 2mm;font-size:7.5pt;color:#333;}
 .pdf-slot-body{display:flex;height:100mm;}
 .pdf-photo-area{flex:1;border-right:1px solid #000;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#fafafa;}
-.pdf-photo-area img{width:100%;height:100%;object-fit:contain;}
+.pdf-photo-area img{width:100%;height:100%;object-fit:cover;}
 .pdf-photo-none{color:#aaa;font-size:10pt;}
 .pdf-comment-area{width:42mm;padding:2mm;display:flex;flex-direction:column;}
 .pdf-comment-label{font-size:8pt;border-bottom:1px solid #ccc;padding-bottom:1mm;margin-bottom:2mm;}
