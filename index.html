@@ -750,7 +750,11 @@ function exportPDF() {
           </div>
         </div>
         <div class="pdf-slot-head-right">
-          <div class="pdf-head-label">調査結果</div>
+          <div class="pdf-result-label">調査結果</div>
+          <div class="pdf-result-checks">
+            <div class="pdf-check"><span class="pdf-checkbox"></span>要是正</div>
+            <div class="pdf-check"><span class="pdf-checkbox"></span>その他</div>
+          </div>
         </div>
       </div>
       <div class="pdf-slot-body">
@@ -773,46 +777,78 @@ function exportPDF() {
 <title>関係写真 - ${esc(activeProject.name)}</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'ＭＳ 明朝','MS Mincho','Hiragino Mincho Pro',serif;font-size:9pt;color:#000;background:#fff;padding:10mm;}
-@page{size:A4;margin:15mm 12mm;}
+body{font-family:'ＭＳ 明朝','MS Mincho','Hiragino Mincho Pro',serif;font-size:9pt;color:#000;background:#fff;padding:8mm;}
+@page{size:A4;margin:12mm 10mm;}
 @media print{body{padding:0;}.print-btn{display:none!important;}}
 .print-btn{position:fixed;bottom:20px;right:20px;background:#1C4ED8;color:#fff;border:none;border-radius:12px;padding:14px 22px;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.25);}
-.pdf-page{width:100%;display:flex;flex-direction:column;page-break-after:always;margin-bottom:10mm;}
+
+/* ページ */
+.pdf-page{width:100%;display:flex;flex-direction:column;page-break-after:always;}
 .pdf-page:last-child{page-break-after:auto;}
-.pdf-page-header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:2mm;font-size:9pt;}
+
+/* ページヘッダー */
+.pdf-page-header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:1.5mm;font-size:9pt;}
 .pdf-page-header-title{font-size:12pt;text-align:center;flex:1;}
-.pdf-slot{border:1px solid #000;margin-bottom:3mm;}
-.pdf-slot-empty{border:1px dashed #ccc;height:100mm;margin-bottom:3mm;}
+
+/* スロット */
+.pdf-slot{border:1px solid #000;margin-bottom:2mm;}
+.pdf-slot-empty{border:1px dashed #ccc;height:95mm;margin-bottom:2mm;}
+
+/* ヘッダー行 */
 .pdf-slot-head{display:flex;border-bottom:1px solid #000;}
 .pdf-slot-head-left{display:flex;flex:1;border-right:1px solid #000;}
 .pdf-head-cell{padding:1mm 2mm;border-right:1px solid #000;}
-.pdf-head-cell:last-child{border-right:none;flex:1;}
-.pdf-head-label{font-size:7.5pt;color:#333;}
+.pdf-head-cell:last-child{border-right:none;flex:1;min-width:35mm;}
+.pdf-head-label{font-size:7pt;color:#333;}
 .pdf-head-value{font-size:8.5pt;font-family:'ＭＳ ゴシック','MS Gothic',sans-serif;}
-.pdf-head-butsui{width:10mm;}
-.pdf-head-bangou{width:22mm;}
-.pdf-head-cell:last-child{border-right:none;flex:1;min-width:40mm;}
-.pdf-slot-head-right{width:38mm;padding:1mm 2mm;font-size:7.5pt;color:#333;}
-.pdf-slot-body{display:flex;height:100mm;}
+.pdf-head-butsui{width:8mm;}
+.pdf-head-bangou{width:20mm;}
+.pdf-slot-head-right{width:40mm;padding:1mm 2mm;border-left:0;}
+
+/* 調査結果チェックボックス */
+.pdf-result-label{font-size:7pt;color:#333;margin-bottom:1mm;}
+.pdf-result-checks{display:flex;gap:3mm;font-size:8pt;}
+.pdf-check{display:flex;align-items:center;gap:1mm;}
+.pdf-checkbox{width:3mm;height:3mm;border:1px solid #000;display:inline-block;flex-shrink:0;}
+
+/* 写真・特記事項エリア */
+.pdf-slot-body{display:flex;height:95mm;}
 .pdf-photo-area{flex:1;border-right:1px solid #000;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#fafafa;}
 .pdf-photo-area img{width:100%;height:100%;object-fit:contain;}
 .pdf-photo-none{color:#aaa;font-size:10pt;}
-.pdf-comment-area{width:42mm;padding:2mm;display:flex;flex-direction:column;}
-.pdf-comment-label{font-size:8pt;border-bottom:1px solid #ccc;padding-bottom:1mm;margin-bottom:2mm;}
-.pdf-comment-text{font-size:8.5pt;line-height:1.5;flex:1;word-break:break-all;}
-.pdf-date-text{font-size:7pt;color:#555;margin-top:2mm;text-align:right;}
-.pdf-footer{text-align:center;font-size:7.5pt;color:#555;margin-top:1mm;}
+.pdf-comment-area{width:40mm;padding:2mm;display:flex;flex-direction:column;}
+.pdf-comment-label{font-size:7pt;color:#333;border-bottom:1px solid #ccc;padding-bottom:1mm;margin-bottom:2mm;}
+.pdf-comment-text{font-size:8.5pt;line-height:1.5;flex:1;word-break:break-all;font-family:'ＭＳ Ｐ明朝','MS PMincho',serif;}
+.pdf-date-text{font-size:6.5pt;color:#555;margin-top:2mm;text-align:right;}
+
+/* 注意書き */
+.pdf-notes{border:1px solid #000;border-top:none;padding:2mm 3mm;font-size:7.5pt;line-height:1.6;}
+.pdf-notes-title{font-weight:bold;margin-bottom:1mm;}
+.pdf-note-row{display:flex;gap:2mm;margin-bottom:0.5mm;}
+.pdf-note-num{flex-shrink:0;width:4mm;}
+.pdf-note-a4{text-align:right;font-size:7pt;color:#555;margin-top:1mm;}
+
+.pdf-footer{text-align:center;font-size:7pt;color:#555;margin-top:1mm;}
 </style></head><body>
 <button class="print-btn" onclick="window.print()">🖨️ 印刷 / PDF保存</button>
 ${pages.map((pair, pi) => `
 <div class="pdf-page">
   <div class="pdf-page-header">
-    <span>別添２</span>
+    <span style="font-size:8pt;">別添２</span>
     <span class="pdf-page-header-title">関係写真</span>
     <span style="text-align:right;font-size:8pt;">${esc(activeProject.name)}<br>${esc(activeProject.address||'')}</span>
   </div>
   ${slot(pair[0])}
   ${slot(pair[1])}
+  <div class="pdf-notes">
+    <div class="pdf-notes-title">（注意）</div>
+    <div class="pdf-note-row"><span class="pdf-note-num">①</span><span>この書類は、調査の結果「要是正」かつ「既存不適格」ではない項目について作成してください。また、「既存不適格」及び「指摘なし」の項目についても、特記すべき事項があれば、必要に応じて作成してください。「要是正」の項目がない場合は、この書類は省略しても構いません。</span></div>
+    <div class="pdf-note-row"><span class="pdf-note-num">②</span><span>記入欄が不足する場合は、枠を拡大、行を追加して記入するか、別紙に必要な事項を記入して添えてください。</span></div>
+    <div class="pdf-note-row"><span class="pdf-note-num">③</span><span>「部位」欄の「番号」及び「調査項目」は、それぞれ別記様式の番号及び調査項目に対応したものを記入してください。</span></div>
+    <div class="pdf-note-row"><span class="pdf-note-num">④</span><span>「調査結果」欄は、調査の結果、要是正の指摘があった場合は「要是正」のチェックボックスに「レ」マークを入れ、それ以外の場合で特記すべき事項がある場合は「その他」のチェックボックスに「レ」マークを入れてください。</span></div>
+    <div class="pdf-note-row"><span class="pdf-note-num">⑤</span><span>写真は、当該部位の外観の状況が確認できるように撮影したものを添付してください。</span></div>
+    <div class="pdf-note-a4">（日本産業規格Ａ列４番）</div>
+  </div>
   <div class="pdf-footer">${pi+1} / ${pages.length}</div>
 </div>`).join('')}
 </body></html>`;
