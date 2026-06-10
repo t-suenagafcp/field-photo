@@ -8,6 +8,7 @@
 <meta name="apple-mobile-web-app-title" content="施工フォト">
 <meta name="theme-color" content="#1C4ED8">
 <title>施工フォト</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
 /* ── リセット & ベース ── */
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
@@ -79,8 +80,8 @@ input,textarea{font-family:inherit;font-size:inherit;}
 .tab-icon{font-size:20px;}
 
 /* ── モーダル共通 ── */
-.overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;display:none;align-items:flex-end;}
-.overlay.open{display:flex;}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;display:flex;align-items:flex-end;visibility:hidden;pointer-events:none;opacity:0;transition:opacity 0.15s;}
+.overlay.open{visibility:visible;pointer-events:auto;opacity:1;}
 .sheet{background:#fff;border-radius:20px 20px 0 0;padding:22px 20px 40px;width:100%;max-height:90dvh;overflow-y:auto;}
 .sheet-title{font-size:18px;font-weight:700;margin-bottom:16px;}
 .field-label{font-size:12px;font-weight:600;color:#6B7280;margin-bottom:6px;}
@@ -278,7 +279,7 @@ input,textarea{font-family:inherit;font-size:inherit;}
 <button id="pdf-print-btn" onclick="window.print()">🖨️ 印刷 / PDF保存</button>
 
 <!-- ══ 隠しinput ══ -->
-<input type="file" id="drawing-file-input" accept="image/*" style="display:none;" onchange="handleDrawingFile(this)">
+<input type="file" id="drawing-file-input" accept="image/*,application/pdf,.pdf" style="display:none;" onchange="handleDrawingFile(this)">
 <input type="file" id="photo-file-input" accept="image/*" capture="environment" style="display:none;" onchange="handleFilePhoto(this)">
 <canvas id="snapshot-canvas" style="display:none;"></canvas>
 
@@ -370,10 +371,9 @@ function openNewProject() {
   document.getElementById('input-name').value = '';
   document.getElementById('input-address').value = '';
   document.getElementById('overlay-new-project').classList.add('open');
-  setTimeout(() => document.getElementById('input-name').focus(), 100);
 }
 function closeNewProject(e) {
-  if (e && e.target !== document.getElementById('overlay-new-project')) return;
+  if (e && !e.target.classList.contains('overlay')) return;
   document.getElementById('overlay-new-project').classList.remove('open');
 }
 async function createProject() {
@@ -436,13 +436,39 @@ function renderDrawing() {
 }
 function handleDrawingFile(input) {
   const file = input.files[0]; if (!file) return;
-  const reader = new FileReader();
-  reader.onload = async e => {
-    activeProject.drawing = e.target.result;
-    await dbSave(activeProject);
-    renderDrawing();
-  };
-  reader.readAsDataURL(file);
+
+  if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
+    // PDF → Canvas → dataURL変換
+    const reader = new FileReader();
+    reader.onload = async e => {
+      try {
+        const pdfjsLib = window['pdfjs-dist/build/pdf'];
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        const pdf = await pdfjsLib.getDocument({data: e.target.result}).promise;
+        const page = await pdf.getPage(1);
+        const viewport = page.getViewport({scale: 2.0});
+        const canvas = document.createElement('canvas');
+        canvas.width  = viewport.width;
+        canvas.height = viewport.height;
+        await page.render({canvasContext: canvas.getContext('2d'), viewport}).promise;
+        activeProject.drawing = canvas.toDataURL('image/jpeg', 0.9);
+        await dbSave(activeProject);
+        renderDrawing();
+      } catch(err) {
+        alert('PDFの読み込みに失敗しました。画像ファイル（JPG/PNG）をお試しください。');
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  } else {
+    // 画像ファイル
+    const reader = new FileReader();
+    reader.onload = async e => {
+      activeProject.drawing = e.target.result;
+      await dbSave(activeProject);
+      renderDrawing();
+    };
+    reader.readAsDataURL(file);
+  }
   input.value = '';
 }
 function renderPins() {
@@ -504,7 +530,6 @@ function acceptPhoto() {
   document.getElementById('input-comment').value     = '';
   document.getElementById('overlay-comment').classList.add('open');
   showScreen('screen-project');
-  setTimeout(() => document.getElementById('input-inspection').focus(), 100);
 }
 function handleFilePhoto(input) {
   const file = input.files[0];
@@ -521,7 +546,7 @@ function handleFilePhoto(input) {
   input.value = '';
 }
 function cancelComment(e) {
-  if (e && e.target !== document.getElementById('overlay-comment')) return;
+  if (e && !e.target.classList.contains('overlay')) return;
   document.getElementById('overlay-comment').classList.remove('open');
   capturedPhoto = null; pendingPin = null;
 }
@@ -597,7 +622,7 @@ function openPinPopup(e, id) {
   document.getElementById('overlay-pin').classList.add('open');
 }
 function closePinPopup(e) {
-  if (e && e.target !== document.getElementById('overlay-pin')) return;
+  if (e && !e.target.classList.contains('overlay')) return;
   document.getElementById('overlay-pin').classList.remove('open');
   selectedPhotoId = null;
 }
