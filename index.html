@@ -989,6 +989,7 @@ function exportJSON() {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 
   alert(`📤 「施工フォト_${activeProject.name}.json」をダウンロードしました。\nPCに転送してExcel自動入力スクリプトで使ってください。`);
+  setTimeout(() => kentaShow('export'), 500);
 }
 function esc(s) {
   return String(s)
@@ -1030,6 +1031,11 @@ const KENTA_SCRIPTS = {
   pdf: [
     'PDF出力をタップすると関係写真のHTMLファイルがダウンロードされるよ🖨️',
     'ダウンロードしたファイルをSafariで開いて「印刷/PDF保存」ボタンを押してね！',
+  ],
+  export: [
+    'Excel連携ボタンを押したよ！JSONファイルがダウンロードされるよ📤',
+    'このJSONファイルをPCに転送してね。AirDrop・メール・iCloudどれでもOK！',
+    'PCでPythonスクリプトと同じフォルダに置いて実行すると、Excelに自動で入力されるよ🎉',
   ],
 };
 
