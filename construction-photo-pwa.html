@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="施工フォト">
+<meta name="theme-color" content="#1C4ED8">
+<title>施工フォト</title>
+<style>
+/* ── リセット & ベース ── */
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overflow:hidden;}
+body{font-family:'Hiragino Sans','Meiryo',sans-serif;background:#F7F8FA;color:#111827;font-size:15px;}
+button{cursor:pointer;border:none;background:none;font-family:inherit;font-size:inherit;}
+input,textarea{font-family:inherit;font-size:inherit;}
+
+/* ── 画面切替 ── */
+.screen{display:none;height:100dvh;flex-direction:column;overflow:hidden;}
+.screen.active{display:flex;}
+
+/* ── ヘッダー ── */
+.header{background:#fff;border-bottom:1px solid #E2E5EA;padding:12px 16px;display:flex;align-items:center;gap:12px;flex-shrink:0;position:relative;}
+.header-title{font-size:17px;font-weight:700;flex:1;}
+.header-back{width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:8px;color:#1C4ED8;font-size:22px;flex-shrink:0;}
+.btn-primary{background:#1C4ED8;color:#fff;padding:8px 14px;border-radius:8px;font-weight:600;font-size:13px;}
+.btn-outline{border:1.5px solid #E2E5EA;color:#111827;padding:8px 14px;border-radius:8px;font-weight:600;font-size:13px;}
+.btn-danger{background:#EF4444;color:#fff;padding:8px 14px;border-radius:8px;font-weight:600;font-size:13px;}
+
+/* ── プロジェクト一覧 ── */
+#screen-list .body{flex:1;overflow-y:auto;padding:20px 16px;}
+.section-label{font-size:12px;font-weight:700;color:#6B7280;letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px;}
+.project-card{background:#fff;border:1px solid #E2E5EA;border-radius:12px;padding:16px;margin-bottom:10px;display:flex;align-items:center;gap:14px;}
+.project-icon{width:44px;height:44px;background:#EFF4FF;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
+.project-info{flex:1;min-width:0;}
+.project-name{font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.project-meta{font-size:12px;color:#6B7280;margin-top:2px;}
+.project-del{width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:8px;color:#6B7280;font-size:16px;flex-shrink:0;}
+.empty-state{text-align:center;padding:60px 20px;}
+.empty-icon{font-size:48px;margin-bottom:12px;}
+.empty-text{font-size:15px;font-weight:600;margin-bottom:6px;}
+.empty-sub{font-size:13px;color:#6B7280;}
+
+/* ── 図面・写真画面 ── */
+#screen-project .body{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.drawing-container{flex:1;overflow:auto;background:#D1D5DB;position:relative;}
+.drawing-wrapper{position:relative;display:inline-block;min-width:100%;min-height:100%;}
+.drawing-img{display:block;max-width:100%;height:auto;user-select:none;}
+.drawing-hint{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.65);color:#fff;padding:7px 14px;border-radius:20px;font-size:12px;white-space:nowrap;pointer-events:none;}
+.upload-zone{border:2px dashed #E2E5EA;border-radius:16px;padding:50px 20px;text-align:center;margin:20px 16px;cursor:pointer;}
+.upload-zone-icon{font-size:40px;margin-bottom:10px;}
+.upload-zone-text{font-size:15px;font-weight:600;}
+.upload-zone-sub{font-size:12px;color:#6B7280;margin-top:4px;}
+
+/* ── ピン ── */
+.pin{position:absolute;transform:translate(-50%,-100%);display:flex;flex-direction:column;align-items:center;cursor:pointer;z-index:10;}
+.pin-circle{width:28px;height:28px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:#1C4ED8;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.3);border:2px solid #fff;}
+.pin-number{transform:rotate(45deg);font-size:11px;font-weight:700;color:#fff;}
+.pin-tip{width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:7px solid #1C4ED8;margin-top:-1px;}
+
+/* ── 写真一覧 ── */
+.photo-list{flex:1;overflow-y:auto;padding:12px 16px;}
+.photo-count{font-size:13px;color:#6B7280;margin-bottom:12px;}
+.photo-item{background:#fff;border:1px solid #E2E5EA;border-radius:12px;padding:12px;margin-bottom:10px;display:flex;gap:12px;align-items:flex-start;}
+.photo-num{width:28px;height:28px;border-radius:50%;background:#1C4ED8;color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.photo-thumb{width:72px;height:72px;object-fit:cover;border-radius:8px;flex-shrink:0;}
+.photo-thumb-ph{width:72px;height:72px;background:#F7F8FA;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;}
+.photo-info{flex:1;min-width:0;}
+.photo-item-title{font-size:12px;font-weight:600;color:#1C4ED8;margin-bottom:2px;}
+.photo-comment{font-size:13px;color:#111827;line-height:1.5;word-break:break-all;}
+.photo-date{font-size:11px;color:#6B7280;margin-top:4px;}
+.photo-del{color:#6B7280;font-size:16px;padding:4px;flex-shrink:0;}
+
+/* ── タブ ── */
+.tabs{display:flex;border-top:1px solid #E2E5EA;background:#fff;flex-shrink:0;}
+.tab{flex:1;padding:10px 4px 8px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;font-weight:600;color:#6B7280;}
+.tab.active{color:#1C4ED8;}
+.tab-icon{font-size:20px;}
+
+/* ── モーダル共通 ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;display:none;align-items:flex-end;}
+.overlay.open{display:flex;}
+.sheet{background:#fff;border-radius:20px 20px 0 0;padding:22px 20px 40px;width:100%;max-height:90dvh;overflow-y:auto;}
+.sheet-title{font-size:18px;font-weight:700;margin-bottom:16px;}
+.field-label{font-size:12px;font-weight:600;color:#6B7280;margin-bottom:6px;}
+.field-input{width:100%;border:1.5px solid #E2E5EA;border-radius:10px;padding:11px 13px;font-size:15px;outline:none;margin-bottom:14px;}
+.field-input:focus{border-color:#1C4ED8;}
+.field-textarea{width:100%;border:1.5px solid #E2E5EA;border-radius:10px;padding:11px 13px;font-size:15px;outline:none;resize:none;height:80px;margin-bottom:14px;}
+.field-textarea:focus{border-color:#1C4ED8;}
+.btn-row{display:flex;gap:10px;}
+.btn-row button{flex:1;padding:13px;border-radius:10px;font-size:15px;font-weight:600;}
+.preview-img-sm{width:100%;border-radius:10px;margin-bottom:14px;max-height:180px;object-fit:cover;}
+
+/* ── カメラ画面 ── */
+#screen-camera{background:#000;}
+#camera-video{flex:1;object-fit:cover;width:100%;}
+.camera-controls{padding:20px;display:flex;align-items:center;justify-content:space-between;background:#000;flex-shrink:0;}
+.shutter{width:70px;height:70px;border-radius:50%;background:#fff;border:4px solid rgba(255,255,255,.4);display:flex;align-items:center;justify-content:center;}
+.shutter-inner{width:56px;height:56px;border-radius:50%;background:#fff;}
+.camera-btn-txt{color:#fff;font-size:15px;font-weight:500;padding:10px;}
+
+/* ── 撮影プレビュー ── */
+#screen-preview{background:#000;}
+#preview-img{flex:1;object-fit:contain;width:100%;}
+.preview-controls{padding:20px;background:#000;display:flex;gap:12px;flex-shrink:0;}
+.preview-controls button{flex:1;padding:14px;border-radius:12px;font-size:15px;font-weight:600;}
+
+/* ── ピンポップアップ ── */
+#pin-popup .pin-popup-num{width:32px;height:32px;border-radius:50%;background:#1C4ED8;color:#fff;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+#pin-popup .popup-header{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+#pin-popup .popup-title{font-size:16px;font-weight:700;flex:1;}
+#pin-popup .popup-close{width:30px;height:30px;border-radius:50%;background:#F7F8FA;display:flex;align-items:center;justify-content:center;font-size:15px;color:#6B7280;}
+#pin-popup .popup-img{width:100%;border-radius:12px;object-fit:cover;max-height:260px;margin-bottom:12px;display:block;}
+#pin-popup .popup-no-photo{width:100%;height:100px;background:#F7F8FA;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:32px;margin-bottom:12px;}
+#pin-popup .popup-item{font-size:13px;font-weight:600;color:#1C4ED8;margin-bottom:4px;}
+#pin-popup .popup-comment{font-size:14px;line-height:1.6;color:#111827;white-space:pre-wrap;word-break:break-all;margin-bottom:6px;}
+#pin-popup .popup-date{font-size:11px;color:#6B7280;margin-bottom:16px;}
+#pin-popup .popup-actions{display:flex;gap:10px;}
+#pin-popup .popup-actions button{flex:1;padding:12px;border-radius:10px;font-size:14px;font-weight:600;}
+
+/* ── PDF印刷用 ── */
+@media print{
+  body{overflow:auto!important;}
+  .screen,.overlay,#pdf-print-btn{display:none!important;}
+  #pdf-print-area{display:block!important;}
+}
+#pdf-print-area{display:none;}
+.pdf-page{width:100%;min-height:257mm;display:flex;flex-direction:column;page-break-after:always;font-family:'MS Gothic','Hiragino Sans',sans-serif;}
+.pdf-page:last-child{page-break-after:auto;}
+.pdf-header{border:1.5px solid #000;padding:6px 10px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:flex-end;font-size:9pt;}
+.pdf-header-title{font-size:13pt;font-weight:bold;text-align:center;flex:1;}
+.pdf-slot{border:1.5px solid #000;margin-bottom:6px;flex:1;}
+.pdf-slot-empty{border:1.5px dashed #ccc;min-height:120mm;flex:1;}
+.pdf-slot-head{border-bottom:1px solid #000;}
+.pdf-tbl{width:100%;border-collapse:collapse;font-size:9pt;}
+.pdf-tbl td{border-right:1px solid #000;padding:4px 6px;vertical-align:middle;}
+.pdf-tbl td:last-child{border-right:none;}
+.pdf-lbl{background:#f0f0f0;font-weight:bold;white-space:nowrap;width:40px;}
+.pdf-num{width:60px;font-weight:bold;}
+.pdf-slot-body{display:flex;height:108mm;}
+.pdf-photo{width:65%;border-right:1px solid #000;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#f8f8f8;}
+.pdf-photo img{width:100%;height:100%;object-fit:contain;}
+.pdf-photo-none{color:#999;font-size:11pt;}
+.pdf-comment{width:35%;padding:8px;display:flex;flex-direction:column;}
+.pdf-comment-lbl{font-size:8pt;font-weight:bold;border-bottom:1px solid #ccc;padding-bottom:3px;margin-bottom:5px;}
+.pdf-comment-txt{font-size:9pt;line-height:1.6;flex:1;}
+.pdf-date{font-size:7.5pt;color:#555;margin-top:6px;text-align:right;}
+.pdf-footer{text-align:center;font-size:8pt;color:#555;margin-top:4px;}
+#pdf-print-btn{position:fixed;bottom:24px;right:20px;background:#1C4ED8;color:#fff;border:none;border-radius:12px;padding:14px 22px;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.25);display:none;z-index:200;}
+</style>
+</head>
+<body>
+
+<!-- ══ 画面1: プロジェクト一覧 ══ -->
+<div id="screen-list" class="screen active">
+  <div class="header">
+    <span class="header-title">📐 施工フォト</span>
+    <button class="btn-primary" onclick="openNewProject()">＋ 新規</button>
+  </div>
+  <div class="body">
+    <div class="section-label">プロジェクト</div>
+    <div id="project-list"></div>
+  </div>
+</div>
+
+<!-- ══ 画面2: プロジェクト詳細 ══ -->
+<div id="screen-project" class="screen">
+  <div class="header">
+    <button class="header-back" onclick="backToList()">‹</button>
+    <span class="header-title" id="project-header-name" style="font-size:15px;"></span>
+    <button class="btn-outline" id="drawing-change-btn" style="font-size:12px;display:none;" onclick="drawingFileRef.click()">図面変更</button>
+  </div>
+  <div class="body">
+    <!-- 図面タブ -->
+    <div id="tab-drawing" style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
+      <div id="upload-zone" class="upload-zone" onclick="drawingFileRef.click()">
+        <div class="upload-zone-icon">📄</div>
+        <div class="upload-zone-text">図面をアップロード</div>
+        <div class="upload-zone-sub">タップして画像を選択</div>
+      </div>
+      <div id="drawing-container" class="drawing-container" style="display:none;">
+        <div id="drawing-wrapper" class="drawing-wrapper">
+          <img id="drawing-img" class="drawing-img" src="" alt="図面">
+          <div id="pins-layer"></div>
+          <div class="drawing-hint">📷 図面をタップして撮影</div>
+        </div>
+      </div>
+    </div>
+    <!-- 写真一覧タブ -->
+    <div id="tab-photos" style="flex:1;display:none;flex-direction:column;overflow:hidden;">
+      <div class="photo-list" id="photo-list-body"></div>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tab active" id="tab-btn-drawing" onclick="switchTab('drawing')">
+      <span class="tab-icon">📐</span>図面
+    </button>
+    <button class="tab" id="tab-btn-photos" onclick="switchTab('photos')">
+      <span class="tab-icon">📸</span>写真一覧
+    </button>
+    <button class="tab" onclick="exportPDF()">
+      <span class="tab-icon">🖨️</span>PDF出力
+    </button>
+  </div>
+</div>
+
+<!-- ══ 画面3: カメラ ══ -->
+<div id="screen-camera" class="screen">
+  <video id="camera-video" autoplay playsinline muted style="flex:1;object-fit:cover;width:100%;"></video>
+  <div class="camera-controls">
+    <button class="camera-btn-txt" onclick="cancelCamera()">キャンセル</button>
+    <button class="shutter" onclick="takePicture()"><div class="shutter-inner"></div></button>
+    <div style="width:70px;"></div>
+  </div>
+</div>
+
+<!-- ══ 画面4: 撮影プレビュー ══ -->
+<div id="screen-preview" class="screen">
+  <img id="preview-img" src="" alt="プレビュー" style="flex:1;object-fit:contain;width:100%;">
+  <div class="preview-controls">
+    <button class="btn-outline" style="color:#fff;border-color:rgba(255,255,255,.3);" onclick="retakePhoto()">撮り直す</button>
+    <button class="btn-primary" onclick="acceptPhoto()">この写真を使う</button>
+  </div>
+</div>
+
+<!-- ══ 新規プロジェクトモーダル ══ -->
+<div class="overlay" id="overlay-new-project" onclick="closeNewProject(event)">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <div class="sheet-title">新規プロジェクト</div>
+    <div class="field-label">物件名 *</div>
+    <input class="field-input" id="input-name" placeholder="例：○○マンション定期調査">
+    <div class="field-label">所在地</div>
+    <input class="field-input" id="input-address" placeholder="例：東京都渋谷区…">
+    <div class="btn-row">
+      <button class="btn-outline" onclick="closeNewProject()">キャンセル</button>
+      <button class="btn-primary" onclick="createProject()">作成</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ コメント入力モーダル ══ -->
+<div class="overlay" id="overlay-comment" onclick="cancelComment(event)">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <img id="comment-preview-img" class="preview-img-sm" src="" alt="">
+    <div class="field-label">調査項目</div>
+    <input class="field-input" id="input-inspection" placeholder="例：外壁、防火設備、避難施設等">
+    <div class="field-label">特記事項・コメント</div>
+    <textarea class="field-textarea" id="input-comment" placeholder="例：外壁ひび割れ確認、補修必要"></textarea>
+    <div class="btn-row">
+      <button class="btn-outline" onclick="cancelComment()">キャンセル</button>
+      <button class="btn-primary" onclick="savePhoto()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ピンポップアップ ══ -->
+<div class="overlay" id="overlay-pin" onclick="closePinPopup(event)">
+  <div id="pin-popup" class="sheet" onclick="event.stopPropagation()">
+    <div class="popup-header">
+      <div class="pin-popup-num" id="popup-num"></div>
+      <div class="popup-title" id="popup-title"></div>
+      <button class="popup-close" onclick="closePinPopup()">✕</button>
+    </div>
+    <div id="popup-photo-wrap"></div>
+    <div class="popup-item" id="popup-item"></div>
+    <div class="popup-comment" id="popup-comment"></div>
+    <div class="popup-date" id="popup-date"></div>
+    <div class="popup-actions">
+      <button class="btn-outline" onclick="deleteFromPopup()">🗑 削除</button>
+      <button class="btn-primary" onclick="editCommentFromPopup()">✏️ コメント編集</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PDF印刷エリア ══ -->
+<div id="pdf-print-area"></div>
+<button id="pdf-print-btn" onclick="window.print()">🖨️ 印刷 / PDF保存</button>
+
+<!-- ══ 隠しinput ══ -->
+<input type="file" id="drawing-file-input" accept="image/*" style="display:none;" onchange="handleDrawingFile(this)">
+<input type="file" id="photo-file-input" accept="image/*" capture="environment" style="display:none;" onchange="handleFilePhoto(this)">
+<canvas id="snapshot-canvas" style="display:none;"></canvas>
+
+<script>
+// ══ IndexedDB ══════════════════════════════════════════════════
+const DB_NAME = 'ConstructionPhotoApp', DB_VER = 1;
+function openDB() {
+  return new Promise((res, rej) => {
+    const r = indexedDB.open(DB_NAME, DB_VER);
+    r.onupgradeneeded = e => {
+      if (!e.target.result.objectStoreNames.contains('projects'))
+        e.target.result.createObjectStore('projects', {keyPath:'id'});
+    };
+    r.onsuccess = e => res(e.target.result);
+    r.onerror   = e => rej(e.target.error);
+  });
+}
+async function dbSave(p) {
+  const db = await openDB();
+  return new Promise((res, rej) => {
+    const tx = db.transaction('projects','readwrite');
+    tx.objectStore('projects').put(p);
+    tx.oncomplete = res; tx.onerror = e => rej(e.target.error);
+  });
+}
+async function dbAll() {
+  const db = await openDB();
+  return new Promise((res, rej) => {
+    const r = db.transaction('projects','readonly').objectStore('projects').getAll();
+    r.onsuccess = e => res(e.target.result);
+    r.onerror   = e => rej(e.target.error);
+  });
+}
+async function dbDelete(id) {
+  const db = await openDB();
+  return new Promise((res, rej) => {
+    const tx = db.transaction('projects','readwrite');
+    tx.objectStore('projects').delete(id);
+    tx.oncomplete = res; tx.onerror = e => rej(e.target.error);
+  });
+}
+
+// ══ 状態 ══════════════════════════════════════════════════════
+let projects = [];
+let activeProject = null;
+let pendingPin = null;
+let capturedPhoto = null;
+let selectedPhotoId = null;
+let mediaStream = null;
+const drawingFileRef = document.getElementById('drawing-file-input');
+const photoFileRef   = document.getElementById('photo-file-input');
+
+// ══ 初期化 ════════════════════════════════════════════════════
+window.addEventListener('load', async () => {
+  projects = await dbAll() || [];
+  renderProjectList();
+});
+
+// ══ 画面切替 ══════════════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ══ プロジェクト一覧 ══════════════════════════════════════════
+function renderProjectList() {
+  const el = document.getElementById('project-list');
+  if (!projects.length) {
+    el.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">🏗️</div>
+      <div class="empty-text">プロジェクトがありません</div>
+      <div class="empty-sub">「＋ 新規」から作成してください</div>
+    </div>`;
+    return;
+  }
+  el.innerHTML = projects.map(p => `
+    <div class="project-card" onclick="openProject('${p.id}')">
+      <div class="project-icon">🏢</div>
+      <div class="project-info">
+        <div class="project-name">${esc(p.name)}</div>
+        <div class="project-meta">${esc(p.address||'住所未設定')} · 写真 ${p.photos?.length||0}枚</div>
+      </div>
+      <button class="project-del" onclick="deleteProject(event,'${p.id}')">🗑</button>
+      <span style="color:#6B7280;font-size:18px;">›</span>
+    </div>`).join('');
+}
+
+function openNewProject() {
+  document.getElementById('input-name').value = '';
+  document.getElementById('input-address').value = '';
+  document.getElementById('overlay-new-project').classList.add('open');
+  setTimeout(() => document.getElementById('input-name').focus(), 100);
+}
+function closeNewProject(e) {
+  if (e && e.target !== document.getElementById('overlay-new-project')) return;
+  document.getElementById('overlay-new-project').classList.remove('open');
+}
+async function createProject() {
+  const name = document.getElementById('input-name').value.trim();
+  if (!name) return;
+  const p = {
+    id: Date.now().toString(), name,
+    address: document.getElementById('input-address').value.trim(),
+    createdAt: new Date().toISOString(),
+    drawing: null, photos: []
+  };
+  projects.push(p);
+  await dbSave(p);
+  document.getElementById('overlay-new-project').classList.remove('open');
+  renderProjectList();
+  openProject(p.id);
+}
+async function deleteProject(e, id) {
+  e.stopPropagation();
+  if (!confirm('このプロジェクトを削除しますか？')) return;
+  await dbDelete(id);
+  projects = projects.filter(p => p.id !== id);
+  renderProjectList();
+}
+
+// ══ プロジェクト詳細 ══════════════════════════════════════════
+function openProject(id) {
+  activeProject = projects.find(p => p.id === id);
+  document.getElementById('project-header-name').textContent = activeProject.name;
+  switchTab('drawing');
+  renderDrawing();
+  showScreen('screen-project');
+}
+function backToList() {
+  showScreen('screen-list');
+  renderProjectList();
+}
+function switchTab(t) {
+  document.getElementById('tab-drawing').style.display  = t==='drawing' ? 'flex' : 'none';
+  document.getElementById('tab-photos').style.display   = t==='photos'  ? 'flex' : 'none';
+  document.getElementById('tab-btn-drawing').className  = 'tab' + (t==='drawing' ? ' active' : '');
+  document.getElementById('tab-btn-photos').className   = 'tab' + (t==='photos'  ? ' active' : '');
+  if (t==='photos') renderPhotoList();
+}
+
+// ══ 図面 ══════════════════════════════════════════════════════
+function renderDrawing() {
+  const hasDrawing = !!activeProject.drawing;
+  document.getElementById('upload-zone').style.display       = hasDrawing ? 'none' : 'block';
+  document.getElementById('drawing-container').style.display = hasDrawing ? 'block' : 'none';
+  document.getElementById('drawing-change-btn').style.display= hasDrawing ? 'block' : 'none';
+  if (hasDrawing) {
+    document.getElementById('drawing-img').src = activeProject.drawing;
+    renderPins();
+    // タップ（ピン以外）でカメラ起動
+    const wrapper = document.getElementById('drawing-wrapper');
+    wrapper.onclick = handleDrawingTap;
+    wrapper.ontouchend = handleDrawingTap;
+  }
+}
+function handleDrawingFile(input) {
+  const file = input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async e => {
+    activeProject.drawing = e.target.result;
+    await dbSave(activeProject);
+    renderDrawing();
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+function renderPins() {
+  const layer = document.getElementById('pins-layer');
+  layer.innerHTML = (activeProject.photos||[]).map(ph => `
+    <div class="pin" style="left:${ph.x}%;top:${ph.y}%;" onclick="openPinPopup(event,'${ph.id}')">
+      <div class="pin-circle"><span class="pin-number">${ph.num}</span></div>
+      <div class="pin-tip"></div>
+    </div>`).join('');
+}
+function handleDrawingTap(e) {
+  if (e.target.closest('.pin')) return;
+  e.stopPropagation();
+  const rect = document.getElementById('drawing-wrapper').getBoundingClientRect();
+  const src  = e.touches ? e.changedTouches[0] : e;
+  pendingPin = {
+    x: ((src.clientX - rect.left) / rect.width)  * 100,
+    y: ((src.clientY - rect.top)  / rect.height) * 100
+  };
+  startCamera();
+}
+
+// ══ カメラ ════════════════════════════════════════════════════
+async function startCamera() {
+  showScreen('screen-camera');
+  try {
+    mediaStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});
+    document.getElementById('camera-video').srcObject = mediaStream;
+  } catch {
+    stopCamera();
+    photoFileRef.click();
+  }
+}
+function stopCamera() {
+  if (mediaStream) { mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null; }
+  document.getElementById('camera-video').srcObject = null;
+}
+function cancelCamera() {
+  stopCamera(); pendingPin = null; showScreen('screen-project');
+}
+function takePicture() {
+  const video  = document.getElementById('camera-video');
+  const canvas = document.getElementById('snapshot-canvas');
+  canvas.width  = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+  capturedPhoto = canvas.toDataURL('image/jpeg', 0.85);
+  stopCamera();
+  document.getElementById('preview-img').src = capturedPhoto;
+  showScreen('screen-preview');
+}
+function retakePhoto() {
+  capturedPhoto = null; pendingPin = null;
+  showScreen('screen-project');
+}
+function acceptPhoto() {
+  document.getElementById('comment-preview-img').src = capturedPhoto;
+  document.getElementById('input-inspection').value  = '';
+  document.getElementById('input-comment').value     = '';
+  document.getElementById('overlay-comment').classList.add('open');
+  showScreen('screen-project');
+  setTimeout(() => document.getElementById('input-inspection').focus(), 100);
+}
+function handleFilePhoto(input) {
+  const file = input.files[0];
+  if (!file) { pendingPin = null; return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    capturedPhoto = e.target.result;
+    document.getElementById('comment-preview-img').src = capturedPhoto;
+    document.getElementById('input-inspection').value  = '';
+    document.getElementById('input-comment').value     = '';
+    document.getElementById('overlay-comment').classList.add('open');
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+function cancelComment(e) {
+  if (e && e.target !== document.getElementById('overlay-comment')) return;
+  document.getElementById('overlay-comment').classList.remove('open');
+  capturedPhoto = null; pendingPin = null;
+}
+async function savePhoto() {
+  if (!pendingPin) return;
+  const num = (activeProject.photos?.length||0) + 1;
+  const entry = {
+    id: Date.now().toString(), num,
+    x: pendingPin.x, y: pendingPin.y,
+    photo: capturedPhoto,
+    inspectionItem: document.getElementById('input-inspection').value.trim(),
+    comment: document.getElementById('input-comment').value.trim(),
+    date: new Date().toLocaleString('ja-JP')
+  };
+  activeProject.photos = [...(activeProject.photos||[]), entry];
+  await dbSave(activeProject);
+  document.getElementById('overlay-comment').classList.remove('open');
+  capturedPhoto = null; pendingPin = null;
+  renderPins();
+}
+
+// ══ 写真一覧 ══════════════════════════════════════════════════
+function renderPhotoList() {
+  const photos = activeProject.photos || [];
+  const el = document.getElementById('photo-list-body');
+  if (!photos.length) {
+    el.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">📸</div>
+      <div class="empty-text">写真がありません</div>
+      <div class="empty-sub">図面タブで位置をタップして撮影</div>
+    </div>`;
+    return;
+  }
+  el.innerHTML = `<div class="photo-count">写真 ${photos.length}枚</div>` +
+    photos.map(ph => `
+    <div class="photo-item">
+      <div class="photo-num">${ph.num}</div>
+      ${ph.photo
+        ? `<img class="photo-thumb" src="${ph.photo}" alt="">`
+        : `<div class="photo-thumb-ph">📷</div>`}
+      <div class="photo-info">
+        ${ph.inspectionItem ? `<div class="photo-item-title">${esc(ph.inspectionItem)}</div>` : ''}
+        <div class="photo-comment">${esc(ph.comment||'（コメントなし）')}</div>
+        <div class="photo-date">${ph.date}</div>
+      </div>
+      <button class="photo-del" onclick="deletePhotoById('${ph.id}')">🗑</button>
+    </div>`).join('');
+}
+async function deletePhotoById(id) {
+  if (!confirm('この写真を削除しますか？')) return;
+  activeProject.photos = activeProject.photos
+    .filter(p => p.id !== id)
+    .map((p,i) => ({...p, num: i+1}));
+  await dbSave(activeProject);
+  renderPhotoList();
+  renderPins();
+}
+
+// ══ ピンポップアップ ══════════════════════════════════════════
+function openPinPopup(e, id) {
+  e.stopPropagation();
+  const ph = activeProject.photos.find(p => p.id === id);
+  if (!ph) return;
+  selectedPhotoId = id;
+  document.getElementById('popup-num').textContent   = ph.num;
+  document.getElementById('popup-title').textContent = `撮影ポイント ${ph.num}`;
+  document.getElementById('popup-item').textContent  = ph.inspectionItem || '';
+  document.getElementById('popup-comment').textContent = ph.comment || '（コメントなし）';
+  document.getElementById('popup-date').textContent  = '📅 ' + ph.date;
+  document.getElementById('popup-photo-wrap').innerHTML = ph.photo
+    ? `<img class="popup-img" src="${ph.photo}" alt="">`
+    : `<div class="popup-no-photo">📷</div>`;
+  document.getElementById('overlay-pin').classList.add('open');
+}
+function closePinPopup(e) {
+  if (e && e.target !== document.getElementById('overlay-pin')) return;
+  document.getElementById('overlay-pin').classList.remove('open');
+  selectedPhotoId = null;
+}
+async function deleteFromPopup() {
+  if (!confirm('この写真を削除しますか？')) return;
+  activeProject.photos = activeProject.photos
+    .filter(p => p.id !== selectedPhotoId)
+    .map((p,i) => ({...p, num: i+1}));
+  await dbSave(activeProject);
+  document.getElementById('overlay-pin').classList.remove('open');
+  selectedPhotoId = null;
+  renderPins();
+}
+async function editCommentFromPopup() {
+  const ph = activeProject.photos.find(p => p.id === selectedPhotoId);
+  if (!ph) return;
+  const newVal = prompt('コメントを編集', ph.comment || '');
+  if (newVal === null) return;
+  ph.comment = newVal.trim();
+  await dbSave(activeProject);
+  document.getElementById('popup-comment').textContent = ph.comment || '（コメントなし）';
+}
+
+// ══ PDF出力 ═══════════════════════════════════════════════════
+function exportPDF() {
+  const photos = activeProject?.photos || [];
+  if (!photos.length) { alert('写真がありません'); return; }
+
+  const pages = [];
+  for (let i = 0; i < photos.length; i += 2)
+    pages.push([photos[i], photos[i+1]||null]);
+
+  const slot = (ph) => {
+    if (!ph) return `<div class="pdf-slot-empty"></div>`;
+    return `<div class="pdf-slot">
+      <div class="pdf-slot-head">
+        <table class="pdf-tbl"><tr>
+          <td class="pdf-lbl">部位</td><td>&nbsp;</td>
+          <td class="pdf-lbl">番号</td><td class="pdf-num">${ph.num}</td>
+          <td class="pdf-lbl">調査項目</td><td>${esc(ph.inspectionItem||'')}</td>
+        </tr></table>
+      </div>
+      <div class="pdf-slot-body">
+        <div class="pdf-photo">
+          ${ph.photo ? `<img src="${ph.photo}">` : `<div class="pdf-photo-none">写真なし</div>`}
+        </div>
+        <div class="pdf-comment">
+          <div class="pdf-comment-lbl">特記事項</div>
+          <div class="pdf-comment-txt">${esc(ph.comment||'').replace(/\n/g,'<br>')}</div>
+          <div class="pdf-date">${ph.date}</div>
+        </div>
+      </div>
+    </div>`;
+  };
+
+  document.getElementById('pdf-print-area').innerHTML =
+    pages.map((pair, pi) => `
+      <div class="pdf-page">
+        <div class="pdf-header">
+          <span>別添２</span>
+          <span class="pdf-header-title">関係写真</span>
+          <span style="text-align:right;font-size:9pt;">${esc(activeProject.name)}<br>${esc(activeProject.address||'')}</span>
+        </div>
+        ${slot(pair[0])}
+        ${slot(pair[1])}
+        <div class="pdf-footer">${pi+1} / ${pages.length}</div>
+      </div>`).join('');
+
+  document.getElementById('pdf-print-btn').style.display = 'block';
+  window.print();
+  // 印刷後にエリアをリセット
+  setTimeout(() => {
+    document.getElementById('pdf-print-area').innerHTML = '';
+    document.getElementById('pdf-print-btn').style.display = 'none';
+  }, 2000);
+}
+
+// ══ ユーティリティ ════════════════════════════════════════════
+function esc(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
