@@ -120,35 +120,111 @@ input,textarea{font-family:inherit;font-size:inherit;}
 #pin-popup .popup-actions{display:flex;gap:10px;}
 #pin-popup .popup-actions button{flex:1;padding:12px;border-radius:10px;font-size:14px;font-weight:600;}
 
-/* ── PDF印刷用 ── */
-@media print{
-  body{overflow:auto!important;}
-  .screen,.overlay,#pdf-print-btn{display:none!important;}
-  #pdf-print-area{display:block!important;}
+/* ── PDFページスタイル（Excel写真台紙完全一致） ── */
+.pdf-page{
+  width:190mm;margin:0 auto;
+  display:flex;flex-direction:column;
+  page-break-after:always;
+  font-family:'ＭＳ 明朝','MS Mincho','Hiragino Mincho Pro',serif;
+  font-size:9pt;color:#000;
 }
-#pdf-print-area{display:none;}
-.pdf-page{width:100%;min-height:257mm;display:flex;flex-direction:column;page-break-after:always;font-family:'MS Gothic','Hiragino Sans',sans-serif;}
 .pdf-page:last-child{page-break-after:auto;}
-.pdf-header{border:1.5px solid #000;padding:6px 10px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:flex-end;font-size:9pt;}
-.pdf-header-title{font-size:13pt;font-weight:bold;text-align:center;flex:1;}
-.pdf-slot{border:1.5px solid #000;margin-bottom:6px;flex:1;}
-.pdf-slot-empty{border:1.5px dashed #ccc;min-height:120mm;flex:1;}
-.pdf-slot-head{border-bottom:1px solid #000;}
-.pdf-tbl{width:100%;border-collapse:collapse;font-size:9pt;}
-.pdf-tbl td{border-right:1px solid #000;padding:4px 6px;vertical-align:middle;}
-.pdf-tbl td:last-child{border-right:none;}
-.pdf-lbl{background:#f0f0f0;font-weight:bold;white-space:nowrap;width:40px;}
-.pdf-num{width:60px;font-weight:bold;}
-.pdf-slot-body{display:flex;height:108mm;}
-.pdf-photo{width:65%;border-right:1px solid #000;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#f8f8f8;}
-.pdf-photo img{width:100%;height:100%;object-fit:contain;}
-.pdf-photo-none{color:#999;font-size:11pt;}
-.pdf-comment{width:35%;padding:8px;display:flex;flex-direction:column;}
-.pdf-comment-lbl{font-size:8pt;font-weight:bold;border-bottom:1px solid #ccc;padding-bottom:3px;margin-bottom:5px;}
-.pdf-comment-txt{font-size:9pt;line-height:1.6;flex:1;}
-.pdf-date{font-size:7.5pt;color:#555;margin-top:6px;text-align:right;}
-.pdf-footer{text-align:center;font-size:8pt;color:#555;margin-top:4px;}
+
+/* ページヘッダー「別添２ 関係写真」 */
+.pdf-page-header{
+  display:flex;justify-content:space-between;align-items:flex-end;
+  margin-bottom:1mm;
+}
+.pdf-page-header-left{font-size:8pt;}
+.pdf-page-header-title{font-size:12pt;text-align:center;flex:1;}
+.pdf-page-header-right{font-size:8pt;text-align:right;}
+
+/* 写真1枚分のスロット */
+.pdf-slot{
+  border:1px solid #000;
+  margin-bottom:2mm;
+  width:100%;
+}
+.pdf-slot-empty{
+  border:1px dashed #ccc;
+  height:110mm;
+  margin-bottom:2mm;
+}
+
+/* ヘッダー行（部位・番号・調査項目・調査結果） */
+.pdf-slot-head{
+  display:flex;
+  border-bottom:1px solid #000;
+}
+.pdf-slot-head-left{
+  display:flex;
+  flex:1;
+  border-right:1px solid #000;
+}
+.pdf-head-cell{
+  padding:1mm 2mm;
+  border-right:1px solid #000;
+  white-space:nowrap;
+}
+.pdf-head-cell:last-child{border-right:none;}
+.pdf-head-label{font-size:8pt;color:#333;}
+.pdf-head-value{font-size:8.5pt;font-family:'ＭＳ ゴシック','MS Gothic','Hiragino Sans',sans-serif;}
+.pdf-head-butsui{width:8mm;}
+.pdf-head-bangou{width:22mm;}
+.pdf-head-item{flex:1;}
+.pdf-slot-head-right{
+  width:42mm;
+  padding:1mm 2mm;
+  font-size:8pt;
+}
+
+/* 写真・特記事項エリア */
+.pdf-slot-body{
+  display:flex;
+  height:100mm;
+}
+.pdf-photo-area{
+  flex:1;
+  border-right:1px solid #000;
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;background:#fafafa;
+  position:relative;
+}
+.pdf-photo-area img{
+  width:100%;height:100%;object-fit:contain;
+}
+.pdf-photo-none{
+  color:#aaa;font-size:10pt;
+  position:absolute;
+}
+.pdf-comment-area{
+  width:42mm;
+  padding:2mm;
+  display:flex;flex-direction:column;
+  border-top:1px solid #000;
+}
+.pdf-comment-label{
+  font-size:8pt;
+  border-bottom:1px solid #ccc;
+  padding-bottom:1mm;margin-bottom:2mm;
+}
+.pdf-comment-text{
+  font-size:8.5pt;line-height:1.5;flex:1;
+  font-family:'ＭＳ Ｐ明朝','MS PMincho','Hiragino Mincho Pro',serif;
+  word-break:break-all;
+}
+.pdf-date-text{font-size:7pt;color:#555;margin-top:2mm;text-align:right;}
+
+.pdf-footer{text-align:center;font-size:7.5pt;color:#555;margin-top:1mm;}
+
+/* ── PDF印刷用 ── */
+#pdf-print-area{display:none;}
 #pdf-print-btn{position:fixed;bottom:24px;right:20px;background:#1C4ED8;color:#fff;border:none;border-radius:12px;padding:14px 22px;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.25);display:none;z-index:200;}
+@media print{
+  *{visibility:hidden;}
+  #pdf-print-area,#pdf-print-area *{visibility:visible;}
+  #pdf-print-area{display:block!important;position:fixed;top:0;left:0;width:100%;background:#fff;}
+}
 </style>
 </head>
 <body>
@@ -659,20 +735,34 @@ function exportPDF() {
     if (!ph) return `<div class="pdf-slot-empty"></div>`;
     return `<div class="pdf-slot">
       <div class="pdf-slot-head">
-        <table class="pdf-tbl"><tr>
-          <td class="pdf-lbl">部位</td><td>&nbsp;</td>
-          <td class="pdf-lbl">番号</td><td class="pdf-num">${ph.num}</td>
-          <td class="pdf-lbl">調査項目</td><td>${esc(ph.inspectionItem||'')}</td>
-        </tr></table>
+        <div class="pdf-slot-head-left">
+          <div class="pdf-head-cell pdf-head-butsui">
+            <div class="pdf-head-label">部位</div>
+            <div class="pdf-head-value">&nbsp;</div>
+          </div>
+          <div class="pdf-head-cell pdf-head-bangou">
+            <div class="pdf-head-label">番号</div>
+            <div class="pdf-head-value">${ph.num}</div>
+          </div>
+          <div class="pdf-head-cell pdf-head-item">
+            <div class="pdf-head-label">調査項目</div>
+            <div class="pdf-head-value">${esc(ph.inspectionItem||'')}</div>
+          </div>
+        </div>
+        <div class="pdf-slot-head-right">
+          <div class="pdf-head-label">調査結果</div>
+        </div>
       </div>
       <div class="pdf-slot-body">
-        <div class="pdf-photo">
-          ${ph.photo ? `<img src="${ph.photo}">` : `<div class="pdf-photo-none">写真なし</div>`}
+        <div class="pdf-photo-area">
+          ${ph.photo
+            ? `<img src="${ph.photo}" alt="">`
+            : `<div class="pdf-photo-none">写真なし</div>`}
         </div>
-        <div class="pdf-comment">
-          <div class="pdf-comment-lbl">特記事項</div>
-          <div class="pdf-comment-txt">${esc(ph.comment||'').replace(/\n/g,'<br>')}</div>
-          <div class="pdf-date">${ph.date}</div>
+        <div class="pdf-comment-area">
+          <div class="pdf-comment-label">特記事項</div>
+          <div class="pdf-comment-text">${esc(ph.comment||'').replace(/\n/g,'<br>')}</div>
+          <div class="pdf-date-text">${ph.date}</div>
         </div>
       </div>
     </div>`;
@@ -681,10 +771,10 @@ function exportPDF() {
   document.getElementById('pdf-print-area').innerHTML =
     pages.map((pair, pi) => `
       <div class="pdf-page">
-        <div class="pdf-header">
-          <span>別添２</span>
-          <span class="pdf-header-title">関係写真</span>
-          <span style="text-align:right;font-size:9pt;">${esc(activeProject.name)}<br>${esc(activeProject.address||'')}</span>
+        <div class="pdf-page-header">
+          <span class="pdf-page-header-left">別添２</span>
+          <span class="pdf-page-header-title">関係写真</span>
+          <span class="pdf-page-header-right">${esc(activeProject.name)}<br>${esc(activeProject.address||'')}</span>
         </div>
         ${slot(pair[0])}
         ${slot(pair[1])}
@@ -693,11 +783,10 @@ function exportPDF() {
 
   document.getElementById('pdf-print-btn').style.display = 'block';
   window.print();
-  // 印刷後にエリアをリセット
   setTimeout(() => {
     document.getElementById('pdf-print-area').innerHTML = '';
     document.getElementById('pdf-print-btn').style.display = 'none';
-  }, 2000);
+  }, 3000);
 }
 
 // ══ ユーティリティ ════════════════════════════════════════════
