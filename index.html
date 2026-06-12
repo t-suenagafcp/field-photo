@@ -978,17 +978,17 @@ function exportJSON() {
   };
 
   const json = JSON.stringify(data, null, 2);
-  const blob = new Blob([json], {type: 'application/json;charset=utf-8'});
+  const blob = new Blob([json], {type: 'text/plain;charset=utf-8'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `施工フォト_${activeProject.name}.json`;
+  a.download = `施工フォト_${activeProject.name}.txt`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 
-  alert(`📤 「施工フォト_${activeProject.name}.json」をダウンロードしました。\nPCに転送してExcel自動入力スクリプトで使ってください。`);
+  alert(`📤 「施工フォト_${activeProject.name}.txt」をダウンロードしました。\nPCに転送してExcel自動入力スクリプトで使ってください。`);
   setTimeout(() => kentaShow('export'), 500);
 }
 function esc(s) {
@@ -1036,7 +1036,7 @@ const KENTA_SCRIPTS = {
   export: [
     'Excel連携ボタンを押したよ！JSONファイルがダウンロードされるよ📤',
     'このJSONファイルをPCに転送してね。AirDrop・メール・iCloudどれでもOK！',
-    'PCでPythonスクリプトと同じフォルダに置いて実行すると、Excelに自動で入力されるよ🎉',
+    'PCの「施工フォト」フォルダにある「施工フォト変換ツール.exe」を開いて、JSONとExcelひな形を選んで変換開始を押してね🎉',
   ],
 };
 
