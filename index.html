@@ -9,6 +9,8 @@
 <meta name="theme-color" content="#1C4ED8">
 <title>施工フォト</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 /* ── リセット & ベース ── */
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
@@ -234,6 +236,8 @@ input,textarea{font-family:inherit;font-size:inherit;}
 }
 @keyframes kentaIn{from{opacity:0;transform:translateX(-50%) translateY(12px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}
 .kenta-bubble.hidden{display:none;}
+/* カメラ画面ではシャッターボタンと被るため上にずらす */
+.kenta-bubble.kenta-high{bottom:150px;}
 .kenta-char{flex-shrink:0;width:60px;height:60px;}
 .kenta-char svg{width:100%;height:100%;}
 .kenta-text{
@@ -485,8 +489,14 @@ const photoFileRef   = document.getElementById('photo-file-input');
 window.addEventListener('load', async () => {
   projects = await dbAll() || [];
   renderProjectList();
-  // 初回のみウェルカム表示
-  if (!localStorage.getItem('kenta_welcomed')) {
+
+  // 直前に開いていたプロジェクトがあれば自動的に復元
+  // （iOSがバックグラウンドでアプリ/タブを終了させた場合に備える）
+  const lastId = localStorage.getItem('last_open_project');
+  if (lastId && projects.some(p => p.id === lastId)) {
+    openProject(lastId);
+  } else if (!localStorage.getItem('kenta_welcomed')) {
+    // 初回のみウェルカム表示
     setTimeout(() => kentaShow('welcome'), 600);
     localStorage.setItem('kenta_welcomed', '1');
   }
@@ -557,12 +567,14 @@ async function deleteProject(e, id) {
 // ══ プロジェクト詳細 ══════════════════════════════════════════
 function openProject(id) {
   activeProject = projects.find(p => p.id === id);
+  localStorage.setItem('last_open_project', id);
   document.getElementById('project-header-name').textContent = activeProject.name;
   switchTab('drawing');
   renderDrawing();
   showScreen('screen-project');
 }
 function backToList() {
+  localStorage.removeItem('last_open_project');
   showScreen('screen-list');
   renderProjectList();
 }
@@ -813,7 +825,7 @@ async function editCommentFromPopup() {
 }
 
 // ══ PDF出力 ═══════════════════════════════════════════════════
-function exportPDF() {
+async function exportPDF() {
   const photos = activeProject?.photos || [];
   if (!photos.length) { alert('写真がありません'); return; }
 
@@ -860,31 +872,25 @@ function exportPDF() {
     </div>`;
   };
 
-  // 独立したHTMLとして生成（写真をbase64で埋め込み済み）
-  const html = `<!DOCTYPE html>
-<html lang="ja"><head><meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>関係写真 - ${esc(activeProject.name)}</title>
-<style>
-*{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'ＭＳ 明朝','MS Mincho','Hiragino Mincho Pro',serif;font-size:9pt;color:#000;background:#fff;padding:8mm;}
-@page{size:A4;margin:12mm 10mm;}
-@media print{body{padding:0;}.print-btn{display:none!important;}}
-.print-btn{position:fixed;bottom:20px;right:20px;background:#1C4ED8;color:#fff;border:none;border-radius:12px;padding:14px 22px;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.25);}
+  // ローディング表示
+  const loadingEl = document.createElement('div');
+  loadingEl.style = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:600;';
+  loadingEl.textContent = '📄 PDFを作成中...';
+  document.body.appendChild(loadingEl);
 
-/* ページ */
-.pdf-page{width:100%;display:flex;flex-direction:column;page-break-after:always;}
-.pdf-page:last-child{page-break-after:auto;}
-
-/* ページヘッダー */
+  try {
+    // 画面外レンダリング用コンテナ（A4サイズ・mm基準）
+    const stage = document.createElement('div');
+    stage.id = 'pdf-render-stage';
+    stage.style = 'position:fixed;left:-99999px;top:0;width:210mm;background:#fff;';
+    stage.innerHTML = `<style>
+#pdf-render-stage{font-family:'ＭＳ 明朝','MS Mincho','Hiragino Mincho Pro',serif;font-size:9pt;color:#000;}
+#pdf-render-stage *{box-sizing:border-box;margin:0;padding:0;}
+.pdf-page{width:210mm;min-height:297mm;padding:12mm 10mm;display:flex;flex-direction:column;background:#fff;}
 .pdf-page-header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:1.5mm;font-size:9pt;}
 .pdf-page-header-title{font-size:12pt;text-align:center;flex:1;}
-
-/* スロット */
 .pdf-slot{border:1px solid #000;margin-bottom:2mm;}
 .pdf-slot-empty{border:1px dashed #ccc;height:95mm;margin-bottom:2mm;}
-
-/* ヘッダー行 */
 .pdf-slot-head{display:flex;border-bottom:1px solid #000;}
 .pdf-slot-head-left{display:flex;flex:1;border-right:1px solid #000;}
 .pdf-head-cell{padding:1mm 2mm;border-right:1px solid #000;}
@@ -894,14 +900,10 @@ body{font-family:'ＭＳ 明朝','MS Mincho','Hiragino Mincho Pro',serif;font-si
 .pdf-head-butsui{width:8mm;}
 .pdf-head-bangou{width:20mm;}
 .pdf-slot-head-right{width:40mm;padding:1mm 2mm;border-left:0;}
-
-/* 調査結果チェックボックス */
 .pdf-result-label{font-size:7pt;color:#333;margin-bottom:1mm;}
 .pdf-result-checks{display:flex;gap:3mm;font-size:8pt;}
 .pdf-check{display:flex;align-items:center;gap:1mm;}
 .pdf-checkbox{width:3mm;height:3mm;border:1px solid #000;display:inline-block;flex-shrink:0;}
-
-/* 写真・特記事項エリア */
 .pdf-slot-body{display:flex;height:95mm;}
 .pdf-photo-area{flex:1;border-right:1px solid #000;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#fafafa;}
 .pdf-photo-area img{width:100%;height:100%;object-fit:contain;}
@@ -910,19 +912,15 @@ body{font-family:'ＭＳ 明朝','MS Mincho','Hiragino Mincho Pro',serif;font-si
 .pdf-comment-label{font-size:7pt;color:#333;border-bottom:1px solid #ccc;padding-bottom:1mm;margin-bottom:2mm;}
 .pdf-comment-text{font-size:8.5pt;line-height:1.5;flex:1;word-break:break-all;font-family:'ＭＳ Ｐ明朝','MS PMincho',serif;}
 .pdf-date-text{font-size:6.5pt;color:#555;margin-top:2mm;text-align:right;}
-
-/* 注意書き */
 .pdf-notes{border:1px solid #000;border-top:none;padding:2mm 3mm;font-size:7.5pt;line-height:1.6;}
 .pdf-notes-title{font-weight:bold;margin-bottom:1mm;}
 .pdf-note-row{display:flex;gap:2mm;margin-bottom:0.5mm;}
 .pdf-note-num{flex-shrink:0;width:4mm;}
 .pdf-note-a4{text-align:right;font-size:7pt;color:#555;margin-top:1mm;}
-
 .pdf-footer{text-align:center;font-size:7pt;color:#555;margin-top:1mm;}
-</style></head><body>
-<button class="print-btn" onclick="window.print()">🖨️ 印刷 / PDF保存</button>
+</style>
 ${pages.map((pair, pi) => `
-<div class="pdf-page">
+<div class="pdf-page" data-page="${pi}">
   <div class="pdf-page-header">
     <span style="font-size:8pt;">別添２</span>
     <span class="pdf-page-header-title">関係写真</span>
@@ -940,19 +938,32 @@ ${pages.map((pair, pi) => `
     <div class="pdf-note-a4">（日本産業規格Ａ列４番）</div>
   </div>
   <div class="pdf-footer">${pi+1} / ${pages.length}</div>
-</div>`).join('')}
-</body></html>`;
+</div>`).join('')}`;
+    document.body.appendChild(stage);
 
-  // Blobとしてダウンロード
-  const blob = new Blob([html], {type:'text/html;charset=utf-8'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `関係写真_${activeProject.name}.html`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+    // 画像の読み込み完了を待つ
+    const imgs = stage.querySelectorAll('img');
+    await Promise.all(Array.from(imgs).map(img => img.complete ? Promise.resolve() :
+      new Promise(res => { img.onload = res; img.onerror = res; })));
+
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+    const pageEls = stage.querySelectorAll('.pdf-page');
+
+    for (let i = 0; i < pageEls.length; i++) {
+      const canvas = await html2canvas(pageEls[i], { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+      const imgData = canvas.toDataURL('image/jpeg', 0.92);
+      if (i > 0) pdf.addPage();
+      pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
+    }
+
+    document.body.removeChild(stage);
+    pdf.save(`関係写真_${activeProject.name}.pdf`);
+  } catch (err) {
+    alert('PDF作成中にエラーが発生しました: ' + err.message);
+  } finally {
+    document.body.removeChild(loadingEl);
+  }
 }
 
 // ══ Excelエクスポート用JSON出力 ══════════════════════════════
@@ -1052,6 +1063,7 @@ function kentaShow(scriptKey) {
   const bubble = document.getElementById('kenta-bubble');
   document.getElementById('kenta-msg').textContent = kentaQueue[0];
   bubble.classList.remove('hidden');
+  bubble.classList.toggle('kenta-high', scriptKey === 'camera');
   bubble.style.animation = 'none';
   requestAnimationFrame(() => { bubble.style.animation = ''; bubble.classList.remove('hidden'); });
 }
