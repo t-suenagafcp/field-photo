@@ -11,6 +11,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
 /* ── リセット & ベース ── */
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
@@ -325,6 +326,11 @@ input,textarea{font-family:inherit;font-size:inherit;}
     </div>
     <!-- 写真一覧タブ -->
     <div id="tab-photos" style="flex:1;display:none;flex-direction:column;overflow:hidden;">
+      <div style="padding:10px 14px;border-bottom:1px solid #E2E5EA;background:#fff;">
+        <button onclick="downloadAllPhotos()" style="width:100%;padding:11px;border-radius:10px;background:#EFF4FF;color:#1C4ED8;font-size:14px;font-weight:600;border:none;">
+          📦 写真をまとめてダウンロード（ZIP）
+        </button>
+      </div>
       <div class="photo-list" id="photo-list-body"></div>
     </div>
   </div>
@@ -946,6 +952,24 @@ ${pages.map((pair, pi) => `
     await Promise.all(Array.from(imgs).map(img => img.complete ? Promise.resolve() :
       new Promise(res => { img.onload = res; img.onerror = res; })));
 
+    // html2canvasはobject-fit:containを正しく描画しないことがあるため、
+    // 画像の実寸比率から枠に収まる正確なサイズをJSで計算してwidth/heightを直接指定する
+    imgs.forEach(img => {
+      const area = img.parentElement;
+      const areaW = area.clientWidth;
+      const areaH = area.clientHeight;
+      const natW = img.naturalWidth;
+      const natH = img.naturalHeight;
+      if (!natW || !natH || !areaW || !areaH) return;
+      const scale = Math.min(areaW / natW, areaH / natH);
+      const dispW = natW * scale;
+      const dispH = natH * scale;
+      img.style.width = dispW + 'px';
+      img.style.height = dispH + 'px';
+      img.style.objectFit = '';
+      img.style.display = 'block';
+    });
+
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
     const pageEls = stage.querySelectorAll('.pdf-page');
@@ -961,6 +985,41 @@ ${pages.map((pair, pi) => `
     pdf.save(`関係写真_${activeProject.name}.pdf`);
   } catch (err) {
     alert('PDF作成中にエラーが発生しました: ' + err.message);
+  } finally {
+    document.body.removeChild(loadingEl);
+  }
+}
+
+// ══ 写真まとめてダウンロード(ZIP) ═══════════════════════════════
+async function downloadAllPhotos() {
+  const photos = (activeProject?.photos || []).filter(p => p.photo);
+  if (!photos.length) { alert('写真がありません'); return; }
+
+  const loadingEl = document.createElement('div');
+  loadingEl.style = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:600;';
+  loadingEl.textContent = '📦 ZIPを作成中...';
+  document.body.appendChild(loadingEl);
+
+  try {
+    const zip = new JSZip();
+    photos.forEach((ph, i) => {
+      const m = ph.photo.match(/^data:image\/(\w+);base64,(.+)$/);
+      if (!m) return;
+      const ext = m[1] === 'jpeg' ? 'jpg' : m[1];
+      const num = String(ph.num || (i+1)).padStart(2, '0');
+      zip.file(`写真${num}_${ph.inspectionItem || ''}.${ext}`, m[2], { base64: true });
+    });
+    const blob = await zip.generateAsync({ type: 'blob' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `施工フォト_${activeProject.name}.zip`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  } catch (err) {
+    alert('ZIP作成中にエラーが発生しました: ' + err.message);
   } finally {
     document.body.removeChild(loadingEl);
   }
