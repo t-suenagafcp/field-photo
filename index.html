@@ -66,7 +66,10 @@ input,textarea{font-family:inherit;font-size:inherit;}
 /* ── 写真一覧 ── */
 .photo-list{flex:1;overflow-y:auto;padding:12px 16px;}
 .photo-count{font-size:13px;color:#6B7280;margin-bottom:12px;}
-.photo-item{background:#fff;border:1px solid #E2E5EA;border-radius:12px;padding:12px;margin-bottom:10px;display:flex;gap:12px;align-items:flex-start;}
+.photo-item{background:#fff;border:1px solid #E2E5EA;border-radius:12px;padding:12px;margin-bottom:10px;display:flex;gap:12px;align-items:flex-start;transition:transform .15s,box-shadow .15s;}
+.photo-item.dragging{opacity:.4;}
+.photo-item.drag-ghost{position:fixed;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.25);pointer-events:none;width:calc(100% - 28px);}
+.photo-drag-handle{flex-shrink:0;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:18px;color:#9CA3AF;touch-action:none;cursor:grab;align-self:center;}
 .photo-num{width:28px;height:28px;border-radius:50%;background:#1C4ED8;color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .photo-thumb{width:72px;height:72px;object-fit:cover;border-radius:8px;flex-shrink:0;}
 .photo-thumb-ph{width:72px;height:72px;background:#F7F8FA;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;}
@@ -764,9 +767,11 @@ function renderPhotoList() {
     </div>`;
     return;
   }
-  el.innerHTML = `<div class="photo-count">写真 ${photos.length}枚</div>` +
-    photos.map(ph => `
-    <div class="photo-item">
+  el.innerHTML = `<div class="photo-count">写真 ${photos.length}枚　<span style="color:#9CA3AF;font-weight:400;">（☰を長押しして並び替え）</span></div>` +
+    `<div id="photo-sort-list">` +
+    photos.map((ph, idx) => `
+    <div class="photo-item" data-id="${ph.id}" data-idx="${idx}">
+      <div class="photo-drag-handle" ontouchstart="dragTouchStart(event, '${ph.id}')" onmousedown="dragMouseStart(event, '${ph.id}')">☰</div>
       <div class="photo-num">${ph.num}</div>
       ${ph.photo
         ? `<img class="photo-thumb" src="${ph.photo}" alt="">`
@@ -777,13 +782,99 @@ function renderPhotoList() {
         <div class="photo-date">${ph.date}</div>
       </div>
       <button class="photo-del" onclick="deletePhotoById('${ph.id}')">🗑</button>
-    </div>`).join('');
+    </div>`).join('') +
+    `</div>`;
 }
 async function deletePhotoById(id) {
   if (!confirm('この写真を削除しますか？')) return;
   activeProject.photos = activeProject.photos
     .filter(p => p.id !== id)
     .map((p,i) => ({...p, num: i+1}));
+  await dbSave(activeProject);
+  renderPhotoList();
+  renderPins();
+}
+
+// ══ 写真一覧 並び替え（ドラッグ&ドロップ） ══════════════════════
+let dragState = null;
+
+function dragTouchStart(e, id) {
+  e.preventDefault();
+  const t = e.touches[0];
+  dragBegin(id, t.clientY, t.clientX);
+  document.addEventListener('touchmove', dragTouchMove, {passive:false});
+  document.addEventListener('touchend', dragEnd);
+}
+function dragTouchMove(e) {
+  e.preventDefault();
+  const t = e.touches[0];
+  dragMove(t.clientY, t.clientX);
+}
+function dragMouseStart(e, id) {
+  e.preventDefault();
+  dragBegin(id, e.clientY, e.clientX);
+  document.addEventListener('mousemove', dragMouseMove);
+  document.addEventListener('mouseup', dragEnd);
+}
+function dragMouseMove(e) { dragMove(e.clientY, e.clientX); }
+
+function dragBegin(id, clientY, clientX) {
+  const list = document.getElementById('photo-sort-list');
+  const card = list.querySelector(`.photo-item[data-id="${id}"]`);
+  if (!card) return;
+  const rect = card.getBoundingClientRect();
+
+  const ghost = card.cloneNode(true);
+  ghost.classList.add('drag-ghost');
+  ghost.style.left = rect.left + 'px';
+  ghost.style.top = rect.top + 'px';
+  ghost.style.height = rect.height + 'px';
+  document.body.appendChild(ghost);
+
+  card.classList.add('dragging');
+
+  dragState = {
+    id, list, card, ghost,
+    offsetY: clientY - rect.top,
+    offsetX: clientX - rect.left,
+  };
+}
+
+function dragMove(clientY, clientX) {
+  if (!dragState) return;
+  const { ghost, list, card } = dragState;
+  ghost.style.top = (clientY - dragState.offsetY) + 'px';
+  ghost.style.left = (clientX - dragState.offsetX) + 'px';
+
+  const siblings = Array.from(list.querySelectorAll('.photo-item:not(.dragging)'));
+  let target = null;
+  for (const sib of siblings) {
+    const r = sib.getBoundingClientRect();
+    const mid = r.top + r.height / 2;
+    if (clientY < mid) { target = sib; break; }
+  }
+  if (target) list.insertBefore(card, target);
+  else list.appendChild(card);
+}
+
+async function dragEnd() {
+  document.removeEventListener('touchmove', dragTouchMove);
+  document.removeEventListener('touchend', dragEnd);
+  document.removeEventListener('mousemove', dragMouseMove);
+  document.removeEventListener('mouseup', dragEnd);
+  if (!dragState) return;
+
+  const { list, card, ghost } = dragState;
+  ghost.remove();
+  card.classList.remove('dragging');
+
+  // DOM上の現在の並び順からphotos配列を再構築し、番号を振り直す
+  const newOrderIds = Array.from(list.querySelectorAll('.photo-item')).map(el => el.dataset.id);
+  const byId = {};
+  activeProject.photos.forEach(p => byId[p.id] = p);
+  activeProject.photos = newOrderIds.map((id, i) => ({ ...byId[id], num: i + 1 }));
+
+  dragState = null;
   await dbSave(activeProject);
   renderPhotoList();
   renderPins();
