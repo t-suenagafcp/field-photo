@@ -82,7 +82,8 @@ input,textarea{font-family:inherit;font-size:inherit;}
 .photo-item-title{font-size:12px;font-weight:600;color:#1C4ED8;margin-bottom:2px;}
 .photo-comment{font-size:13px;color:#111827;line-height:1.5;word-break:break-all;}
 .photo-date{font-size:11px;color:#6B7280;margin-top:4px;}
-.photo-del{color:#6B7280;font-size:16px;padding:4px;flex-shrink:0;}
+.photo-del{color:#6B7280;font-size:16px;padding:10px 8px;flex-shrink:0;min-width:44px;min-height:44px;background:none;border:none;touch-action:manipulation;}
+.photo-del.confirm-state{color:#fff;background:#DC2626;font-size:12px;font-weight:700;border-radius:8px;white-space:nowrap;}
 
 /* ── タブ ── */
 .tabs{display:flex;border-top:1px solid #E2E5EA;background:#fff;flex-shrink:0;}
@@ -889,12 +890,30 @@ function renderPhotoList() {
         <div class="photo-comment">${esc(ph.comment||'（コメントなし）')}</div>
         <div class="photo-date">${ph.date}</div>
       </div>
-      <button class="photo-del" onclick="deletePhotoById('${ph.id}')">🗑</button>
+      <button class="photo-del" data-id="${ph.id}" onclick="handleDeleteClick(this, '${ph.id}')">🗑</button>
     </div>`).join('') +
     `</div>`;
 }
+function handleDeleteClick(btn, id) {
+  if (btn.classList.contains('confirm-state')) {
+    deletePhotoById(id);
+    return;
+  }
+  // 一度目のタップ：確認状態に切り替える（他の削除ボタンの確認状態はリセット）
+  document.querySelectorAll('.photo-del.confirm-state').forEach(b => {
+    b.classList.remove('confirm-state');
+    b.textContent = '🗑';
+  });
+  btn.classList.add('confirm-state');
+  btn.textContent = '本当に削除';
+  setTimeout(() => {
+    if (btn.classList.contains('confirm-state')) {
+      btn.classList.remove('confirm-state');
+      btn.textContent = '🗑';
+    }
+  }, 3000);
+}
 async function deletePhotoById(id) {
-  if (!confirm('この写真を削除しますか？')) return;
   activeProject.photos = activeProject.photos
     .filter(p => p.id !== id)
     .map((p,i) => ({...p, num: i+1}));
