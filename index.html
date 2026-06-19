@@ -49,6 +49,11 @@ input,textarea{font-family:inherit;font-size:inherit;}
 /* ── 図面・写真画面 ── */
 #screen-project .body{flex:1;display:flex;flex-direction:column;overflow:hidden;}
 .drawing-container{flex:1;overflow:auto;background:#D1D5DB;position:relative;}
+.floor-tabs{display:flex;gap:6px;padding:8px 10px;background:#fff;border-bottom:1px solid #E2E5EA;overflow-x:auto;white-space:nowrap;}
+.floor-tab{flex-shrink:0;padding:6px 14px;border-radius:16px;background:#F3F4F6;color:#374151;font-size:13px;font-weight:600;border:none;}
+.floor-tab.active{background:#1C4ED8;color:#fff;}
+.floor-tab-edit{background:none;color:#9CA3AF;font-size:14px;padding:6px 8px;}
+.photo-floor-tag{display:inline-block;background:#EFF4FF;color:#1C4ED8;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;margin-bottom:4px;}
 .drawing-wrapper{position:relative;display:inline-block;min-width:100%;min-height:100%;}
 .drawing-img{display:block;max-width:100%;height:auto;user-select:none;}
 .drawing-hint{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.65);color:#fff;padding:7px 14px;border-radius:20px;font-size:12px;white-space:nowrap;pointer-events:none;}
@@ -175,7 +180,7 @@ input,textarea{font-family:inherit;font-size:inherit;}
 .pdf-head-cell:last-child{border-right:none;flex:1;min-width:40mm;}
 .pdf-head-label{font-size:8pt;color:#333;}
 .pdf-head-value{font-size:8.5pt;font-family:'ＭＳ ゴシック','MS Gothic','Hiragino Sans',sans-serif;}
-.pdf-head-butsui{width:8mm;}
+.pdf-head-butsui{width:14mm;}
 .pdf-head-bangou{width:22mm;}
 .pdf-head-item{flex:1;}
 .pdf-slot-head-right{
@@ -309,15 +314,16 @@ input,textarea{font-family:inherit;font-size:inherit;}
   <div class="header">
     <button class="header-back" onclick="backToList()">‹</button>
     <span class="header-title" id="project-header-name" style="font-size:15px;"></span>
-    <button class="btn-outline" id="drawing-change-btn" style="font-size:12px;display:none;" onclick="drawingFileRef.click()">図面変更</button>
+    <button class="btn-outline" id="drawing-change-btn" style="font-size:12px;display:none;" onclick="confirmChangeDrawing()">図面変更</button>
   </div>
   <div class="body">
     <!-- 図面タブ -->
     <div id="tab-drawing" style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
+      <div id="floor-tabs" class="floor-tabs"></div>
       <div id="upload-zone" class="upload-zone" onclick="drawingFileRef.click()">
         <div class="upload-zone-icon">📄</div>
         <div class="upload-zone-text">図面をアップロード</div>
-        <div class="upload-zone-sub">タップして画像を選択</div>
+        <div class="upload-zone-sub">タップして画像を選択（複数ページPDF可）</div>
       </div>
       <div id="drawing-container" class="drawing-container" style="display:none;">
         <div id="drawing-wrapper" class="drawing-wrapper">
@@ -557,7 +563,7 @@ async function createProject() {
     id: Date.now().toString(), name,
     address: document.getElementById('input-address').value.trim(),
     createdAt: new Date().toISOString(),
-    drawing: null, photos: []
+    drawings: [], currentFloor: 0, photos: []
   };
   projects.push(p);
   await dbSave(p);
@@ -576,11 +582,23 @@ async function deleteProject(e, id) {
 // ══ プロジェクト詳細 ══════════════════════════════════════════
 function openProject(id) {
   activeProject = projects.find(p => p.id === id);
+  migrateProjectToFloors(activeProject);
   localStorage.setItem('last_open_project', id);
   document.getElementById('project-header-name').textContent = activeProject.name;
   switchTab('drawing');
   renderDrawing();
   showScreen('screen-project');
+}
+// 旧データ構造（drawing単数）→ 新データ構造（drawings配列＋floorIndex）へ変換
+function migrateProjectToFloors(p) {
+  if (!p.drawings) {
+    p.drawings = p.drawing ? [{ name: '1階', image: p.drawing }] : [];
+    p.currentFloor = 0;
+  }
+  if (typeof p.currentFloor !== 'number') p.currentFloor = 0;
+  if (p.photos) {
+    p.photos = p.photos.map(ph => ({ floorIndex: 0, ...ph }));
+  }
 }
 function backToList() {
   localStorage.removeItem('last_open_project');
@@ -597,52 +615,115 @@ function switchTab(t) {
 
 // ══ 図面 ══════════════════════════════════════════════════════
 function renderDrawing() {
-  const hasDrawing = !!activeProject.drawing;
+  const drawings = activeProject.drawings || [];
+  const hasDrawing = drawings.length > 0;
   document.getElementById('upload-zone').style.display       = hasDrawing ? 'none' : 'block';
   document.getElementById('drawing-container').style.display = hasDrawing ? 'block' : 'none';
   document.getElementById('drawing-change-btn').style.display= hasDrawing ? 'block' : 'none';
   if (!hasDrawing) {
     setTimeout(() => kentaShow('drawingUpload'), 400);
+    document.getElementById('floor-tabs').innerHTML = '';
+    return;
   }
-  if (hasDrawing) {
-    document.getElementById('drawing-img').src = activeProject.drawing;
-    renderPins();
-    // タップ（ピン以外）でカメラ起動
-    const wrapper = document.getElementById('drawing-wrapper');
-    wrapper.onclick = handleDrawingTap;
-    wrapper.ontouchend = handleDrawingTap;
-  }
+  if (activeProject.currentFloor >= drawings.length) activeProject.currentFloor = 0;
+  const cur = drawings[activeProject.currentFloor];
+
+  document.getElementById('drawing-img').src = cur.image;
+  renderPins();
+  renderFloorTabs();
+
+  // タップ（ピン以外）でカメラ起動
+  const wrapper = document.getElementById('drawing-wrapper');
+  wrapper.onclick = handleDrawingTap;
+  wrapper.ontouchend = handleDrawingTap;
+
+  // 左右スワイプでフロア切替
+  const container = document.getElementById('drawing-container');
+  let swipeStartX = null, swipeStartY = null;
+  container.ontouchstart = e => {
+    if (e.touches.length !== 1) return;
+    swipeStartX = e.touches[0].clientX;
+    swipeStartY = e.touches[0].clientY;
+  };
+  container.ontouchend = e => {
+    if (swipeStartX === null) return;
+    const dx = e.changedTouches[0].clientX - swipeStartX;
+    const dy = e.changedTouches[0].clientY - swipeStartY;
+    swipeStartX = null;
+    if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      if (dx < 0) changeFloor(activeProject.currentFloor + 1);
+      else changeFloor(activeProject.currentFloor - 1);
+    }
+  };
 }
-function handleDrawingFile(input) {
+function renderFloorTabs() {
+  const drawings = activeProject.drawings || [];
+  const tabsEl = document.getElementById('floor-tabs');
+  if (drawings.length <= 1) { tabsEl.innerHTML = ''; return; }
+  tabsEl.innerHTML = drawings.map((d, i) => `
+    <button class="floor-tab${i===activeProject.currentFloor?' active':''}" onclick="changeFloor(${i})">${esc(d.name)}</button>
+  `).join('') + `<button class="floor-tab floor-tab-edit" onclick="openFloorNameEditor()">✎</button>`;
+}
+async function changeFloor(idx) {
+  const drawings = activeProject.drawings || [];
+  if (idx < 0 || idx >= drawings.length) return;
+  activeProject.currentFloor = idx;
+  await dbSave(activeProject);
+  renderDrawing();
+}
+function openFloorNameEditor() {
+  const drawings = activeProject.drawings || [];
+  const names = drawings.map((d,i) => prompt(`${i+1}枚目の図面の名前を入力してください（例：1階）`, d.name));
+  names.forEach((n, i) => { if (n && n.trim()) drawings[i].name = n.trim(); });
+  dbSave(activeProject);
+  renderDrawing();
+}
+function confirmChangeDrawing(){
+  if((activeProject.photos||[]).length && !confirm('図面を変更すると、撮影済みの写真と図面の対応がずれる場合があります。続けますか？')) return;
+  drawingFileRef.click();
+}
+async function handleDrawingFile(input) {
   const file = input.files[0]; if (!file) return;
 
   if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
-    // PDF → Canvas → dataURL変換
+    // PDF → 全ページをCanvas → dataURL変換し、各ページをフロアとして追加
     const reader = new FileReader();
     reader.onload = async e => {
       try {
         const pdfjsLib = window['pdfjs-dist/build/pdf'];
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
         const pdf = await pdfjsLib.getDocument({data: e.target.result}).promise;
-        const page = await pdf.getPage(1);
-        const viewport = page.getViewport({scale: 2.0});
-        const canvas = document.createElement('canvas');
-        canvas.width  = viewport.width;
-        canvas.height = viewport.height;
-        await page.render({canvasContext: canvas.getContext('2d'), viewport}).promise;
-        activeProject.drawing = canvas.toDataURL('image/jpeg', 0.9);
+        const newDrawings = [];
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const viewport = page.getViewport({scale: 2.0});
+          const canvas = document.createElement('canvas');
+          canvas.width  = viewport.width;
+          canvas.height = viewport.height;
+          await page.render({canvasContext: canvas.getContext('2d'), viewport}).promise;
+          newDrawings.push({ name: `${i}階`, image: canvas.toDataURL('image/jpeg', 0.9) });
+        }
+        activeProject.drawings = newDrawings;
+        activeProject.currentFloor = 0;
         await dbSave(activeProject);
         renderDrawing();
+        if (newDrawings.length > 1) {
+          setTimeout(() => openFloorNameEditor(), 400);
+        } else {
+          setTimeout(() => kentaShow('drawingReady'), 400);
+        }
       } catch(err) {
         alert('PDFの読み込みに失敗しました。画像ファイル（JPG/PNG）をお試しください。');
       }
     };
     reader.readAsArrayBuffer(file);
   } else {
-    // 画像ファイル
+    // 画像ファイル（1枚＝1フロアとして追加）
     const reader = new FileReader();
     reader.onload = async e => {
-      activeProject.drawing = e.target.result;
+      const floorNum = (activeProject.drawings||[]).length + 1;
+      activeProject.drawings = [...(activeProject.drawings||[]), { name: `${floorNum}階`, image: e.target.result }];
+      activeProject.currentFloor = activeProject.drawings.length - 1;
       await dbSave(activeProject);
       renderDrawing();
       setTimeout(() => kentaShow('drawingReady'), 400);
@@ -653,7 +734,10 @@ function handleDrawingFile(input) {
 }
 function renderPins() {
   const layer = document.getElementById('pins-layer');
-  layer.innerHTML = (activeProject.photos||[]).map(ph => `
+  const cur = activeProject.currentFloor || 0;
+  layer.innerHTML = (activeProject.photos||[])
+    .filter(ph => (ph.floorIndex||0) === cur)
+    .map(ph => `
     <div class="pin" style="left:${ph.x}%;top:${ph.y}%;" onclick="openPinPopup(event,'${ph.id}')">
       <div class="pin-circle"><span class="pin-number">${ph.num}</span></div>
       <div class="pin-tip"></div>
@@ -666,7 +750,8 @@ function handleDrawingTap(e) {
   const src  = e.touches ? e.changedTouches[0] : e;
   pendingPin = {
     x: ((src.clientX - rect.left) / rect.width)  * 100,
-    y: ((src.clientY - rect.top)  / rect.height) * 100
+    y: ((src.clientY - rect.top)  / rect.height) * 100,
+    floorIndex: activeProject.currentFloor || 0
   };
   startCamera();
 }
@@ -743,6 +828,7 @@ async function savePhoto() {
   const entry = {
     id: Date.now().toString(), num,
     x: pendingPin.x, y: pendingPin.y,
+    floorIndex: pendingPin.floorIndex || 0,
     photo: capturedPhoto,
     inspectionItem: document.getElementById('input-inspection').value.trim(),
     comment: document.getElementById('input-comment').value.trim(),
@@ -777,6 +863,7 @@ function renderPhotoList() {
         ? `<img class="photo-thumb" src="${ph.photo}" alt="">`
         : `<div class="photo-thumb-ph">📷</div>`}
       <div class="photo-info">
+        ${(activeProject.drawings||[]).length > 1 ? `<div class="photo-floor-tag">${esc((activeProject.drawings[ph.floorIndex||0]||{}).name||'')}</div>` : ''}
         ${ph.inspectionItem ? `<div class="photo-item-title">${esc(ph.inspectionItem)}</div>` : ''}
         <div class="photo-comment">${esc(ph.comment||'（コメントなし）')}</div>
         <div class="photo-date">${ph.date}</div>
@@ -937,7 +1024,7 @@ async function exportPDF() {
         <div class="pdf-slot-head-left">
           <div class="pdf-head-cell pdf-head-butsui">
             <div class="pdf-head-label">部位</div>
-            <div class="pdf-head-value">&nbsp;</div>
+            <div class="pdf-head-value">${esc((activeProject.drawings && activeProject.drawings[ph.floorIndex||0]) ? activeProject.drawings[ph.floorIndex||0].name : '')}</div>
           </div>
           <div class="pdf-head-cell pdf-head-bangou">
             <div class="pdf-head-label">番号</div>
@@ -994,7 +1081,7 @@ async function exportPDF() {
 .pdf-head-cell:last-child{border-right:none;flex:1;min-width:35mm;}
 .pdf-head-label{font-size:7pt;color:#333;}
 .pdf-head-value{font-size:8.5pt;font-family:'ＭＳ ゴシック','MS Gothic',sans-serif;}
-.pdf-head-butsui{width:8mm;}
+.pdf-head-butsui{width:14mm;}
 .pdf-head-bangou{width:20mm;}
 .pdf-slot-head-right{width:40mm;padding:1mm 2mm;border-left:0;}
 .pdf-result-label{font-size:7pt;color:#333;margin-bottom:1mm;}
@@ -1098,7 +1185,8 @@ async function downloadAllPhotos() {
       if (!m) return;
       const ext = m[1] === 'jpeg' ? 'jpg' : m[1];
       const num = String(ph.num || (i+1)).padStart(2, '0');
-      zip.file(`写真${num}_${ph.inspectionItem || ''}.${ext}`, m[2], { base64: true });
+      const floorName = (activeProject.drawings && activeProject.drawings[ph.floorIndex||0]) ? activeProject.drawings[ph.floorIndex||0].name + '_' : '';
+      zip.file(`写真${num}_${floorName}${ph.inspectionItem || ''}.${ext}`, m[2], { base64: true });
     });
     const blob = await zip.generateAsync({ type: 'blob' });
     const url = URL.createObjectURL(blob);
@@ -1129,6 +1217,7 @@ function exportJSON() {
     },
     photos: photos.map(ph => ({
       num: ph.num,
+      floor: (activeProject.drawings && activeProject.drawings[ph.floorIndex||0]) ? activeProject.drawings[ph.floorIndex||0].name : '',
       inspectionItem: ph.inspectionItem || '',
       comment: ph.comment || '',
       date: ph.date,
