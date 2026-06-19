@@ -632,29 +632,49 @@ function renderDrawing() {
   renderPins();
   renderFloorTabs();
 
-  // タップ（ピン以外）でカメラ起動
+  // 図面タップ（ピン以外）でカメラ起動／左右スワイプでフロア切替
+  // ピンチズーム・パン操作と誤判定しないよう、指がほとんど動いていない場合だけ「タップ」として扱う
   const wrapper = document.getElementById('drawing-wrapper');
-  wrapper.onclick = handleDrawingTap;
-  wrapper.ontouchend = handleDrawingTap;
-
-  // 左右スワイプでフロア切替
   const container = document.getElementById('drawing-container');
-  let swipeStartX = null, swipeStartY = null;
+  wrapper.onclick = null;
+  wrapper.ontouchend = null;
+
+  let touchStartX = null, touchStartY = null, touchStartTime = 0, multiTouch = false;
+
   container.ontouchstart = e => {
-    if (e.touches.length !== 1) return;
-    swipeStartX = e.touches[0].clientX;
-    swipeStartY = e.touches[0].clientY;
+    if (e.touches.length > 1) { multiTouch = true; touchStartX = null; return; }
+    multiTouch = false;
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+    touchStartTime = Date.now();
+  };
+  container.ontouchmove = e => {
+    if (e.touches.length > 1) multiTouch = true;
   };
   container.ontouchend = e => {
-    if (swipeStartX === null) return;
-    const dx = e.changedTouches[0].clientX - swipeStartX;
-    const dy = e.changedTouches[0].clientY - swipeStartY;
-    swipeStartX = null;
-    if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+    if (multiTouch || touchStartX === null) { touchStartX = null; multiTouch = false; return; }
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    const dy = e.changedTouches[0].clientY - touchStartY;
+    const dist = Math.hypot(dx, dy);
+    const elapsed = Date.now() - touchStartTime;
+    touchStartX = null;
+
+    if (dist < 12) {
+      // ほぼ動いていない＝タップ → 撮影
+      if (!e.target.closest('.pin')) handleDrawingTap(e.changedTouches[0]);
+    } else if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.5 && elapsed < 600) {
+      // 横方向に大きく素早く動いた＝スワイプ → フロア切替
       if (dx < 0) changeFloor(activeProject.currentFloor + 1);
       else changeFloor(activeProject.currentFloor - 1);
     }
+    // それ以外（ズーム後の指離しや緩慢なドラッグ等）は何もしない
   };
+  // PC（マウス）操作用：クリックはそのまま撮影として扱う
+  wrapper.addEventListener('click', e => {
+    if (e.target.closest('.pin')) return;
+    if ('ontouchstart' in window) return; // タッチ端末ではtouchendで処理済み
+    handleDrawingTap(e);
+  });
 }
 function renderFloorTabs() {
   const drawings = activeProject.drawings || [];
@@ -743,11 +763,9 @@ function renderPins() {
       <div class="pin-tip"></div>
     </div>`).join('');
 }
-function handleDrawingTap(e) {
-  if (e.target.closest('.pin')) return;
-  e.stopPropagation();
+function handleDrawingTap(src) {
+  if (src.target && src.target.closest && src.target.closest('.pin')) return;
   const rect = document.getElementById('drawing-wrapper').getBoundingClientRect();
-  const src  = e.touches ? e.changedTouches[0] : e;
   pendingPin = {
     x: ((src.clientX - rect.left) / rect.width)  * 100,
     y: ((src.clientY - rect.top)  / rect.height) * 100,
@@ -796,6 +814,7 @@ function retakePhoto() {
   showScreen('screen-project');
 }
 function acceptPhoto() {
+  stopCamera();
   document.getElementById('comment-preview-img').src = capturedPhoto;
   document.getElementById('input-inspection').value  = '';
   document.getElementById('input-comment').value     = '';
@@ -838,6 +857,8 @@ async function savePhoto() {
   await dbSave(activeProject);
   document.getElementById('overlay-comment').classList.remove('open');
   capturedPhoto = null; pendingPin = null;
+  stopCamera();
+  showScreen('screen-project');
   renderPins();
 }
 
