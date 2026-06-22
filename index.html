@@ -82,7 +82,8 @@ input,textarea{font-family:inherit;font-size:inherit;}
 .photo-item-title{font-size:12px;font-weight:600;color:#1C4ED8;margin-bottom:2px;}
 .photo-comment{font-size:13px;color:#111827;line-height:1.5;word-break:break-all;}
 .photo-date{font-size:11px;color:#6B7280;margin-top:4px;}
-.photo-del{color:#6B7280;font-size:16px;padding:10px 8px;flex-shrink:0;min-width:44px;min-height:44px;background:none;border:none;touch-action:manipulation;}
+.photo-del{color:#EF4444;font-size:20px;padding:8px;flex-shrink:0;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:none;border:none;touch-action:manipulation;}
+.photo-del.confirm-state{background:#FEF2F2;color:#DC2626;font-size:11px;font-weight:700;padding:6px 8px;min-width:56px;}
 .photo-del.confirm-state{color:#fff;background:#DC2626;font-size:12px;font-weight:700;border-radius:8px;white-space:nowrap;}
 
 /* ── タブ ── */
@@ -879,7 +880,7 @@ function renderPhotoList() {
     `<div id="photo-sort-list">` +
     photos.map((ph, idx) => `
     <div class="photo-item" data-id="${ph.id}" data-idx="${idx}">
-      <div class="photo-drag-handle" ontouchstart="dragTouchStart(event, '${ph.id}')" onmousedown="dragMouseStart(event, '${ph.id}')">☰</div>
+      <div class="photo-drag-handle" data-drag-id="${ph.id}">☰</div>
       <div class="photo-num">${ph.num}</div>
       ${ph.photo
         ? `<img class="photo-thumb" src="${ph.photo}" alt="">`
@@ -890,58 +891,59 @@ function renderPhotoList() {
         <div class="photo-comment">${esc(ph.comment||'（コメントなし）')}</div>
         <div class="photo-date">${ph.date}</div>
       </div>
-      <button class="photo-del" data-id="${ph.id}" onclick="handleDeleteClick(this, '${ph.id}')">🗑</button>
+      <button class="photo-del" data-del-id="${ph.id}">🗑</button>
     </div>`).join('') +
     `</div>`;
-}
-function handleDeleteClick(btn, id) {
-  if (btn.classList.contains('confirm-state')) {
-    deletePhotoById(id);
-    return;
-  }
-  // 一度目のタップ：確認状態に切り替える（他の削除ボタンの確認状態はリセット）
-  document.querySelectorAll('.photo-del.confirm-state').forEach(b => {
-    b.classList.remove('confirm-state');
-    b.textContent = '🗑';
-  });
-  btn.classList.add('confirm-state');
-  btn.textContent = '本当に削除';
-  setTimeout(() => {
-    if (btn.classList.contains('confirm-state')) {
-      btn.classList.remove('confirm-state');
-      btn.textContent = '🗑';
-    }
-  }, 3000);
-}
-async function deletePhotoById(id) {
-  activeProject.photos = activeProject.photos
-    .filter(p => p.id !== id)
-    .map((p,i) => ({...p, num: i+1}));
-  await dbSave(activeProject);
-  renderPhotoList();
-  renderPins();
-}
 
+  // イベント委譲：削除ボタン・ドラッグハンドルをリスト全体で受け取る
+  const sortList = document.getElementById('photo-sort-list');
+
+  sortList.addEventListener('click', e => {
+    const btn = e.target.closest('[data-del-id]');
+    if (!btn) return;
+    const id = btn.dataset.delId;
+    if (btn.classList.contains('confirm-state')) {
+      deletePhotoById(id);
+    } else {
+      document.querySelectorAll('.photo-del.confirm-state').forEach(b => {
+        b.classList.remove('confirm-state'); b.textContent = '🗑';
+      });
+      btn.classList.add('confirm-state');
+      btn.textContent = '削除する';
+      setTimeout(() => {
+        if (btn.classList.contains('confirm-state')) {
+          btn.classList.remove('confirm-state'); btn.textContent = '🗑';
+        }
+      }, 3000);
+    }
+  });
+
+  sortList.addEventListener('touchstart', e => {
+    const handle = e.target.closest('[data-drag-id]');
+    if (!handle) return;
+    e.preventDefault();
+    const t = e.touches[0];
+    dragBegin(handle.dataset.dragId, t.clientY, t.clientX);
+    document.addEventListener('touchmove', dragTouchMove, {passive:false});
+    document.addEventListener('touchend', dragEnd);
+  }, {passive: false});
+
+  sortList.addEventListener('mousedown', e => {
+    const handle = e.target.closest('[data-drag-id]');
+    if (!handle) return;
+    e.preventDefault();
+    dragBegin(handle.dataset.dragId, e.clientY, e.clientX);
+    document.addEventListener('mousemove', dragMouseMove);
+    document.addEventListener('mouseup', dragEnd);
+  });
+}
 // ══ 写真一覧 並び替え（ドラッグ&ドロップ） ══════════════════════
 let dragState = null;
 
-function dragTouchStart(e, id) {
-  e.preventDefault();
-  const t = e.touches[0];
-  dragBegin(id, t.clientY, t.clientX);
-  document.addEventListener('touchmove', dragTouchMove, {passive:false});
-  document.addEventListener('touchend', dragEnd);
-}
 function dragTouchMove(e) {
   e.preventDefault();
   const t = e.touches[0];
   dragMove(t.clientY, t.clientX);
-}
-function dragMouseStart(e, id) {
-  e.preventDefault();
-  dragBegin(id, e.clientY, e.clientX);
-  document.addEventListener('mousemove', dragMouseMove);
-  document.addEventListener('mouseup', dragEnd);
 }
 function dragMouseMove(e) { dragMove(e.clientY, e.clientX); }
 
