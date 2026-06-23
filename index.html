@@ -798,14 +798,28 @@ function cancelCamera() {
 function takePicture() {
   const video  = document.getElementById('camera-video');
   const canvas = document.getElementById('snapshot-canvas');
-  canvas.width  = video.videoWidth;
-  canvas.height = video.videoHeight;
-  canvas.getContext('2d').drawImage(video, 0, 0);
+  const vw = video.videoWidth;
+  const vh = video.videoHeight;
+
+  // 縦向き（portrait）で撮った場合は90度回転して横向きにする
+  const isPortrait = vh > vw;
+  if (isPortrait) {
+    canvas.width  = vh;  // 回転後は縦横が入れ替わる
+    canvas.height = vw;
+    const ctx = canvas.getContext('2d');
+    ctx.translate(vh / 2, vw / 2);
+    ctx.rotate(Math.PI / 2);
+    ctx.drawImage(video, -vw / 2, -vh / 2, vw, vh);
+  } else {
+    canvas.width  = vw;
+    canvas.height = vh;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+  }
+
   capturedPhoto = canvas.toDataURL('image/jpeg', 0.85);
   stopCamera();
   document.getElementById('preview-img').src = capturedPhoto;
   showScreen('screen-preview');
-  // 写真中央にヒント表示（3秒後に消える）
   const hint = document.getElementById('preview-save-hint');
   hint.style.display = 'block';
   setTimeout(() => { hint.style.display = 'none'; }, 3500);
