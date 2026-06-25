@@ -312,12 +312,16 @@ input,textarea{font-family:inherit;font-size:inherit;}
 <div id="screen-list" class="screen active">
   <div class="header">
     <span class="header-title">📐 施工フォト</span>
-    <button class="btn-primary" onclick="openNewProject()">＋ 新規</button>
+    <div style="display:flex;gap:8px;">
+      <button class="btn-outline" onclick="document.getElementById('json-import-list-input').click()" style="font-size:12px;">📥 インポート</button>
+      <button class="btn-primary" onclick="openNewProject()">＋ 新規</button>
+    </div>
   </div>
   <div class="body">
     <div class="section-label">プロジェクト</div>
     <div id="project-list"></div>
   </div>
+<input type="file" id="json-import-list-input" accept=".json,.txt" style="display:none" onchange="handleJSONImportNew(this)">
 </div>
 
 <!-- ══ 画面2: プロジェクト詳細 ══ -->
@@ -369,6 +373,8 @@ input,textarea{font-family:inherit;font-size:inherit;}
     </button>
   </div>
 </div>
+<!-- JSONインポート用の非表示input -->
+<input type="file" id="json-import-input" accept=".json,.txt" style="display:none" onchange="handleJSONImport(this)">
 
 <!-- ══ 画面3: カメラ ══ -->
 <div id="screen-camera" class="screen">
@@ -1121,14 +1127,126 @@ async function exportPDF() {
     </div>`;
   };
 
-  // ローディング表示
   const loadingEl = document.createElement('div');
   loadingEl.style = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:600;';
   loadingEl.textContent = '📄 PDFを作成中...';
   document.body.appendChild(loadingEl);
 
   try {
-    // 画面外レンダリング用コンテナ（A4サイズ・mm基準）
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+    let firstPage = true;
+
+    // ── フロアごとの図面+ピン一覧ページを先頭に追加 ──
+    const drawings = activeProject.drawings || [];
+    for (let fi = 0; fi < drawings.length; fi++) {
+      const floor = drawings[fi];
+      if (!floor.image) continue;
+      const floorPhotos = photos.filter(p => (p.floorIndex||0) === fi);
+      if (!floorPhotos.length) continue;
+
+      // Canvasで図面にピンを描画
+      const img = new Image();
+      img.src = floor.image;
+      await new Promise(res => { img.onload = res; img.onerror = res; });
+
+      const canvas = document.createElement('canvas');
+      // A4比率で描画（図面エリアは左70%、一覧表は右30%）
+      const A4W = 1240, A4H = 1754;
+      canvas.width  = A4W;
+      canvas.height = A4H;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, A4W, A4H);
+
+      // ヘッダー
+      ctx.fillStyle = '#000';
+      ctx.font = 'bold 36px sans-serif';
+      ctx.fillText(`${esc(activeProject.name)}　${floor.name}　撮影位置図`, 40, 60);
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(40, 72); ctx.lineTo(A4W - 40, 72); ctx.stroke();
+
+      // 図面エリア（左側70%）
+      const mapX = 40, mapY = 90;
+      const mapW = Math.floor(A4W * 0.65) - 40;
+      const mapH = A4H - 130;
+
+      // 図面画像をcontainで描画
+      const scale = Math.min(mapW / img.width, mapH / img.height);
+      const dw = img.width * scale;
+      const dh = img.height * scale;
+      const dx = mapX + (mapW - dw) / 2;
+      const dy = mapY + (mapH - dh) / 2;
+      ctx.drawImage(img, dx, dy, dw, dh);
+
+      // ピン描画
+      floorPhotos.forEach(ph => {
+        const px = dx + (ph.x / 100) * dw;
+        const py = dy + (ph.y / 100) * dh;
+        const r = 18;
+        ctx.fillStyle = '#E53E3E';
+        ctx.beginPath(); ctx.arc(px, py - r, r, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+        ctx.stroke();
+        // ピン下の三角
+        ctx.fillStyle = '#E53E3E';
+        ctx.beginPath();
+        ctx.moveTo(px - 6, py - r * 0.5);
+        ctx.lineTo(px + 6, py - r * 0.5);
+        ctx.lineTo(px, py + 2);
+        ctx.fill();
+        // 番号
+        ctx.fillStyle = '#fff';
+        ctx.font = `bold ${r}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(String(ph.num), px, py - r);
+      });
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'alphabetic';
+
+      // 一覧表（右側30%）
+      const tableX = mapX + mapW + 20;
+      const tableW = A4W - tableX - 20;
+      const rowH = 48;
+      ctx.font = 'bold 22px sans-serif';
+      ctx.fillStyle = '#000';
+      ctx.fillText('番号　調査項目', tableX, mapY + 24);
+      ctx.strokeStyle = '#999'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(tableX, mapY + 32); ctx.lineTo(tableX + tableW, mapY + 32); ctx.stroke();
+
+      floorPhotos.forEach((ph, idx) => {
+        const ty = mapY + 48 + idx * rowH;
+        if (ty + rowH > A4H - 40) return; // 枠外は省略
+        ctx.fillStyle = idx % 2 === 0 ? '#F7F8FA' : '#fff';
+        ctx.fillRect(tableX, ty, tableW, rowH);
+        ctx.strokeStyle = '#ddd'; ctx.lineWidth = 1;
+        ctx.strokeRect(tableX, ty, tableW, rowH);
+        ctx.fillStyle = '#E53E3E';
+        ctx.font = 'bold 20px sans-serif';
+        ctx.fillText(String(ph.num), tableX + 6, ty + rowH * 0.65);
+        ctx.fillStyle = '#111';
+        ctx.font = '18px sans-serif';
+        const item = (ph.inspectionItem || '').substring(0, 10);
+        ctx.fillText(item, tableX + 36, ty + rowH * 0.65);
+      });
+
+      // フッター
+      ctx.fillStyle = '#555';
+      ctx.font = '20px sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText(new Date().toLocaleDateString('ja-JP'), A4W - 40, A4H - 20);
+      ctx.textAlign = 'left';
+
+      // PDFに追加
+      const imgData = canvas.toDataURL('image/jpeg', 0.92);
+      if (!firstPage) pdf.addPage();
+      pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
+      firstPage = false;
+    }
+
+    // ── 写真台紙ページ ──
     const stage = document.createElement('div');
     stage.id = 'pdf-render-stage';
     stage.style = 'position:fixed;left:-99999px;top:0;width:210mm;background:#fff;';
@@ -1190,13 +1308,10 @@ ${pages.map((pair, pi) => `
 </div>`).join('')}`;
     document.body.appendChild(stage);
 
-    // 画像の読み込み完了を待つ
     const imgs = stage.querySelectorAll('img');
     await Promise.all(Array.from(imgs).map(img => img.complete ? Promise.resolve() :
       new Promise(res => { img.onload = res; img.onerror = res; })));
 
-    // html2canvasはobject-fit:containを正しく描画しないことがあるため、
-    // 画像の実寸比率から枠に収まる正確なサイズをJSで計算してwidth/heightを直接指定する
     imgs.forEach(img => {
       const area = img.parentElement;
       const areaW = area.clientWidth;
@@ -1205,23 +1320,19 @@ ${pages.map((pair, pi) => `
       const natH = img.naturalHeight;
       if (!natW || !natH || !areaW || !areaH) return;
       const scale = Math.min(areaW / natW, areaH / natH);
-      const dispW = natW * scale;
-      const dispH = natH * scale;
-      img.style.width = dispW + 'px';
-      img.style.height = dispH + 'px';
+      img.style.width = natW * scale + 'px';
+      img.style.height = natH * scale + 'px';
       img.style.objectFit = '';
       img.style.display = 'block';
     });
 
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
     const pageEls = stage.querySelectorAll('.pdf-page');
-
     for (let i = 0; i < pageEls.length; i++) {
       const canvas = await html2canvas(pageEls[i], { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
       const imgData = canvas.toDataURL('image/jpeg', 0.92);
-      if (i > 0) pdf.addPage();
+      if (!firstPage) pdf.addPage();
       pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
+      firstPage = false;
     }
 
     document.body.removeChild(stage);
@@ -1267,6 +1378,50 @@ async function downloadAllPhotos() {
   } finally {
     document.body.removeChild(loadingEl);
   }
+}
+
+// ══ JSONインポート（新規プロジェクトとして取り込み） ══════════
+function handleJSONImportNew(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!data.project || !data.photos) throw new Error('JSONの形式が正しくありません');
+      // 既存プロジェクトと名前が重複しないようにする
+      let name = data.project.name || 'インポート';
+      const existing = projects.map(p => p.name);
+      if (existing.includes(name)) name = name + '_' + new Date().toLocaleDateString('ja-JP').replace(/\//g,'-');
+      const p = {
+        id: Date.now().toString(),
+        name,
+        address: data.project.address || '',
+        createdAt: data.project.createdAt || new Date().toISOString(),
+        drawings: data.project.drawings || [],
+        currentFloor: 0,
+        photos: data.photos.map((ph, i) => ({
+          id: ph.id || Date.now().toString() + i,
+          num: ph.num || i+1,
+          x: ph.pinX || ph.x || 0,
+          y: ph.pinY || ph.y || 0,
+          floorIndex: ph.floorIndex || 0,
+          photo: ph.photo || null,
+          inspectionItem: ph.inspectionItem || '',
+          comment: ph.comment || '',
+          date: ph.date || ''
+        }))
+      };
+      projects.push(p);
+      await dbSave(p);
+      renderProjectList();
+      alert(`「${name}」をインポートしました（写真${p.photos.length}枚）`);
+    } catch(err) {
+      alert('インポートに失敗しました: ' + err.message);
+    }
+    input.value = '';
+  };
+  reader.readAsText(file, 'utf-8');
 }
 
 // ══ Excelエクスポート用JSON出力 ══════════════════════════════
