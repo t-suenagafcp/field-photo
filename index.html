@@ -578,7 +578,8 @@ function renderDrawing() {
   };
   wrapper.addEventListener('click', e => {
     if (e.target.closest('.pin')) return;
-    if ('ontouchstart' in window) return;
+    // タッチイベントで既に処理済みの場合はスキップ（300ms以内）
+    if (e.sourceCapabilities && e.sourceCapabilities.firesTouchEvents) return;
     handleDrawingTap(e);
   });
 }
