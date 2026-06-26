@@ -359,6 +359,20 @@ input,textarea{font-family:inherit;font-size:inherit;}
     <div class="popup-item" id="popup-item"></div>
     <div class="popup-comment" id="popup-comment"></div>
     <div class="popup-date" id="popup-date"></div>
+    <!-- 向き調整スライダー -->
+    <div style="margin-bottom:14px;">
+      <div style="font-size:12px;font-weight:600;color:#6B7280;margin-bottom:8px;">🧭 ピンの向き</div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:18px;">↺</span>
+        <input type="range" id="pin-rotate-slider" min="0" max="359" value="0"
+          style="flex:1;height:6px;accent-color:#1C4ED8;"
+          oninput="onPinRotateSlider(this.value)">
+        <span style="font-size:18px;">↻</span>
+      </div>
+      <div style="text-align:center;font-size:12px;color:#6B7280;margin-top:4px;">
+        <span id="pin-rotate-deg">0</span>°
+      </div>
+    </div>
     <div class="popup-actions">
       <button class="btn-outline" onclick="deleteFromPopup()">🗑 削除</button>
       <button class="btn-primary" onclick="editCommentFromPopup()">✏️ コメント編集</button>
@@ -684,11 +698,28 @@ function renderPins() {
     return {x, y};
   });
 
-  layer.innerHTML = pins.map((ph, i) => `
-    <div class="pin pin-sm" style="left:${positions[i].x}%;top:${positions[i].y}%;" onclick="openPinPopup(event,'${ph.id}')">
+  layer.innerHTML = pins.map((ph, i) => {
+    const rot = ph.rotation || 0;
+    return `
+    <div class="pin pin-sm" style="left:${positions[i].x}%;top:${positions[i].y}%;transform:translate(-50%,-100%) rotate(${rot}deg);" onclick="openPinPopup(event,'${ph.id}')">
       <div class="pin-circle"><span class="pin-number">${ph.num}</span></div>
       <div class="pin-tip"></div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
+}
+
+// ピン回転スライダー操作
+async function onPinRotateSlider(val) {
+  const deg = parseInt(val);
+  document.getElementById('pin-rotate-deg').textContent = deg;
+  const ph = activeProject.photos.find(p => p.id === selectedPhotoId);
+  if (!ph) return;
+  ph.rotation = deg;
+  // リアルタイムでピンの見た目を更新
+  renderPins();
+  // DBに保存（少し遅延させて連続保存を避ける）
+  clearTimeout(onPinRotateSlider._timer);
+  onPinRotateSlider._timer = setTimeout(() => dbSave(activeProject), 500);
 }
 function handleDrawingTap(src) {
   if (src.target && src.target.closest && src.target.closest('.pin')) return;
@@ -934,6 +965,10 @@ function openPinPopup(e, id) {
   document.getElementById('popup-photo-wrap').innerHTML = ph.photo
     ? `<img class="popup-img" src="${ph.photo}" alt="">`
     : `<div class="popup-no-photo">📷</div>`;
+  // 回転スライダーの初期値をセット
+  const rot = ph.rotation || 0;
+  document.getElementById('pin-rotate-slider').value = rot;
+  document.getElementById('pin-rotate-deg').textContent = rot;
   document.getElementById('overlay-pin').classList.add('open');
 }
 function closePinPopup(e) {
@@ -1047,17 +1082,25 @@ async function exportPDF() {
       const dx = mapX + (mapW - dw) / 2, dy = mapY + (mapH - dh) / 2;
       ctx.drawImage(img, dx, dy, dw, dh);
 
-      // ピン描画
+      // ピン描画（回転対応）
       floorPhotos.forEach(ph => {
         const px = dx + (ph.x / 100) * dw, py = dy + (ph.y / 100) * dh;
         const r = 16;
-        ctx.fillStyle = '#E53E3E'; ctx.beginPath(); ctx.arc(px, py - r, r, 0, Math.PI * 2); ctx.fill();
+        const rotRad = ((ph.rotation || 0) * Math.PI) / 180;
+        ctx.save();
+        ctx.translate(px, py);
+        ctx.rotate(rotRad);
+        // 丸
+        ctx.fillStyle = '#E53E3E'; ctx.beginPath(); ctx.arc(0, -r, r, 0, Math.PI * 2); ctx.fill();
         ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+        // 三角（先っちょ）
         ctx.fillStyle = '#E53E3E'; ctx.beginPath();
-        ctx.moveTo(px - 5, py - r * 0.4); ctx.lineTo(px + 5, py - r * 0.4); ctx.lineTo(px, py + 2); ctx.fill();
+        ctx.moveTo(-5, -r * 0.4); ctx.lineTo(5, -r * 0.4); ctx.lineTo(0, 4); ctx.fill();
+        // 番号
         ctx.fillStyle = '#fff'; ctx.font = `bold ${r}px sans-serif`;
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText(String(ph.num), px, py - r);
+        ctx.fillText(String(ph.num), 0, -r);
+        ctx.restore();
       });
       ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
 
