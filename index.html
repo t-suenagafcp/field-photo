@@ -1027,9 +1027,9 @@ async function exportPDF() {
         ctx.fillText(String(ph.num), px, py - r);
       });
       ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-      const tableX = mapX + mapW + 20, tableW = A4W - tableX - 20, rowH = 48;
+      const tableX = mapX + mapW + 20, tableW = A4W - tableX - 20, rowH = 72;
       ctx.font = 'bold 22px sans-serif'; ctx.fillStyle = '#000';
-      ctx.fillText('番号　調査項目', tableX, mapY + 24);
+      ctx.fillText('番号　調査項目／特記事項', tableX, mapY + 24);
       ctx.strokeStyle = '#999'; ctx.lineWidth = 1;
       ctx.beginPath(); ctx.moveTo(tableX, mapY + 32); ctx.lineTo(tableX + tableW, mapY + 32); ctx.stroke();
       floorPhotos.forEach((ph, idx) => {
@@ -1038,10 +1038,22 @@ async function exportPDF() {
         ctx.fillStyle = idx % 2 === 0 ? '#F7F8FA' : '#fff';
         ctx.fillRect(tableX, ty, tableW, rowH);
         ctx.strokeStyle = '#ddd'; ctx.lineWidth = 1; ctx.strokeRect(tableX, ty, tableW, rowH);
+        // 番号
         ctx.fillStyle = '#E53E3E'; ctx.font = 'bold 20px sans-serif';
-        ctx.fillText(String(ph.num), tableX + 6, ty + rowH * 0.65);
-        ctx.fillStyle = '#111'; ctx.font = '18px sans-serif';
-        ctx.fillText((ph.inspectionItem || '').substring(0, 10), tableX + 36, ty + rowH * 0.65);
+        ctx.fillText(String(ph.num), tableX + 6, ty + 26);
+        // 調査項目
+        ctx.fillStyle = '#111'; ctx.font = 'bold 17px sans-serif';
+        ctx.fillText((ph.inspectionItem || '').substring(0, 14), tableX + 36, ty + 26);
+        // 特記事項
+        ctx.fillStyle = '#444'; ctx.font = '15px sans-serif';
+        const comment = ph.comment || '';
+        const maxW = tableW - 40;
+        if (ctx.measureText(comment).width <= maxW) {
+          ctx.fillText(comment.substring(0, 20), tableX + 10, ty + 52);
+        } else {
+          ctx.fillText(comment.substring(0, 18), tableX + 10, ty + 48);
+          ctx.fillText(comment.substring(18, 36) + (comment.length > 36 ? '…' : ''), tableX + 10, ty + 66);
+        }
       });
       ctx.fillStyle = '#555'; ctx.font = '20px sans-serif'; ctx.textAlign = 'right';
       ctx.fillText(new Date().toLocaleDateString('ja-JP'), A4W - 40, A4H - 20);
