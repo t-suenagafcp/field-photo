@@ -67,12 +67,27 @@ input,textarea{font-family:inherit;font-size:inherit;}
 /* ── ピン ── */
 .pin{position:absolute;display:flex;flex-direction:column;align-items:center;cursor:pointer;z-index:10;}
 .pin-circle{width:28px;height:28px;border-radius:50%;background:#1C4ED8;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.3);border:2px solid #fff;position:relative;z-index:2;}
-.pin-number{font-size:11px;font-weight:700;color:#fff;}
-.pin-tip{width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:8px solid #1C4ED8;margin-top:-1px;transform-origin:top center;}
+.pin-number{font-size:11px;font-weight:700;color:#fff;display:block;transform:none !important;}
+.pin-tip-wrap{display:flex;justify-content:center;margin-top:-1px;}
+.pin-tip{width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:8px solid #1C4ED8;transform-origin:top center;display:block;}
 /* 小さいピン */
 .pin-sm .pin-circle{width:20px;height:20px;}
 .pin-sm .pin-number{font-size:9px;}
 .pin-sm .pin-tip{border-left-width:4px;border-right-width:4px;border-top-width:6px;}
+
+/* ── 向き調整フローティングUI ── */
+#rotate-ui{
+  position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+  background:rgba(255,255,255,0.92);backdrop-filter:blur(10px);
+  border:1.5px solid #E0E7FF;border-radius:20px;
+  padding:12px 18px;z-index:300;
+  box-shadow:0 4px 20px rgba(0,0,0,0.18);
+  display:none;width:calc(100% - 32px);max-width:360px;
+}
+#rotate-ui.open{display:block;}
+.rotate-ui-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.rotate-ui-title{font-size:13px;font-weight:700;color:#1C4ED8;}
+.rotate-ui-close{font-size:18px;color:#6B7280;background:none;border:none;cursor:pointer;padding:2px 6px;}
 
 /* ── 写真一覧 ── */
 .photo-list{flex:1;overflow-y:auto;padding:12px 16px;}
@@ -359,24 +374,29 @@ input,textarea{font-family:inherit;font-size:inherit;}
     <div class="popup-item" id="popup-item"></div>
     <div class="popup-comment" id="popup-comment"></div>
     <div class="popup-date" id="popup-date"></div>
-    <!-- 向き調整スライダー -->
-    <div style="margin-bottom:14px;">
-      <div style="font-size:12px;font-weight:600;color:#6B7280;margin-bottom:8px;">🧭 ピンの向き</div>
-      <div style="display:flex;align-items:center;gap:10px;">
-        <span style="font-size:18px;">↺</span>
-        <input type="range" id="pin-rotate-slider" min="0" max="359" value="0"
-          style="flex:1;height:6px;accent-color:#1C4ED8;"
-          oninput="onPinRotateSlider(this.value)">
-        <span style="font-size:18px;">↻</span>
-      </div>
-      <div style="text-align:center;font-size:12px;color:#6B7280;margin-top:4px;">
-        <span id="pin-rotate-deg">0</span>°
-      </div>
-    </div>
     <div class="popup-actions">
       <button class="btn-outline" onclick="deleteFromPopup()">🗑 削除</button>
-      <button class="btn-primary" onclick="editCommentFromPopup()">✏️ コメント編集</button>
+      <button class="btn-outline" onclick="openRotateUI()" style="color:#1C4ED8;border-color:#1C4ED8;">🧭 向き調整</button>
+      <button class="btn-primary" onclick="editCommentFromPopup()">✏️ 編集</button>
     </div>
+  </div>
+</div>
+
+<!-- ══ ピン向き調整フローティングUI ══ -->
+<div id="rotate-ui">
+  <div class="rotate-ui-header">
+    <span class="rotate-ui-title">🧭 ピンの向き調整</span>
+    <button class="rotate-ui-close" onclick="closeRotateUI()">✕</button>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <span style="font-size:20px;cursor:pointer;" onclick="stepRotate(-15)">↺</span>
+    <input type="range" id="pin-rotate-slider" min="0" max="359" value="0"
+      style="flex:1;height:8px;accent-color:#1C4ED8;"
+      oninput="onPinRotateSlider(this.value)">
+    <span style="font-size:20px;cursor:pointer;" onclick="stepRotate(15)">↻</span>
+  </div>
+  <div style="text-align:center;font-size:12px;color:#6B7280;margin-top:6px;">
+    <span id="pin-rotate-deg">0</span>° &nbsp;|&nbsp; ↺↻ボタンで15°ずつ調整
   </div>
 </div>
 
@@ -833,7 +853,7 @@ function renderPins() {
     return `
     <div class="pin pin-sm" style="left:${positions[i].x}%;top:${positions[i].y}%;transform:translate(-50%,-50%);" onclick="openPinPopup(event,'${ph.id}')">
       <div class="pin-circle"><span class="pin-number">${ph.num}</span></div>
-      <div class="pin-tip" style="transform:rotate(${rot}deg);transform-origin:top center;margin-top:0;"></div>
+      <div class="pin-tip-wrap"><div class="pin-tip" style="transform:rotate(${rot}deg);"></div></div>
     </div>`;
   }).join('');
 }
@@ -845,11 +865,29 @@ async function onPinRotateSlider(val) {
   const ph = activeProject.photos.find(p => p.id === selectedPhotoId);
   if (!ph) return;
   ph.rotation = deg;
-  // リアルタイムでピンの見た目を更新
   renderPins();
-  // DBに保存（少し遅延させて連続保存を避ける）
   clearTimeout(onPinRotateSlider._timer);
   onPinRotateSlider._timer = setTimeout(() => dbSave(activeProject), 500);
+}
+function stepRotate(step) {
+  const slider = document.getElementById('pin-rotate-slider');
+  const newVal = ((parseInt(slider.value) + step) + 360) % 360;
+  slider.value = newVal;
+  onPinRotateSlider(newVal);
+}
+function openRotateUI() {
+  const ph = activeProject.photos.find(p => p.id === selectedPhotoId);
+  if (!ph) return;
+  const rot = ph.rotation || 0;
+  document.getElementById('pin-rotate-slider').value = rot;
+  document.getElementById('pin-rotate-deg').textContent = rot;
+  // ポップアップを閉じてフローティングUIを表示
+  document.getElementById('overlay-pin').classList.remove('open');
+  document.getElementById('rotate-ui').classList.add('open');
+}
+function closeRotateUI() {
+  document.getElementById('rotate-ui').classList.remove('open');
+  dbSave(activeProject);
 }
 function handleDrawingTap(src) {
   if (src.target && src.target.closest && src.target.closest('.pin')) return;
@@ -1095,7 +1133,7 @@ function openPinPopup(e, id) {
   document.getElementById('popup-photo-wrap').innerHTML = ph.photo
     ? `<img class="popup-img" src="${ph.photo}" alt="">`
     : `<div class="popup-no-photo">📷</div>`;
-  // 回転スライダーの初期値をセット
+  // 回転スライダーの初期値をセット（フローティングUI用）
   const rot = ph.rotation || 0;
   document.getElementById('pin-rotate-slider').value = rot;
   document.getElementById('pin-rotate-deg').textContent = rot;
