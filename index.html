@@ -191,6 +191,16 @@ input,textarea{font-family:inherit;font-size:inherit;}
   #pdf-print-area{display:block!important;position:fixed;top:0;left:0;width:100%;background:#fff;}
 }
 
+/* ── オンボーディングツアー ── */
+.tour-highlight{position:fixed;z-index:2002;border-radius:10px;box-shadow:0 0 0 4px #F59E0B,0 0 0 9999px rgba(0,0,0,0.55);pointer-events:none;transition:all 0.3s;}
+.tour-bubble{position:fixed;z-index:2003;background:#fff;border-radius:14px;padding:12px 16px;max-width:220px;box-shadow:0 4px 20px rgba(0,0,0,0.2);pointer-events:auto;}
+.tour-bubble.arrow-bottom::after{content:'';position:absolute;bottom:-10px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-top:10px solid #fff;}
+.tour-bubble.arrow-top::after{content:'';position:absolute;top:-10px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-bottom:10px solid #fff;}
+.tour-title{font-size:13px;font-weight:700;color:#1C4ED8;margin-bottom:3px;}
+.tour-text{font-size:12px;color:#374151;line-height:1.5;margin-bottom:10px;}
+.tour-btn{background:#1C4ED8;color:#fff;border:none;border-radius:8px;padding:7px 16px;font-size:12px;font-weight:700;cursor:pointer;width:100%;}
+.tour-skip{font-size:11px;color:#9CA3AF;text-align:center;margin-top:6px;cursor:pointer;}
+
 /* ── ケンタくん ── */
 .kenta-bubble{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:500;display:flex;align-items:flex-end;gap:10px;padding:0 16px;width:100%;max-width:380px;animation:kentaIn 0.4s ease;}
 @keyframes kentaIn{from{opacity:0;transform:translateX(-50%) translateY(12px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}
@@ -487,28 +497,27 @@ input,textarea{font-family:inherit;font-size:inherit;}
   position:fixed;inset:0;background:rgba(0,0,0,0.6);
   z-index:9999;display:none;align-items:center;justify-content:center;padding:20px;
 ">
-  <div style="background:#fff;border-radius:20px;padding:24px 20px;width:100%;max-width:360px;">
-    <div style="text-align:center;font-size:17px;font-weight:800;color:#1C4ED8;margin-bottom:6px;">📱 ホーム画面に追加しよう！</div>
-    <div style="text-align:center;font-size:13px;color:#6B7280;margin-bottom:20px;line-height:1.6;">
-      追加するとアイコンから起動でき<br>データもずっと保存されるよ！
+  <div style="background:#fff;border-radius:20px;padding:28px 20px;width:100%;max-width:360px;text-align:center;">
+    <div style="font-size:48px;margin-bottom:12px;">📱</div>
+    <div style="font-size:18px;font-weight:800;color:#1C4ED8;margin-bottom:8px;">ホーム画面に追加しよう！</div>
+    <div style="font-size:13px;color:#6B7280;margin-bottom:24px;line-height:1.7;">
+      アイコンから起動できて<br>データもずっと保存されるよ！
     </div>
 
-    <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px;">
-      <div style="display:flex;align-items:center;gap:12px;">
-        <div style="width:28px;height:28px;border-radius:50%;background:#1C4ED8;color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">1</div>
-        <div style="font-size:13px;color:#374151;">画面下の<strong>共有ボタン（□↑）</strong>をタップ</div>
+    <!-- 矢印つきビジュアル案内 -->
+    <div style="background:#F0F4FF;border-radius:16px;padding:16px;margin-bottom:20px;">
+      <div style="display:flex;align-items:center;justify-content:center;gap:12px;font-size:14px;font-weight:600;color:#1C4ED8;margin-bottom:12px;">
+        <span style="font-size:28px;">□↑</span>
+        <span>画面下の共有ボタンをタップ</span>
       </div>
-      <div style="display:flex;align-items:center;gap:12px;">
-        <div style="width:28px;height:28px;border-radius:50%;background:#1C4ED8;color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">2</div>
-        <div style="font-size:13px;color:#374151;"><strong>「ホーム画面に追加」</strong>をタップ</div>
-      </div>
-      <div style="display:flex;align-items:center;gap:12px;">
-        <div style="width:28px;height:28px;border-radius:50%;background:#F59E0B;color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">3</div>
-        <div style="font-size:13px;color:#374151;">右上の<strong>「追加」</strong>をタップして完了！</div>
+      <div style="font-size:24px;color:#9CA3AF;margin-bottom:8px;">↓</div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:12px;font-size:14px;font-weight:600;color:#1C4ED8;">
+        <span style="font-size:24px;">➕</span>
+        <span>「ホーム画面に追加」をタップ</span>
       </div>
     </div>
 
-    <button onclick="closeHomescreenGuide()" style="width:100%;padding:13px;background:linear-gradient(135deg,#1C4ED8,#3B82F6);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;">
+    <button onclick="closeHomescreenGuide()" style="width:100%;padding:14px;background:linear-gradient(135deg,#1C4ED8,#3B82F6);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;">
       わかった！
     </button>
   </div>
@@ -595,9 +604,10 @@ window.addEventListener('load', async () => {
       localStorage.setItem('homescreen_guided', '1');
     }, 1500);
   } else if (!localStorage.getItem('kenta_welcomed')) {
-    // 初回ウェルカム
+    // 初回ウェルカム→ツアー開始
     setTimeout(() => kentaShow('welcome'), 600);
     localStorage.setItem('kenta_welcomed', '1');
+    setTimeout(() => startTour(), 1200);
   }
 });
 
@@ -1646,12 +1656,8 @@ ${pages.map((pair, pi) => `
   </div>
   ${slot(pair[0])}${slot(pair[1])}
   <div class="pdf-notes">
-    <div class="pdf-notes-title">（注意）</div>
-    <div class="pdf-note-row"><span class="pdf-note-num">①</span><span>この書類は、調査の結果「要是正」かつ「既存不適格」ではない項目について作成してください。また、「既存不適格」及び「指摘なし」の項目についても、特記すべき事項があれば、必要に応じて作成してください。「要是正」の項目がない場合は、この書類は省略しても構いません。</span></div>
-    <div class="pdf-note-row"><span class="pdf-note-num">②</span><span>記入欄が不足する場合は、枠を拡大、行を追加して記入するか、別紙に必要な事項を記入して添えてください。</span></div>
-    <div class="pdf-note-row"><span class="pdf-note-num">③</span><span>「部位」欄の「番号」及び「調査項目」は、それぞれ別記様式の番号及び調査項目に対応したものを記入してください。</span></div>
-    <div class="pdf-note-row"><span class="pdf-note-num">④</span><span>「調査結果」欄は、調査の結果、要是正の指摘があった場合は「要是正」のチェックボックスに「レ」マークを入れ、それ以外の場合で特記すべき事項がある場合は「その他」のチェックボックスに「レ」マークを入れてください。</span></div>
-    <div class="pdf-note-row"><span class="pdf-note-num">⑤</span><span>写真は、当該部位の外観の状況が確認できるように撮影したものを添付してください。</span></div>
+    <div class="pdf-notes-title">備考</div>
+    <div class="pdf-note-row"><span class="pdf-note-num">・</span><span>本写真は現地調査時に撮影したものです。</span></div>
     <div class="pdf-note-a4">（日本産業規格Ａ列４番）</div>
   </div>
   <div class="pdf-footer">${pi+1} / ${pages.length}</div>
@@ -1780,7 +1786,110 @@ function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// ══ ケンタくん ════════════════════════════════════════════════
+// ══ オンボーディングツアー ════════════════════════════════════
+let tourStep = 0;
+let tourHighlight = null;
+let tourBubble = null;
+
+const TOUR_STEPS = [
+  {
+    target: () => document.querySelector('.btn-primary'),
+    title: '① 物件を登録',
+    text: 'まずここをタップして物件名を入力してね',
+    arrow: 'arrow-top',
+    position: 'below'
+  },
+  {
+    target: () => document.getElementById('tab-btn-drawing'),
+    title: '② 図面タブ',
+    text: '図面をアップロードして、タップで撮影できるよ',
+    arrow: 'arrow-bottom',
+    position: 'above'
+  },
+  {
+    target: () => document.getElementById('tab-btn-photos'),
+    title: '③ 写真一覧',
+    text: '撮影した写真がここに一覧で表示されるよ',
+    arrow: 'arrow-bottom',
+    position: 'above'
+  },
+  {
+    target: () => document.querySelector('[onclick="exportPDF()"]'),
+    title: '④ PDF出力',
+    text: '報告書PDFをここから出力できるよ',
+    arrow: 'arrow-bottom',
+    position: 'above'
+  },
+  {
+    target: () => document.querySelector('[onclick="exportJSON()"]'),
+    title: '⑤ Excel連携',
+    text: 'データをExcelに書き出せるよ',
+    arrow: 'arrow-bottom',
+    position: 'above'
+  },
+];
+
+function startTour() {
+  if (localStorage.getItem('tour_done')) return;
+  tourStep = 0;
+  showTourStep();
+}
+
+function showTourStep() {
+  clearTourUI();
+  if (tourStep >= TOUR_STEPS.length) {
+    endTour();
+    return;
+  }
+  const step = TOUR_STEPS[tourStep];
+  const el = step.target();
+  if (!el) { tourStep++; showTourStep(); return; }
+
+  const rect = el.getBoundingClientRect();
+
+  // ハイライト
+  tourHighlight = document.createElement('div');
+  tourHighlight.className = 'tour-highlight';
+  tourHighlight.style.cssText = `left:${rect.left - 4}px;top:${rect.top - 4}px;width:${rect.width + 8}px;height:${rect.height + 8}px;`;
+  document.body.appendChild(tourHighlight);
+
+  // 吹き出し
+  tourBubble = document.createElement('div');
+  tourBubble.className = `tour-bubble ${step.arrow}`;
+  tourBubble.innerHTML = `
+    <div class="tour-title">${step.title}</div>
+    <div class="tour-text">${step.text}</div>
+    <button class="tour-btn" onclick="nextTourStep()">${tourStep < TOUR_STEPS.length - 1 ? '次へ →' : '完了！'}</button>
+    <div class="tour-skip" onclick="endTour()">スキップ</div>
+  `;
+
+  // 吹き出し位置
+  const bubbleW = 220;
+  let left = rect.left + rect.width / 2 - bubbleW / 2;
+  left = Math.max(10, Math.min(left, window.innerWidth - bubbleW - 10));
+
+  if (step.position === 'above') {
+    tourBubble.style.cssText = `left:${left}px;bottom:${window.innerHeight - rect.top + 14}px;width:${bubbleW}px;`;
+  } else {
+    tourBubble.style.cssText = `left:${left}px;top:${rect.bottom + 14}px;width:${bubbleW}px;`;
+  }
+  document.body.appendChild(tourBubble);
+}
+
+function nextTourStep() {
+  tourStep++;
+  showTourStep();
+}
+
+function clearTourUI() {
+  if (tourHighlight) { tourHighlight.remove(); tourHighlight = null; }
+  if (tourBubble) { tourBubble.remove(); tourBubble = null; }
+}
+
+function endTour() {
+  clearTourUI();
+  localStorage.setItem('tour_done', '1');
+}
 const KENTA_SCRIPTS = {
   welcome: [
     'はじめまして！ぼくケンタくん！施工フォトのナビゲーターだよ🪖',
