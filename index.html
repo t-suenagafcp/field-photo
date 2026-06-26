@@ -1004,59 +1004,94 @@ async function exportPDF() {
       canvas.width = A4W; canvas.height = A4H;
       const ctx = canvas.getContext('2d');
       ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, A4W, A4H);
-      ctx.fillStyle = '#000'; ctx.font = 'bold 36px sans-serif';
-      ctx.fillText(`${esc(activeProject.name)}　${floor.name}　撮影位置図`, 40, 60);
+
+      // ── ヘッダー ──
+      const PAD = 40;
+      ctx.fillStyle = '#000'; ctx.font = 'bold 34px sans-serif';
+      ctx.fillText(`${esc(activeProject.name)}　${floor.name}　撮影位置図`, PAD, 54);
       ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(40, 72); ctx.lineTo(A4W - 40, 72); ctx.stroke();
-      const mapX = 40, mapY = 90;
-      const mapW = Math.floor(A4W * 0.65) - 40;
-      const mapH = A4H - 130;
+      ctx.beginPath(); ctx.moveTo(PAD, 66); ctx.lineTo(A4W - PAD, 66); ctx.stroke();
+
+      // ── 上半分：図面エリア ──
+      const mapX = PAD, mapY = 80;
+      const mapW = A4W - PAD * 2;
+      const mapH = Math.floor(A4H * 0.50);  // A4の上半分
+      ctx.strokeStyle = '#ccc'; ctx.lineWidth = 1;
+      ctx.strokeRect(mapX, mapY, mapW, mapH);
+
       const scale = Math.min(mapW / img.width, mapH / img.height);
       const dw = img.width * scale, dh = img.height * scale;
       const dx = mapX + (mapW - dw) / 2, dy = mapY + (mapH - dh) / 2;
       ctx.drawImage(img, dx, dy, dw, dh);
+
+      // ピン描画
       floorPhotos.forEach(ph => {
         const px = dx + (ph.x / 100) * dw, py = dy + (ph.y / 100) * dh;
-        const r = 18;
+        const r = 16;
         ctx.fillStyle = '#E53E3E'; ctx.beginPath(); ctx.arc(px, py - r, r, 0, Math.PI * 2); ctx.fill();
         ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
         ctx.fillStyle = '#E53E3E'; ctx.beginPath();
-        ctx.moveTo(px - 6, py - r * 0.5); ctx.lineTo(px + 6, py - r * 0.5); ctx.lineTo(px, py + 2); ctx.fill();
+        ctx.moveTo(px - 5, py - r * 0.4); ctx.lineTo(px + 5, py - r * 0.4); ctx.lineTo(px, py + 2); ctx.fill();
         ctx.fillStyle = '#fff'; ctx.font = `bold ${r}px sans-serif`;
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.fillText(String(ph.num), px, py - r);
       });
       ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-      const tableX = mapX + mapW + 20, tableW = A4W - tableX - 20, rowH = 72;
-      ctx.font = 'bold 22px sans-serif'; ctx.fillStyle = '#000';
-      ctx.fillText('番号　調査項目／特記事項', tableX, mapY + 24);
-      ctx.strokeStyle = '#999'; ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(tableX, mapY + 32); ctx.lineTo(tableX + tableW, mapY + 32); ctx.stroke();
+
+      // ── 下半分：一覧表 ──
+      const tblY = mapY + mapH + 20;
+      const tblH = A4H - tblY - PAD;
+      const tblX = PAD, tblW = A4W - PAD * 2;
+
+      // ヘッダー行
+      const hdrH = 40;
+      ctx.fillStyle = '#1C4ED8';
+      ctx.fillRect(tblX, tblY, tblW, hdrH);
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 20px sans-serif';
+      const numW = 60, itemW = 300;
+      ctx.fillText('No.', tblX + 10, tblY + 27);
+      ctx.fillText('調査項目', tblX + numW + 10, tblY + 27);
+      ctx.fillText('特記事項', tblX + numW + itemW + 10, tblY + 27);
+
+      // 区切り線
+      ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(tblX + numW, tblY); ctx.lineTo(tblX + numW, tblY + hdrH); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(tblX + numW + itemW, tblY); ctx.lineTo(tblX + numW + itemW, tblY + hdrH); ctx.stroke();
+
+      // データ行（1行で収める、最大30件程度）
+      const maxRows = Math.floor(tblH / hdrH);
+      const rowH2 = Math.min(38, Math.floor(tblH / Math.max(floorPhotos.length, 1)));
       floorPhotos.forEach((ph, idx) => {
-        const ty = mapY + 48 + idx * rowH;
-        if (ty + rowH > A4H - 40) return;
-        ctx.fillStyle = idx % 2 === 0 ? '#F7F8FA' : '#fff';
-        ctx.fillRect(tableX, ty, tableW, rowH);
-        ctx.strokeStyle = '#ddd'; ctx.lineWidth = 1; ctx.strokeRect(tableX, ty, tableW, rowH);
+        const ry = tblY + hdrH + idx * rowH2;
+        if (ry + rowH2 > A4H - PAD + 10) return;
+        // 背景
+        ctx.fillStyle = idx % 2 === 0 ? '#F0F4FF' : '#fff';
+        ctx.fillRect(tblX, ry, tblW, rowH2);
+        // 枠線
+        ctx.strokeStyle = '#E2E5EA'; ctx.lineWidth = 1;
+        ctx.strokeRect(tblX, ry, tblW, rowH2);
+        // 縦区切り
+        ctx.beginPath(); ctx.moveTo(tblX + numW, ry); ctx.lineTo(tblX + numW, ry + rowH2); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(tblX + numW + itemW, ry); ctx.lineTo(tblX + numW + itemW, ry + rowH2); ctx.stroke();
         // 番号
-        ctx.fillStyle = '#E53E3E'; ctx.font = 'bold 20px sans-serif';
-        ctx.fillText(String(ph.num), tableX + 6, ty + 26);
+        ctx.fillStyle = '#E53E3E'; ctx.font = `bold ${Math.min(20, rowH2 - 8)}px sans-serif`;
+        ctx.textBaseline = 'middle';
+        ctx.fillText(String(ph.num), tblX + 10, ry + rowH2 / 2);
         // 調査項目
-        ctx.fillStyle = '#111'; ctx.font = 'bold 17px sans-serif';
-        ctx.fillText((ph.inspectionItem || '').substring(0, 14), tableX + 36, ty + 26);
-        // 特記事項
-        ctx.fillStyle = '#444'; ctx.font = '15px sans-serif';
+        ctx.fillStyle = '#111'; ctx.font = `${Math.min(18, rowH2 - 10)}px sans-serif`;
+        ctx.fillText((ph.inspectionItem || '').substring(0, 16), tblX + numW + 10, ry + rowH2 / 2);
+        // 特記事項（残りの幅に収まる文字数）
+        ctx.fillStyle = '#444';
+        const commentW = tblW - numW - itemW - 20;
+        ctx.font = `${Math.min(17, rowH2 - 10)}px sans-serif`;
         const comment = ph.comment || '';
-        const maxW = tableW - 40;
-        if (ctx.measureText(comment).width <= maxW) {
-          ctx.fillText(comment.substring(0, 20), tableX + 10, ty + 52);
-        } else {
-          ctx.fillText(comment.substring(0, 18), tableX + 10, ty + 48);
-          ctx.fillText(comment.substring(18, 36) + (comment.length > 36 ? '…' : ''), tableX + 10, ty + 66);
-        }
+        ctx.fillText(comment.substring(0, 30), tblX + numW + itemW + 10, ry + rowH2 / 2);
       });
+      ctx.textBaseline = 'alphabetic';
+
+      // フッター
       ctx.fillStyle = '#555'; ctx.font = '20px sans-serif'; ctx.textAlign = 'right';
-      ctx.fillText(new Date().toLocaleDateString('ja-JP'), A4W - 40, A4H - 20);
+      ctx.fillText(new Date().toLocaleDateString('ja-JP'), A4W - PAD, A4H - 10);
       ctx.textAlign = 'left';
       const imgData = canvas.toDataURL('image/jpeg', 0.92);
       if (!firstPage) pdf.addPage();
