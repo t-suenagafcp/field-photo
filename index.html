@@ -966,7 +966,6 @@ async function changeFloor(idx) {
 function openFloorNameEditor() {
   const drawings = activeProject.drawings || [];
   if (!drawings.length) return;
-  // 1枚ずつモーダルで入力していく
   openFloorNameModalStep(0);
 }
 
@@ -975,7 +974,6 @@ let floorNameStep = 0;
 function openFloorNameModalStep(idx) {
   const drawings = activeProject.drawings || [];
   if (idx >= drawings.length) {
-    // 全部終わったら保存してツアー進行
     dbSave(activeProject);
     renderDrawing();
     document.getElementById('overlay-floor-name').classList.remove('open');
@@ -984,34 +982,31 @@ function openFloorNameModalStep(idx) {
   }
   floorNameStep = idx;
   const d = drawings[idx];
-
-  // 図面を拡大表示
-  document.getElementById('floor-name-img').src = d.image || '';
-
-  // 入力欄を生成（現在の名前をplaceholderに）
-  const inputsEl = document.getElementById('floor-name-inputs');
   const total = drawings.length;
+
+  // 図面プレビューは非表示
+  document.getElementById('floor-name-preview').style.display = 'none';
+
+  // 入力欄：現在の図面名を値として入力済みで表示
+  const inputsEl = document.getElementById('floor-name-inputs');
   inputsEl.innerHTML = `
     <div style="font-size:13px;color:#6B7280;margin-bottom:8px;">${idx + 1} / ${total} 枚目の図面名</div>
     <input class="field-input" id="floor-name-single-input"
-      placeholder="${esc(d.name)}"
-      value=""
+      value="${esc(d.name)}"
+      placeholder="例：1階"
       style="font-size:16px;">
-    <div style="font-size:12px;color:#9CA3AF;margin-top:-8px;margin-bottom:12px;">
-      空白のままにすると「${esc(d.name)}」のままになります
-    </div>
   `;
 
-  // 進むボタンのラベル変更
+  // ボタンのラベル
   const saveBtn = document.querySelector('#overlay-floor-name .btn-primary');
-  if (saveBtn) saveBtn.textContent = idx < total - 1 ? '次の図面 →' : '完了';
+  if (saveBtn) saveBtn.textContent = idx < total - 1 ? '次へ →' : '完了';
 
   document.getElementById('overlay-floor-name').classList.add('open');
 
-  // 入力欄にフォーカス
+  // 入力欄にフォーカス＆全選択
   setTimeout(() => {
     const input = document.getElementById('floor-name-single-input');
-    if (input) input.focus();
+    if (input) { input.focus(); input.select(); }
   }, 400);
 }
 
@@ -1024,7 +1019,6 @@ async function saveFloorNames() {
   const drawings = activeProject.drawings || [];
   const val = document.getElementById('floor-name-single-input')?.value.trim();
   if (val) drawings[floorNameStep].name = val;
-  // 次のステップへ
   openFloorNameModalStep(floorNameStep + 1);
 }
 function confirmChangeDrawing(){
