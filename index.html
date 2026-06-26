@@ -65,15 +65,8 @@ input,textarea{font-family:inherit;font-size:inherit;}
 .upload-zone-sub{font-size:12px;color:#6B7280;margin-top:4px;}
 
 /* ── ピン ── */
-.pin{position:absolute;display:flex;flex-direction:column;align-items:center;cursor:pointer;z-index:10;}
-.pin-circle{width:28px;height:28px;border-radius:50%;background:#1C4ED8;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.3);border:2px solid #fff;position:relative;z-index:2;}
-.pin-number{font-size:11px;font-weight:700;color:#fff;display:block;transform:none !important;}
-.pin-tip-wrap{position:absolute;top:50%;left:50%;width:0;height:0;pointer-events:none;}
-.pin-tip{position:absolute;width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:10px solid #1C4ED8;transform-origin:center top;margin-left:-5px;margin-top:0;}
-/* 小さいピン */
-.pin-sm .pin-circle{width:20px;height:20px;}
-.pin-sm .pin-number{font-size:9px;}
-.pin-sm .pin-tip{border-left-width:4px;border-right-width:4px;border-top-width:8px;margin-left:-4px;}
+.pin{position:absolute;transform:translate(-50%,-50%);cursor:pointer;z-index:10;width:32px;height:32px;}
+.pin-sm{width:24px;height:24px;}
 
 /* ── 向き調整フローティングUI ── */
 #rotate-ui{
@@ -848,19 +841,138 @@ function renderPins() {
     return {x, y};
   });
 
+  // SVGでピンを描く（PC・スマホ共通）
   layer.innerHTML = pins.map((ph, i) => {
     const rot = ph.rotation || 0;
-    const r = 10; // pin-sm の半径px相当
+    const R = 10;
+    const tipLen = 10;
+    const rad = (rot - 90) * Math.PI / 180;
+    const tx = Math.cos(rad) * (R + tipLen);
+    const ty = Math.sin(rad) * (R + tipLen);
+    const lx = Math.cos(rad + 0.4) * R;
+    const ly = Math.sin(rad + 0.4) * R;
+    const rx2 = Math.cos(rad - 0.4) * R;
+    const ry2 = Math.sin(rad - 0.4) * R;
+
     return `
-    <div class="pin pin-sm" style="left:${positions[i].x}%;top:${positions[i].y}%;transform:translate(-50%,-50%);position:absolute;" onclick="openPinPopup(event,'${ph.id}')">
-      <div class="pin-circle" style="position:relative;">
-        <span class="pin-number">${ph.num}</span>
-        <div class="pin-tip-wrap">
-          <div class="pin-tip" style="transform:rotate(${rot}deg) translateY(10px);"></div>
-        </div>
-      </div>
+    <div class="pin pin-sm" data-pin-id="${ph.id}" style="left:${positions[i].x}%;top:${positions[i].y}%;">
+      <svg width="48" height="48" viewBox="-24 -24 48 48" style="overflow:visible;display:block;">
+        <polygon points="${lx},${ly} ${rx2},${ry2} ${tx},${ty}" fill="#1C4ED8"/>
+        <circle cx="0" cy="0" r="${R}" fill="#1C4ED8" stroke="white" stroke-width="2"/>
+        <text x="0" y="0" text-anchor="middle" dominant-baseline="central"
+          font-size="9" font-weight="bold" fill="white" style="user-select:none;">${ph.num}</text>
+      </svg>
     </div>`;
   }).join('');
+
+  // ピンにタップ・長押し・ドラッグイベントを設定
+  layer.querySelectorAll('.pin').forEach(pinEl => {
+    const id = pinEl.dataset.pinId;
+    const isTouch = 'ontouchstart' in window;
+
+    if (isTouch) {
+      // ── スマホ：長押し→ドラッグ ──
+      let pressTimer = null;
+      let isDragging = false;
+
+      pinEl.addEventListener('touchstart', e => {
+        e.stopPropagation();
+        isDragging = false;
+        pressTimer = setTimeout(() => {
+          isDragging = true;
+          startPinDrag(id, pinEl);
+          if (!localStorage.getItem('pin_move_hinted')) {
+            kentaShow('pinMove');
+            localStorage.setItem('pin_move_hinted', '1');
+          }
+        }, 500);
+      }, {passive: true});
+
+      pinEl.addEventListener('touchmove', e => {
+        if (!isDragging) { clearTimeout(pressTimer); return; }
+        e.stopPropagation();
+        movePinDrag(id, pinEl, e.touches[0]);
+      }, {passive: true});
+
+      pinEl.addEventListener('touchend', e => {
+        clearTimeout(pressTimer);
+        if (isDragging) { endPinDrag(id); isDragging = false; }
+        else openPinPopup(e, id);
+      });
+
+    } else {
+      // ── PC：クリック&ドラッグ ──
+      let isDragging = false;
+      let moved = false;
+
+      pinEl.addEventListener('mousedown', e => {
+        e.stopPropagation();
+        isDragging = true;
+        moved = false;
+        startPinDrag(id, pinEl);
+
+        const onMove = e2 => {
+          moved = true;
+          movePinDrag(id, pinEl, e2);
+        };
+        const onUp = e2 => {
+          document.removeEventListener('mousemove', onMove);
+          document.removeEventListener('mouseup', onUp);
+          if (moved) {
+            endPinDrag(id);
+            if (!localStorage.getItem('pin_move_hinted')) {
+              kentaShow('pinMove');
+              localStorage.setItem('pin_move_hinted', '1');
+            }
+          } else {
+            // 動いていない＝クリック → ポップアップ
+            cancelPinDrag(id, pinEl);
+            openPinPopup(e2, id);
+          }
+          isDragging = false;
+        };
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+      });
+    }
+  });
+}
+
+// ── ピンドラッグ移動 ──
+let draggingPinId = null;
+
+function startPinDrag(id, pinEl) {
+  draggingPinId = id;
+  pinEl.style.opacity = '0.6';
+  pinEl.style.zIndex = '50';
+  pinEl.style.cursor = 'grabbing';
+}
+
+function cancelPinDrag(id, pinEl) {
+  draggingPinId = null;
+  pinEl.style.opacity = '1';
+  pinEl.style.zIndex = '10';
+  pinEl.style.cursor = '';
+}
+
+function movePinDrag(id, pinEl, pointer) {
+  const wrapper = document.getElementById('drawing-wrapper');
+  const rect = wrapper.getBoundingClientRect();
+  const x = Math.max(0, Math.min(100, ((pointer.clientX - rect.left) / rect.width) * 100));
+  const y = Math.max(0, Math.min(100, ((pointer.clientY - rect.top) / rect.height) * 100));
+  pinEl.style.left = x + '%';
+  pinEl.style.top  = y + '%';
+  const ph = activeProject.photos.find(p => p.id === id);
+  if (ph) { ph.x = x; ph.y = y; }
+}
+
+async function endPinDrag(id) {
+  draggingPinId = null;
+  const layer = document.getElementById('pins-layer');
+  const pinEl = layer.querySelector(`[data-pin-id="${id}"]`);
+  if (pinEl) { pinEl.style.opacity = '1'; pinEl.style.zIndex = '10'; pinEl.style.cursor = ''; }
+  await dbSave(activeProject);
+  renderPins();
 }
 
 // ピン回転スライダー操作
@@ -886,8 +998,10 @@ function openRotateUI() {
   const rot = ph.rotation || 0;
   document.getElementById('pin-rotate-slider').value = rot;
   document.getElementById('pin-rotate-deg').textContent = rot;
-  // ポップアップを閉じてフローティングUIを表示
+  // ポップアップを閉じて図面を見せる
   document.getElementById('overlay-pin').classList.remove('open');
+  // フローティングUIを表示（図面タブに切り替え）
+  switchTab('drawing');
   document.getElementById('rotate-ui').classList.add('open');
 }
 function closeRotateUI() {
@@ -1531,6 +1645,7 @@ const KENTA_SCRIPTS = {
   comment: ['調査項目と特記事項を入力して「保存」をタップしてね✏️','「外壁ひび割れ」「補修必要」など具体的に書くと報告書が作りやすくなるよ！'],
   preview: ['写真を長押しして「写真に保存」するとカメラロールにも保存されるよ📥','バックアップとして保存しておくのがオススメ！'],
   export: ['Excel連携ボタンを押したよ！JSONファイルがダウンロードされるよ📤','このJSONファイルをPCに転送してね。AirDrop・メール・iCloudどれでもOK！','PCの「施工フォト」フォルダにある「施工フォト変換ツール.exe」を開いて、JSONとExcelひな形を選んで変換開始を押してね🎉'],
+  pinMove: ['ピンを長押しすると移動できるよ！📍','好きな場所にドラッグして指を離すと保存されるよ！'],
 };
 
 let kentaQueue = [], kentaIndex = 0;
