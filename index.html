@@ -408,6 +408,112 @@ input,textarea{font-family:inherit;font-size:inherit;}
   </div>
 </div>
 
+<!-- ══ Safari案内モーダル ══ -->
+<div id="overlay-safari" style="
+  position:fixed;inset:0;background:rgba(0,0,0,0.6);
+  z-index:9999;display:none;align-items:center;justify-content:center;padding:20px;
+">
+  <div style="background:#fff;border-radius:20px;padding:24px 20px;width:100%;max-width:360px;">
+    <!-- ケンタくん -->
+    <div style="text-align:center;margin-bottom:12px;">
+      <svg viewBox="0 0 60 60" width="60" height="60" xmlns="http://www.w3.org/2000/svg">
+        <ellipse cx="30" cy="18" rx="16" ry="10" fill="#F59E0B"/>
+        <rect x="14" y="22" width="32" height="5" rx="2" fill="#F59E0B"/>
+        <rect x="12" y="25" width="36" height="3" rx="1.5" fill="#D97706"/>
+        <ellipse cx="30" cy="34" rx="13" ry="12" fill="#FDE68A"/>
+        <ellipse cx="25" cy="32" rx="2" ry="2.5" fill="#1C4ED8"/>
+        <ellipse cx="35" cy="32" rx="2" ry="2.5" fill="#1C4ED8"/>
+        <circle cx="26" cy="31" r="0.8" fill="#fff"/>
+        <circle cx="36" cy="31" r="0.8" fill="#fff"/>
+        <path d="M25 38 Q30 42 35 38" stroke="#D97706" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+        <ellipse cx="22" cy="36" rx="3" ry="2" fill="#FCA5A5" opacity="0.6"/>
+        <ellipse cx="38" cy="36" rx="3" ry="2" fill="#FCA5A5" opacity="0.6"/>
+        <rect x="22" y="46" width="16" height="12" rx="4" fill="#1C4ED8"/>
+        <rect x="12" y="47" width="10" height="5" rx="2.5" fill="#1C4ED8"/>
+        <rect x="38" y="47" width="10" height="5" rx="2.5" fill="#1C4ED8"/>
+      </svg>
+    </div>
+
+    <div style="text-align:center;font-size:17px;font-weight:800;color:#EF4444;margin-bottom:6px;">⚠️ Safariで開いてください</div>
+    <div style="text-align:center;font-size:13px;color:#6B7280;margin-bottom:20px;line-height:1.6;">
+      このアプリはSafariでのみ<br>カメラやPDF出力が正しく動作します
+    </div>
+
+    <!-- ステップ -->
+    <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px;">
+      <div style="display:flex;align-items:flex-start;gap:12px;">
+        <div style="width:28px;height:28px;border-radius:50%;background:#1C4ED8;color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">1</div>
+        <div>
+          <div style="font-size:13px;font-weight:600;margin-bottom:4px;">下のボタンでURLをコピー</div>
+          <button onclick="copyURL()" style="background:#EFF4FF;color:#1C4ED8;border:1.5px solid #1C4ED8;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;width:100%;">
+            📋 URLをコピーする
+          </button>
+          <div id="copy-done" style="color:#10B981;font-size:12px;margin-top:4px;display:none;">✅ コピーしました！</div>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:flex-start;gap:12px;">
+        <div style="width:28px;height:28px;border-radius:50%;background:#1C4ED8;color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">2</div>
+        <div style="font-size:13px;color:#374151;line-height:1.6;">
+          iPhoneの<strong>Safariアプリ</strong>を開く<br>
+          <span style="color:#6B7280;font-size:12px;">（銀色のコンパスマークのアプリ）</span>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:flex-start;gap:12px;">
+        <div style="width:28px;height:28px;border-radius:50%;background:#1C4ED8;color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">3</div>
+        <div style="font-size:13px;color:#374151;line-height:1.6;">
+          アドレスバーに<strong>貼り付けて</strong>開く<br>
+          <span style="color:#6B7280;font-size:12px;">（アドレスバーを長押し→「ペースト」）</span>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:flex-start;gap:12px;">
+        <div style="width:28px;height:28px;border-radius:50%;background:#F59E0B;color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">4</div>
+        <div style="font-size:13px;color:#374151;line-height:1.6;">
+          画面下の<strong>共有ボタン（□↑）</strong>→<br>「<strong>ホーム画面に追加</strong>」をタップ
+        </div>
+      </div>
+    </div>
+
+    <button onclick="closeSafariGuide()" style="width:100%;padding:13px;background:#F3F4F6;color:#6B7280;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;">
+      このまま続ける（一部機能が制限されます）
+    </button>
+  </div>
+</div>
+
+<!-- ══ ホーム画面追加案内モーダル ══ -->
+<div id="overlay-homescreen" style="
+  position:fixed;inset:0;background:rgba(0,0,0,0.6);
+  z-index:9999;display:none;align-items:center;justify-content:center;padding:20px;
+">
+  <div style="background:#fff;border-radius:20px;padding:24px 20px;width:100%;max-width:360px;">
+    <div style="text-align:center;font-size:17px;font-weight:800;color:#1C4ED8;margin-bottom:6px;">📱 ホーム画面に追加しよう！</div>
+    <div style="text-align:center;font-size:13px;color:#6B7280;margin-bottom:20px;line-height:1.6;">
+      追加するとアイコンから起動でき<br>データもずっと保存されるよ！
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:28px;height:28px;border-radius:50%;background:#1C4ED8;color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">1</div>
+        <div style="font-size:13px;color:#374151;">画面下の<strong>共有ボタン（□↑）</strong>をタップ</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:28px;height:28px;border-radius:50%;background:#1C4ED8;color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">2</div>
+        <div style="font-size:13px;color:#374151;"><strong>「ホーム画面に追加」</strong>をタップ</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:28px;height:28px;border-radius:50%;background:#F59E0B;color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">3</div>
+        <div style="font-size:13px;color:#374151;">右上の<strong>「追加」</strong>をタップして完了！</div>
+      </div>
+    </div>
+
+    <button onclick="closeHomescreenGuide()" style="width:100%;padding:13px;background:linear-gradient(135deg,#1C4ED8,#3B82F6);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;">
+      わかった！
+    </button>
+  </div>
+</div>
+
 <!-- ══ PDF印刷エリア ══ -->
 <div id="pdf-print-area"></div>
 <button id="pdf-print-btn" onclick="window.print()">🖨️ 印刷 / PDF保存</button>
@@ -472,11 +578,49 @@ window.addEventListener('load', async () => {
   const lastId = localStorage.getItem('last_open_project');
   if (lastId && projects.some(p => p.id === lastId)) {
     openProject(lastId);
+  }
+
+  // ── ブラウザ・環境チェック ──
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  const isStandalone = window.navigator.standalone === true;
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+
+  if (isIOS && !isSafari) {
+    // iPhoneでSafari以外（Chrome等）→ Safari案内を表示
+    document.getElementById('overlay-safari').style.display = 'flex';
+  } else if (isIOS && isSafari && !isStandalone && !localStorage.getItem('homescreen_guided')) {
+    // SafariだがホームA面未追加 → ホーム画面追加案内
+    setTimeout(() => {
+      document.getElementById('overlay-homescreen').style.display = 'flex';
+      localStorage.setItem('homescreen_guided', '1');
+    }, 1500);
   } else if (!localStorage.getItem('kenta_welcomed')) {
+    // 初回ウェルカム
     setTimeout(() => kentaShow('welcome'), 600);
     localStorage.setItem('kenta_welcomed', '1');
   }
 });
+
+function copyURL() {
+  navigator.clipboard.writeText(location.href).then(() => {
+    document.getElementById('copy-done').style.display = 'block';
+  }).catch(() => {
+    // フォールバック
+    const el = document.createElement('textarea');
+    el.value = location.href;
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand('copy');
+    document.body.removeChild(el);
+    document.getElementById('copy-done').style.display = 'block';
+  });
+}
+function closeSafariGuide() {
+  document.getElementById('overlay-safari').style.display = 'none';
+}
+function closeHomescreenGuide() {
+  document.getElementById('overlay-homescreen').style.display = 'none';
+}
 
 // ══ 画面切替 ══════════════════════════════════════════════════
 function showScreen(id) {
@@ -935,12 +1079,7 @@ function openMoveUI() {
   switchTab('drawing');
   pinMoveMode = true;
   document.getElementById('move-ui').style.display = 'block';
-  // ピンをドラッグ可能にする
   enablePinDrag();
-  if (!localStorage.getItem('pin_move_hinted')) {
-    kentaShow('pinMove');
-    localStorage.setItem('pin_move_hinted', '1');
-  }
 }
 
 async function closeMoveUI() {
@@ -1656,7 +1795,6 @@ const KENTA_SCRIPTS = {
   comment: ['調査項目と特記事項を入力して「保存」をタップしてね✏️','「外壁ひび割れ」「補修必要」など具体的に書くと報告書が作りやすくなるよ！'],
   preview: ['写真を長押しして「写真に保存」するとカメラロールにも保存されるよ📥','バックアップとして保存しておくのがオススメ！'],
   export: ['Excel連携ボタンを押したよ！JSONファイルがダウンロードされるよ📤','このJSONファイルをPCに転送してね。AirDrop・メール・iCloudどれでもOK！','PCの「施工フォト」フォルダにある「施工フォト変換ツール.exe」を開いて、JSONとExcelひな形を選んで変換開始を押してね🎉'],
-  pinMove: ['ピンを長押しすると移動できるよ！📍','好きな場所にドラッグして指を離すと保存されるよ！'],
 };
 
 let kentaQueue = [], kentaIndex = 0;
