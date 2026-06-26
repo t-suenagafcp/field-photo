@@ -523,6 +523,38 @@ input,textarea{font-family:inherit;font-size:inherit;}
   </div>
 </div>
 
+<!-- ══ 写真一覧 編集モーダル ══ -->
+<div class="overlay" id="overlay-photo-edit" onclick="closePhotoEdit(event)">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <div class="sheet-title">写真を編集</div>
+    <img id="photo-edit-thumb" style="width:100%;border-radius:10px;margin-bottom:14px;max-height:160px;object-fit:cover;" src="" alt="">
+    <div class="field-label">調査項目</div>
+    <input class="field-input" id="photo-edit-inspection" placeholder="例：外壁、防火設備">
+    <div class="field-label">特記事項・コメント</div>
+    <textarea class="field-textarea" id="photo-edit-comment" placeholder="例：外壁ひび割れ確認、補修必要"></textarea>
+    <div class="btn-row">
+      <button class="btn-outline" onclick="closePhotoEdit()">キャンセル</button>
+      <button class="btn-primary" onclick="savePhotoEdit()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 図面名編集モーダル ══ -->
+<div class="overlay" id="overlay-floor-name" onclick="closeFloorNameModal(event)">
+  <div class="sheet" onclick="event.stopPropagation()" style="padding-bottom:30px;">
+    <div class="sheet-title">図面名を入力</div>
+    <!-- 図面プレビュー -->
+    <div id="floor-name-preview" style="width:100%;border-radius:10px;overflow:hidden;background:#D1D5DB;margin-bottom:14px;position:relative;max-height:220px;">
+      <img id="floor-name-img" style="width:100%;height:220px;object-fit:contain;display:block;" src="" alt="">
+    </div>
+    <div id="floor-name-inputs"></div>
+    <div class="btn-row" style="margin-top:8px;">
+      <button class="btn-outline" onclick="closeFloorNameModal()">キャンセル</button>
+      <button class="btn-primary" onclick="saveFloorNames()">保存</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ PDF印刷エリア ══ -->
 <div id="pdf-print-area"></div>
 <button id="pdf-print-btn" onclick="window.print()">🖨️ 印刷 / PDF保存</button>
@@ -1302,9 +1334,9 @@ function renderPhotoList() {
       ${ph.photo ? `<img class="photo-thumb" src="${ph.photo}" alt="">` : `<div class="photo-thumb-ph">📷</div>`}
       <div class="photo-info">
         ${(activeProject.drawings||[]).length > 1 ? `<div class="photo-floor-tag">${esc((activeProject.drawings[ph.floorIndex||0]||{}).name||'')}</div>` : ''}
-        ${ph.inspectionItem ? `<div class="photo-item-title">${esc(ph.inspectionItem)}</div>` : ''}
+        ${ph.inspectionItem ? `<div class="photo-item-title">${esc(ph.inspectionItem)}</div>` : `<div class="photo-item-title" style="color:#9CA3AF;">調査項目未入力</div>`}
         <div class="photo-comment">${esc(ph.comment||'（コメントなし）')}</div>
-        <div class="photo-date">${ph.date}</div>
+        <div class="photo-date">${ph.date} <span style="color:#9CA3AF;font-size:10px;">✏️ タップして編集</span></div>
       </div>
       <button class="photo-del" data-del-id="${ph.id}">🗑</button>
     </div>`).join('') +
@@ -1312,23 +1344,31 @@ function renderPhotoList() {
 
   const sortList = document.getElementById('photo-sort-list');
   sortList.addEventListener('click', e => {
+    // 削除ボタン
     const btn = e.target.closest('[data-del-id]');
-    if (!btn) return;
-    const id = btn.dataset.delId;
-    if (btn.classList.contains('confirm-state')) {
-      deletePhotoById(id);
-    } else {
-      document.querySelectorAll('.photo-del.confirm-state').forEach(b => {
-        b.classList.remove('confirm-state'); b.textContent = '🗑';
-      });
-      btn.classList.add('confirm-state');
-      btn.textContent = '削除する';
-      setTimeout(() => {
-        if (btn.classList.contains('confirm-state')) {
-          btn.classList.remove('confirm-state'); btn.textContent = '🗑';
-        }
-      }, 3000);
+    if (btn) {
+      const id = btn.dataset.delId;
+      if (btn.classList.contains('confirm-state')) {
+        deletePhotoById(id);
+      } else {
+        document.querySelectorAll('.photo-del.confirm-state').forEach(b => {
+          b.classList.remove('confirm-state'); b.textContent = '🗑';
+        });
+        btn.classList.add('confirm-state');
+        btn.textContent = '削除する';
+        setTimeout(() => {
+          if (btn.classList.contains('confirm-state')) {
+            btn.classList.remove('confirm-state'); btn.textContent = '🗑';
+          }
+        }, 3000);
+      }
+      return;
     }
+    // ドラッグハンドルは無視
+    if (e.target.closest('[data-drag-id]')) return;
+    // 写真アイテムをタップ→編集モーダル
+    const item = e.target.closest('.photo-item');
+    if (item) openPhotoEdit(item.dataset.id);
   });
 
   sortList.addEventListener('touchstart', e => {
@@ -1401,7 +1441,70 @@ async function dragEnd() {
   renderPins();
 }
 
-// ══ ピンポップアップ ══════════════════════════════════════════
+// ══ 写真一覧 編集モーダル ═════════════════════════════════════
+let editingPhotoId = null;
+
+function openPhotoEdit(id) {
+  const ph = activeProject.photos.find(p => p.id === id);
+  if (!ph) return;
+  editingPhotoId = id;
+  document.getElementById('photo-edit-thumb').src = ph.photo || '';
+  document.getElementById('photo-edit-thumb').style.display = ph.photo ? 'block' : 'none';
+  document.getElementById('photo-edit-inspection').value = ph.inspectionItem || '';
+  document.getElementById('photo-edit-comment').value = ph.comment || '';
+  document.getElementById('overlay-photo-edit').classList.add('open');
+}
+function closePhotoEdit(e) {
+  if (e && !e.target.classList.contains('overlay')) return;
+  document.getElementById('overlay-photo-edit').classList.remove('open');
+  editingPhotoId = null;
+}
+async function savePhotoEdit() {
+  const ph = activeProject.photos.find(p => p.id === editingPhotoId);
+  if (!ph) return;
+  ph.inspectionItem = document.getElementById('photo-edit-inspection').value.trim();
+  ph.comment = document.getElementById('photo-edit-comment').value.trim();
+  await dbSave(activeProject);
+  document.getElementById('overlay-photo-edit').classList.remove('open');
+  editingPhotoId = null;
+  renderPhotoList();
+  renderPins();
+}
+
+// ══ 図面名編集モーダル（拡大表示付き） ═══════════════════════
+function openFloorNameEditor() {
+  const drawings = activeProject.drawings || [];
+  if (!drawings.length) return;
+
+  // 現在のフロアの図面を拡大表示
+  const cur = drawings[activeProject.currentFloor || 0];
+  document.getElementById('floor-name-img').src = cur.image || '';
+
+  // 各フロアの入力欄を生成
+  const inputsEl = document.getElementById('floor-name-inputs');
+  inputsEl.innerHTML = drawings.map((d, i) => `
+    <div style="margin-bottom:10px;">
+      <div class="field-label">${i+1}枚目の図面名</div>
+      <input class="field-input" id="floor-name-input-${i}" value="${esc(d.name)}" placeholder="例：1階、地下1階">
+    </div>
+  `).join('');
+
+  document.getElementById('overlay-floor-name').classList.add('open');
+}
+function closeFloorNameModal(e) {
+  if (e && !e.target.classList.contains('overlay')) return;
+  document.getElementById('overlay-floor-name').classList.remove('open');
+}
+async function saveFloorNames() {
+  const drawings = activeProject.drawings || [];
+  drawings.forEach((d, i) => {
+    const val = document.getElementById(`floor-name-input-${i}`)?.value.trim();
+    if (val) d.name = val;
+  });
+  await dbSave(activeProject);
+  document.getElementById('overlay-floor-name').classList.remove('open');
+  renderDrawing();
+}
 function openPinPopup(e, id) {
   e.stopPropagation();
   const ph = activeProject.photos.find(p => p.id === id);
