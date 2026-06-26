@@ -68,12 +68,12 @@ input,textarea{font-family:inherit;font-size:inherit;}
 .pin{position:absolute;display:flex;flex-direction:column;align-items:center;cursor:pointer;z-index:10;}
 .pin-circle{width:28px;height:28px;border-radius:50%;background:#1C4ED8;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.3);border:2px solid #fff;position:relative;z-index:2;}
 .pin-number{font-size:11px;font-weight:700;color:#fff;display:block;transform:none !important;}
-.pin-tip-wrap{display:flex;justify-content:center;margin-top:-1px;}
-.pin-tip{width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:8px solid #1C4ED8;transform-origin:top center;display:block;}
+.pin-tip-wrap{position:absolute;top:50%;left:50%;width:0;height:0;pointer-events:none;}
+.pin-tip{position:absolute;width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:10px solid #1C4ED8;transform-origin:center top;margin-left:-5px;margin-top:0;}
 /* 小さいピン */
 .pin-sm .pin-circle{width:20px;height:20px;}
 .pin-sm .pin-number{font-size:9px;}
-.pin-sm .pin-tip{border-left-width:4px;border-right-width:4px;border-top-width:6px;}
+.pin-sm .pin-tip{border-left-width:4px;border-right-width:4px;border-top-width:8px;margin-left:-4px;}
 
 /* ── 向き調整フローティングUI ── */
 #rotate-ui{
@@ -850,10 +850,15 @@ function renderPins() {
 
   layer.innerHTML = pins.map((ph, i) => {
     const rot = ph.rotation || 0;
+    const r = 10; // pin-sm の半径px相当
     return `
-    <div class="pin pin-sm" style="left:${positions[i].x}%;top:${positions[i].y}%;transform:translate(-50%,-50%);" onclick="openPinPopup(event,'${ph.id}')">
-      <div class="pin-circle"><span class="pin-number">${ph.num}</span></div>
-      <div class="pin-tip-wrap"><div class="pin-tip" style="transform:rotate(${rot}deg);"></div></div>
+    <div class="pin pin-sm" style="left:${positions[i].x}%;top:${positions[i].y}%;transform:translate(-50%,-50%);position:absolute;" onclick="openPinPopup(event,'${ph.id}')">
+      <div class="pin-circle" style="position:relative;">
+        <span class="pin-number">${ph.num}</span>
+        <div class="pin-tip-wrap">
+          <div class="pin-tip" style="transform:rotate(${rot}deg) translateY(10px);"></div>
+        </div>
+      </div>
     </div>`;
   }).join('');
 }
