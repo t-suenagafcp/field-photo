@@ -796,6 +796,7 @@ function openNewProject() {
   document.getElementById('input-address').value = '';
   document.getElementById('overlay-new-project').classList.add('open');
   setTimeout(() => kentaShow('newProject'), 300);
+  tourAdvanceIfWaiting('new-btn');
 }
 function closeNewProject(e) {
   if (e && !e.target.classList.contains('overlay')) return;
@@ -815,6 +816,7 @@ async function createProject() {
   document.getElementById('overlay-new-project').classList.remove('open');
   renderProjectList();
   openProject(p.id);
+  tourAdvanceIfWaiting('create-btn');
 }
 async function deleteProject(e, id) {
   e.stopPropagation();
@@ -833,6 +835,7 @@ function openProject(id) {
   switchTab('drawing');
   renderDrawing();
   showScreen('screen-project');
+  tourAdvanceTo('upload-zone');
 }
 function migrateProjectToFloors(p) {
   if (!p.drawings) {
@@ -1787,91 +1790,125 @@ function esc(s) {
 }
 
 // ══ オンボーディングツアー ════════════════════════════════════
+// ══ インタラクティブツアー ════════════════════════════════════
 let tourStep = 0;
 let tourHighlight = null;
 let tourBubble = null;
+let tourActive = false;
 
+// ツアーステップ定義
+// type: 'highlight'=ハイライト+次へボタン / 'wait'=ユーザー操作待ち（自動で次へ）
 const TOUR_STEPS = [
   {
-    target: () => document.querySelector('.btn-primary'),
-    title: '① 物件を登録',
-    text: 'まずここをタップして物件名を入力してね',
-    arrow: 'arrow-top',
-    position: 'below'
+    id: 'new-btn',
+    target: () => document.querySelector('#screen-list .btn-primary'),
+    title: '① まず物件を登録しよう',
+    text: '「＋ 新規」をタップしてね',
+    arrow: 'arrow-top', position: 'below',
+    type: 'wait', // タップしたら自動で次へ
   },
   {
-    target: () => document.getElementById('tab-btn-drawing'),
-    title: '② 図面タブ',
-    text: '図面をアップロードして、タップで撮影できるよ',
-    arrow: 'arrow-bottom',
-    position: 'above'
+    id: 'input-name',
+    target: () => document.getElementById('input-name'),
+    title: '② 物件名を入力',
+    text: '物件名を入力してね',
+    arrow: 'arrow-top', position: 'below',
+    type: 'highlight',
   },
   {
+    id: 'create-btn',
+    target: () => document.querySelector('#overlay-new-project .btn-primary'),
+    title: '③ 作成をタップ',
+    text: '入力したら「作成」をタップしてね',
+    arrow: 'arrow-top', position: 'below',
+    type: 'wait',
+  },
+  {
+    id: 'upload-zone',
+    target: () => document.getElementById('upload-zone'),
+    title: '④ 図面をアップロード',
+    text: 'ここをタップして図面を選んでね（画像・PDF対応）',
+    arrow: 'arrow-top', position: 'below',
+    type: 'highlight',
+  },
+  {
+    id: 'tab-photos',
     target: () => document.getElementById('tab-btn-photos'),
-    title: '③ 写真一覧',
-    text: '撮影した写真がここに一覧で表示されるよ',
-    arrow: 'arrow-bottom',
-    position: 'above'
+    title: '⑤ 写真一覧',
+    text: '撮影した写真の一覧はここで確認できるよ',
+    arrow: 'arrow-bottom', position: 'above',
+    type: 'highlight',
   },
   {
+    id: 'pdf-btn',
     target: () => document.querySelector('[onclick="exportPDF()"]'),
-    title: '④ PDF出力',
+    title: '⑥ PDF出力',
     text: '報告書PDFをここから出力できるよ',
-    arrow: 'arrow-bottom',
-    position: 'above'
+    arrow: 'arrow-bottom', position: 'above',
+    type: 'highlight',
   },
   {
+    id: 'excel-btn',
     target: () => document.querySelector('[onclick="exportJSON()"]'),
-    title: '⑤ Excel連携',
-    text: 'データをExcelに書き出せるよ',
-    arrow: 'arrow-bottom',
-    position: 'above'
+    title: '⑦ Excel連携',
+    text: 'データをExcelに書き出せるよ。これで使い方は完璧！',
+    arrow: 'arrow-bottom', position: 'above',
+    type: 'highlight',
+    last: true,
   },
 ];
 
 function startTour() {
   if (localStorage.getItem('tour_done')) return;
+  tourActive = true;
   tourStep = 0;
   showTourStep();
 }
 
 function showTourStep() {
   clearTourUI();
-  if (tourStep >= TOUR_STEPS.length) {
-    endTour();
-    return;
-  }
+  if (tourStep >= TOUR_STEPS.length) { endTour(); return; }
+
   const step = TOUR_STEPS[tourStep];
   const el = step.target();
-  if (!el) { tourStep++; showTourStep(); return; }
+  if (!el || !document.body.contains(el)) {
+    // 要素が見えない場合はスキップ
+    tourStep++; showTourStep(); return;
+  }
 
   const rect = el.getBoundingClientRect();
+  if (rect.width === 0 || rect.height === 0) {
+    tourStep++; showTourStep(); return;
+  }
 
-  // ハイライト
+  // ハイライト（暗幕＋光る枠）
   tourHighlight = document.createElement('div');
   tourHighlight.className = 'tour-highlight';
-  tourHighlight.style.cssText = `left:${rect.left - 4}px;top:${rect.top - 4}px;width:${rect.width + 8}px;height:${rect.height + 8}px;`;
+  tourHighlight.style.cssText = `left:${rect.left - 5}px;top:${rect.top - 5}px;width:${rect.width + 10}px;height:${rect.height + 10}px;`;
   document.body.appendChild(tourHighlight);
 
   // 吹き出し
   tourBubble = document.createElement('div');
   tourBubble.className = `tour-bubble ${step.arrow}`;
+
+  const btnLabel = step.last ? '完了！🎉' : (step.type === 'wait' ? 'タップして進む →' : '次へ →');
+  const showBtn = step.type === 'highlight'; // waitタイプはボタン不要（操作したら自動で次へ）
+
   tourBubble.innerHTML = `
     <div class="tour-title">${step.title}</div>
     <div class="tour-text">${step.text}</div>
-    <button class="tour-btn" onclick="nextTourStep()">${tourStep < TOUR_STEPS.length - 1 ? '次へ →' : '完了！'}</button>
+    ${showBtn ? `<button class="tour-btn" onclick="nextTourStep()">${btnLabel}</button>` : `<div style="font-size:11px;color:#9CA3AF;text-align:center;">↑ タップすると次に進むよ</div>`}
     <div class="tour-skip" onclick="endTour()">スキップ</div>
   `;
 
-  // 吹き出し位置
-  const bubbleW = 220;
+  const bubbleW = 230;
   let left = rect.left + rect.width / 2 - bubbleW / 2;
   left = Math.max(10, Math.min(left, window.innerWidth - bubbleW - 10));
 
   if (step.position === 'above') {
-    tourBubble.style.cssText = `left:${left}px;bottom:${window.innerHeight - rect.top + 14}px;width:${bubbleW}px;`;
+    tourBubble.style.cssText = `left:${left}px;bottom:${window.innerHeight - rect.top + 16}px;width:${bubbleW}px;`;
   } else {
-    tourBubble.style.cssText = `left:${left}px;top:${rect.bottom + 14}px;width:${bubbleW}px;`;
+    tourBubble.style.cssText = `left:${left}px;top:${rect.bottom + 16}px;width:${bubbleW}px;`;
   }
   document.body.appendChild(tourBubble);
 }
@@ -1887,8 +1924,27 @@ function clearTourUI() {
 }
 
 function endTour() {
+  tourActive = false;
   clearTourUI();
   localStorage.setItem('tour_done', '1');
+}
+
+// ユーザー操作に連動してツアーを進める
+function tourAdvanceIfWaiting(stepId) {
+  if (!tourActive) return;
+  const step = TOUR_STEPS[tourStep];
+  if (step && step.id === stepId && step.type === 'wait') {
+    tourStep++;
+    setTimeout(() => showTourStep(), 400); // 少し待って次の画面が出てから
+  }
+}
+function tourAdvanceTo(stepId) {
+  if (!tourActive) return;
+  const idx = TOUR_STEPS.findIndex(s => s.id === stepId);
+  if (idx > tourStep) {
+    tourStep = idx;
+    setTimeout(() => showTourStep(), 400);
+  }
 }
 const KENTA_SCRIPTS = {
   welcome: [
