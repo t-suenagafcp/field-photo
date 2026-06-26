@@ -965,10 +965,67 @@ async function changeFloor(idx) {
 }
 function openFloorNameEditor() {
   const drawings = activeProject.drawings || [];
-  const names = drawings.map((d,i) => prompt(`${i+1}枚目の図面の名前を入力してください（例：1階）`, d.name));
-  names.forEach((n, i) => { if (n && n.trim()) drawings[i].name = n.trim(); });
-  dbSave(activeProject);
-  renderDrawing();
+  if (!drawings.length) return;
+  // 1枚ずつモーダルで入力していく
+  openFloorNameModalStep(0);
+}
+
+let floorNameStep = 0;
+
+function openFloorNameModalStep(idx) {
+  const drawings = activeProject.drawings || [];
+  if (idx >= drawings.length) {
+    // 全部終わったら保存してツアー進行
+    dbSave(activeProject);
+    renderDrawing();
+    document.getElementById('overlay-floor-name').classList.remove('open');
+    tourAdvanceIfWaiting('upload-zone');
+    return;
+  }
+  floorNameStep = idx;
+  const d = drawings[idx];
+
+  // 図面を拡大表示
+  document.getElementById('floor-name-img').src = d.image || '';
+
+  // 入力欄を生成（現在の名前をplaceholderに）
+  const inputsEl = document.getElementById('floor-name-inputs');
+  const total = drawings.length;
+  inputsEl.innerHTML = `
+    <div style="font-size:13px;color:#6B7280;margin-bottom:8px;">${idx + 1} / ${total} 枚目の図面名</div>
+    <input class="field-input" id="floor-name-single-input"
+      placeholder="${esc(d.name)}"
+      value=""
+      style="font-size:16px;">
+    <div style="font-size:12px;color:#9CA3AF;margin-top:-8px;margin-bottom:12px;">
+      空白のままにすると「${esc(d.name)}」のままになります
+    </div>
+  `;
+
+  // 進むボタンのラベル変更
+  const saveBtn = document.querySelector('#overlay-floor-name .btn-primary');
+  if (saveBtn) saveBtn.textContent = idx < total - 1 ? '次の図面 →' : '完了';
+
+  document.getElementById('overlay-floor-name').classList.add('open');
+
+  // 入力欄にフォーカス
+  setTimeout(() => {
+    const input = document.getElementById('floor-name-single-input');
+    if (input) input.focus();
+  }, 400);
+}
+
+function closeFloorNameModal(e) {
+  if (e && !e.target.classList.contains('overlay')) return;
+  document.getElementById('overlay-floor-name').classList.remove('open');
+}
+
+async function saveFloorNames() {
+  const drawings = activeProject.drawings || [];
+  const val = document.getElementById('floor-name-single-input')?.value.trim();
+  if (val) drawings[floorNameStep].name = val;
+  // 次のステップへ
+  openFloorNameModalStep(floorNameStep + 1);
 }
 function confirmChangeDrawing(){
   if((activeProject.photos||[]).length && !confirm('図面を変更すると、撮影済みの写真と図面の対応がずれる場合があります。続けますか？')) return;
@@ -1001,8 +1058,8 @@ async function handleDrawingFile(input) {
           setTimeout(() => openFloorNameEditor(), 400);
         } else {
           setTimeout(() => kentaShow('drawingReady'), 400);
+          tourAdvanceIfWaiting('upload-zone');
         }
-        tourAdvanceIfWaiting('upload-zone');
       } catch(err) {
         alert('PDFの読み込みに失敗しました。画像ファイル（JPG/PNG）をお試しください。');
       }
@@ -1493,20 +1550,6 @@ function openFloorNameEditor() {
 
   document.getElementById('overlay-floor-name').classList.add('open');
 }
-function closeFloorNameModal(e) {
-  if (e && !e.target.classList.contains('overlay')) return;
-  document.getElementById('overlay-floor-name').classList.remove('open');
-}
-async function saveFloorNames() {
-  const drawings = activeProject.drawings || [];
-  drawings.forEach((d, i) => {
-    const val = document.getElementById(`floor-name-input-${i}`)?.value.trim();
-    if (val) d.name = val;
-  });
-  await dbSave(activeProject);
-  document.getElementById('overlay-floor-name').classList.remove('open');
-  renderDrawing();
-}
 function openPinPopup(e, id) {
   e.stopPropagation();
   const ph = activeProject.photos.find(p => p.id === id);
@@ -1886,7 +1929,7 @@ function exportJSON() {
   a.href = url; a.download = `施工フォト_${activeProject.name}.txt`;
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   setTimeout(() => URL.revokeObjectURL(url), 1000);
-  alert(`📤 「施工フォト_${activeProject.name}.txt」をダウンロードしました。\nPCに転送してExcel自動入力スクリプトで使ってください。`);
+  alert(`📤 JSONファイルをダウンロードしました！\n\n【PCへの転送後】\nAirDrop・メール・iCloudなどでPCに転送してください。\n\n💡 ファイルは「施工フォト変換ツール」と\n同じフォルダに保存すると整理しやすいです。`);
   setTimeout(() => kentaShow('export'), 500);
 }
 
@@ -1974,50 +2017,54 @@ function showTourStep() {
   clearTourUI();
   if (tourStep >= TOUR_STEPS.length) { endTour(); return; }
 
-  const step = TOUR_STEPS[tourStep];
-  const el = step.target();
-  if (!el || !document.body.contains(el)) {
-    // 要素が見えない場合はスキップ
-    tourStep++; showTourStep(); return;
-  }
+  // モーダルのアニメーション等が完了するまで少し待ってから位置を計算
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      const step = TOUR_STEPS[tourStep];
+      const el = step.target();
+      if (!el || !document.body.contains(el)) {
+        tourStep++; showTourStep(); return;
+      }
 
-  const rect = el.getBoundingClientRect();
-  if (rect.width === 0 || rect.height === 0) {
-    tourStep++; showTourStep(); return;
-  }
+      const rect = el.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) {
+        tourStep++; showTourStep(); return;
+      }
 
-  // ハイライト（暗幕＋光る枠）
-  tourHighlight = document.createElement('div');
-  tourHighlight.className = 'tour-highlight';
-  tourHighlight.style.cssText = `left:${rect.left - 5}px;top:${rect.top - 5}px;width:${rect.width + 10}px;height:${rect.height + 10}px;`;
-  document.body.appendChild(tourHighlight);
+      // ハイライト（暗幕＋光る枠）
+      tourHighlight = document.createElement('div');
+      tourHighlight.className = 'tour-highlight';
+      tourHighlight.style.cssText = `left:${rect.left - 5}px;top:${rect.top - 5}px;width:${rect.width + 10}px;height:${rect.height + 10}px;`;
+      document.body.appendChild(tourHighlight);
 
-  // 吹き出し
-  tourBubble = document.createElement('div');
-  tourBubble.className = `tour-bubble ${step.arrow}`;
+      // 吹き出し
+      tourBubble = document.createElement('div');
+      tourBubble.className = `tour-bubble ${step.arrow}`;
 
-  const isEarlyStep = tourStep <= 3; // ①〜④はボタンなし
-  const btnLabel = step.last ? '完了！🎉' : '次へ →';
-  const showNextBtn = !isEarlyStep && step.type === 'highlight';
-  const showSkip = !isEarlyStep;
+      const isEarlyStep = tourStep <= 3;
+      const btnLabel = step.last ? '完了！🎉' : '次へ →';
+      const showNextBtn = !isEarlyStep && step.type === 'highlight';
+      const showSkip = !isEarlyStep;
 
-  tourBubble.innerHTML = `
-    <div class="tour-title">${step.title}</div>
-    <div class="tour-text">${step.text}</div>
-    ${showNextBtn ? `<button class="tour-btn" onclick="nextTourStep()">${btnLabel}</button>` : `<div style="font-size:11px;color:#9CA3AF;text-align:center;">↑ 操作すると次に進むよ</div>`}
-    ${showSkip ? `<div class="tour-skip" onclick="endTour()">スキップ</div>` : ''}
-  `;
+      tourBubble.innerHTML = `
+        <div class="tour-title">${step.title}</div>
+        <div class="tour-text">${step.text}</div>
+        ${showNextBtn ? `<button class="tour-btn" onclick="nextTourStep()">${btnLabel}</button>` : `<div style="font-size:11px;color:#9CA3AF;text-align:center;">↑ 操作すると次に進むよ</div>`}
+        ${showSkip ? `<div class="tour-skip" onclick="endTour()">スキップ</div>` : ''}
+      `;
 
-  const bubbleW = 230;
-  let left = rect.left + rect.width / 2 - bubbleW / 2;
-  left = Math.max(10, Math.min(left, window.innerWidth - bubbleW - 10));
+      const bubbleW = 230;
+      let left = rect.left + rect.width / 2 - bubbleW / 2;
+      left = Math.max(10, Math.min(left, window.innerWidth - bubbleW - 10));
 
-  if (step.position === 'above') {
-    tourBubble.style.cssText = `left:${left}px;bottom:${window.innerHeight - rect.top + 16}px;width:${bubbleW}px;`;
-  } else {
-    tourBubble.style.cssText = `left:${left}px;top:${rect.bottom + 16}px;width:${bubbleW}px;`;
-  }
-  document.body.appendChild(tourBubble);
+      if (step.position === 'above') {
+        tourBubble.style.cssText = `left:${left}px;bottom:${window.innerHeight - rect.top + 16}px;width:${bubbleW}px;`;
+      } else {
+        tourBubble.style.cssText = `left:${left}px;top:${rect.bottom + 16}px;width:${bubbleW}px;`;
+      }
+      document.body.appendChild(tourBubble);
+    }, 350);
+  });
 }
 
 function nextTourStep() {
