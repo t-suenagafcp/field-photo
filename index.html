@@ -340,7 +340,7 @@ input,textarea{font-family:inherit;font-size:inherit;}
   <div class="sheet" onclick="event.stopPropagation()">
     <div class="sheet-title">新規プロジェクト</div>
     <div class="field-label">物件名 *</div>
-    <input class="field-input" id="input-name" placeholder="例：○○マンション定期調査">
+    <input class="field-input" id="input-name" placeholder="例：○○マンション定期調査" onkeydown="if(event.key==='Enter'||event.keyCode===13) tourAdvanceIfWaiting('input-name')" oninput="if(this.value.trim()) tourAdvanceIfWaiting('input-name')">
     <div class="field-label">所在地</div>
     <input class="field-input" id="input-address" placeholder="例：東京都渋谷区…">
     <div class="btn-row">
@@ -1002,6 +1002,7 @@ async function handleDrawingFile(input) {
         } else {
           setTimeout(() => kentaShow('drawingReady'), 400);
         }
+        tourAdvanceIfWaiting('upload-zone');
       } catch(err) {
         alert('PDFの読み込みに失敗しました。画像ファイル（JPG/PNG）をお試しください。');
       }
@@ -1016,6 +1017,7 @@ async function handleDrawingFile(input) {
       await dbSave(activeProject);
       renderDrawing();
       setTimeout(() => kentaShow('drawingReady'), 400);
+      tourAdvanceIfWaiting('upload-zone');
     };
     reader.readAsDataURL(file);
   }
@@ -1916,7 +1918,7 @@ const TOUR_STEPS = [
     title: '② 物件名を入力',
     text: '物件名を入力してね',
     arrow: 'arrow-top', position: 'below',
-    type: 'highlight',
+    type: 'wait',
   },
   {
     id: 'create-btn',
@@ -1932,7 +1934,7 @@ const TOUR_STEPS = [
     title: '④ 図面をアップロード',
     text: 'ここをタップして図面を選んでね（画像・PDF対応）',
     arrow: 'arrow-top', position: 'below',
-    type: 'highlight',
+    type: 'wait',
   },
   {
     id: 'tab-photos',
@@ -1994,14 +1996,16 @@ function showTourStep() {
   tourBubble = document.createElement('div');
   tourBubble.className = `tour-bubble ${step.arrow}`;
 
-  const btnLabel = step.last ? '完了！🎉' : (step.type === 'wait' ? 'タップして進む →' : '次へ →');
-  const showBtn = step.type === 'highlight'; // waitタイプはボタン不要（操作したら自動で次へ）
+  const isEarlyStep = tourStep <= 3; // ①〜④はボタンなし
+  const btnLabel = step.last ? '完了！🎉' : '次へ →';
+  const showNextBtn = !isEarlyStep && step.type === 'highlight';
+  const showSkip = !isEarlyStep;
 
   tourBubble.innerHTML = `
     <div class="tour-title">${step.title}</div>
     <div class="tour-text">${step.text}</div>
-    ${showBtn ? `<button class="tour-btn" onclick="nextTourStep()">${btnLabel}</button>` : `<div style="font-size:11px;color:#9CA3AF;text-align:center;">↑ タップすると次に進むよ</div>`}
-    <div class="tour-skip" onclick="endTour()">スキップ</div>
+    ${showNextBtn ? `<button class="tour-btn" onclick="nextTourStep()">${btnLabel}</button>` : `<div style="font-size:11px;color:#9CA3AF;text-align:center;">↑ 操作すると次に進むよ</div>`}
+    ${showSkip ? `<div class="tour-skip" onclick="endTour()">スキップ</div>` : ''}
   `;
 
   const bubbleW = 230;
