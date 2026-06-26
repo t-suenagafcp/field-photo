@@ -369,10 +369,25 @@ input,textarea{font-family:inherit;font-size:inherit;}
     <div class="popup-date" id="popup-date"></div>
     <div class="popup-actions">
       <button class="btn-outline" onclick="deleteFromPopup()">🗑 削除</button>
-      <button class="btn-outline" onclick="openRotateUI()" style="color:#1C4ED8;border-color:#1C4ED8;">🧭 向き調整</button>
+      <button class="btn-outline" onclick="openRotateUI()" style="color:#1C4ED8;border-color:#1C4ED8;">🧭 向き</button>
+      <button class="btn-outline" onclick="openMoveUI()" style="color:#10B981;border-color:#10B981;">📍 移動</button>
       <button class="btn-primary" onclick="editCommentFromPopup()">✏️ 編集</button>
     </div>
   </div>
+</div>
+
+<!-- ══ ピン移動フローティングUI ══ -->
+<div id="move-ui" style="
+  position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+  background:rgba(255,255,255,0.92);backdrop-filter:blur(10px);
+  border:1.5px solid #D1FAE5;border-radius:20px;
+  padding:12px 18px;z-index:300;
+  box-shadow:0 4px 20px rgba(0,0,0,0.18);
+  display:none;width:calc(100% - 32px);max-width:360px;text-align:center;
+">
+  <div style="font-size:13px;font-weight:700;color:#10B981;margin-bottom:8px;">📍 ピン移動モード</div>
+  <div style="font-size:12px;color:#6B7280;margin-bottom:12px;">ピンをドラッグして移動してください</div>
+  <button onclick="closeMoveUI()" style="background:#10B981;color:#fff;border:none;border-radius:10px;padding:10px 32px;font-size:14px;font-weight:700;cursor:pointer;">完了</button>
 </div>
 
 <!-- ══ ピン向き調整フローティングUI ══ -->
@@ -865,81 +880,25 @@ function renderPins() {
     </div>`;
   }).join('');
 
-  // ピンにタップ・長押し・ドラッグイベントを設定
+  // ピンにタップイベントのみ設定（移動は専用UIで行う）
   layer.querySelectorAll('.pin').forEach(pinEl => {
     const id = pinEl.dataset.pinId;
-    const isTouch = 'ontouchstart' in window;
 
-    if (isTouch) {
-      // ── スマホ：長押し→ドラッグ ──
-      let pressTimer = null;
-      let isDragging = false;
+    pinEl.addEventListener('touchend', e => {
+      e.stopPropagation();
+      openPinPopup(e, id);
+    });
 
-      pinEl.addEventListener('touchstart', e => {
-        e.stopPropagation();
-        isDragging = false;
-        pressTimer = setTimeout(() => {
-          isDragging = true;
-          startPinDrag(id, pinEl);
-          if (!localStorage.getItem('pin_move_hinted')) {
-            kentaShow('pinMove');
-            localStorage.setItem('pin_move_hinted', '1');
-          }
-        }, 500);
-      }, {passive: true});
-
-      pinEl.addEventListener('touchmove', e => {
-        if (!isDragging) { clearTimeout(pressTimer); return; }
-        e.stopPropagation();
-        movePinDrag(id, pinEl, e.touches[0]);
-      }, {passive: true});
-
-      pinEl.addEventListener('touchend', e => {
-        clearTimeout(pressTimer);
-        if (isDragging) { endPinDrag(id); isDragging = false; }
-        else openPinPopup(e, id);
-      });
-
-    } else {
-      // ── PC：クリック&ドラッグ ──
-      let isDragging = false;
-      let moved = false;
-
-      pinEl.addEventListener('mousedown', e => {
-        e.stopPropagation();
-        isDragging = true;
-        moved = false;
-        startPinDrag(id, pinEl);
-
-        const onMove = e2 => {
-          moved = true;
-          movePinDrag(id, pinEl, e2);
-        };
-        const onUp = e2 => {
-          document.removeEventListener('mousemove', onMove);
-          document.removeEventListener('mouseup', onUp);
-          if (moved) {
-            endPinDrag(id);
-            if (!localStorage.getItem('pin_move_hinted')) {
-              kentaShow('pinMove');
-              localStorage.setItem('pin_move_hinted', '1');
-            }
-          } else {
-            // 動いていない＝クリック → ポップアップ
-            cancelPinDrag(id, pinEl);
-            openPinPopup(e2, id);
-          }
-          isDragging = false;
-        };
-        document.addEventListener('mousemove', onMove);
-        document.addEventListener('mouseup', onUp);
-      });
-    }
+    pinEl.addEventListener('click', e => {
+      e.stopPropagation();
+      openPinPopup(e, id);
+    });
   });
 }
 
 // ── ピンドラッグ移動 ──
 let draggingPinId = null;
+let pinMoveMode = false;
 
 function startPinDrag(id, pinEl) {
   draggingPinId = id;
@@ -950,9 +909,7 @@ function startPinDrag(id, pinEl) {
 
 function cancelPinDrag(id, pinEl) {
   draggingPinId = null;
-  pinEl.style.opacity = '1';
-  pinEl.style.zIndex = '10';
-  pinEl.style.cursor = '';
+  if (pinEl) { pinEl.style.opacity = '1'; pinEl.style.zIndex = '10'; pinEl.style.cursor = ''; }
 }
 
 function movePinDrag(id, pinEl, pointer) {
@@ -971,8 +928,62 @@ async function endPinDrag(id) {
   const layer = document.getElementById('pins-layer');
   const pinEl = layer.querySelector(`[data-pin-id="${id}"]`);
   if (pinEl) { pinEl.style.opacity = '1'; pinEl.style.zIndex = '10'; pinEl.style.cursor = ''; }
+}
+
+function openMoveUI() {
+  document.getElementById('overlay-pin').classList.remove('open');
+  switchTab('drawing');
+  pinMoveMode = true;
+  document.getElementById('move-ui').style.display = 'block';
+  // ピンをドラッグ可能にする
+  enablePinDrag();
+  if (!localStorage.getItem('pin_move_hinted')) {
+    kentaShow('pinMove');
+    localStorage.setItem('pin_move_hinted', '1');
+  }
+}
+
+async function closeMoveUI() {
+  pinMoveMode = false;
+  document.getElementById('move-ui').style.display = 'none';
   await dbSave(activeProject);
   renderPins();
+}
+
+function enablePinDrag() {
+  const layer = document.getElementById('pins-layer');
+  layer.querySelectorAll('.pin').forEach(pinEl => {
+    const id = pinEl.dataset.pinId;
+    pinEl.style.cursor = 'grab';
+
+    // タッチ
+    pinEl.ontouchstart = e => {
+      e.stopPropagation();
+      startPinDrag(id, pinEl);
+      const onMove = ev => movePinDrag(id, pinEl, ev.touches[0]);
+      const onEnd = async () => {
+        await endPinDrag(id);
+        pinEl.removeEventListener('touchmove', onMove);
+        pinEl.removeEventListener('touchend', onEnd);
+      };
+      pinEl.addEventListener('touchmove', onMove, {passive:true});
+      pinEl.addEventListener('touchend', onEnd);
+    };
+
+    // マウス
+    pinEl.onmousedown = e => {
+      e.stopPropagation();
+      startPinDrag(id, pinEl);
+      const onMove = ev => movePinDrag(id, pinEl, ev);
+      const onUp = async () => {
+        await endPinDrag(id);
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+      };
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    };
+  });
 }
 
 // ピン回転スライダー操作
