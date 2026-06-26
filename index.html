@@ -69,6 +69,10 @@ input,textarea{font-family:inherit;font-size:inherit;}
 .pin-circle{width:28px;height:28px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:#1C4ED8;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.3);border:2px solid #fff;}
 .pin-number{transform:rotate(45deg);font-size:11px;font-weight:700;color:#fff;}
 .pin-tip{width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:7px solid #1C4ED8;margin-top:-1px;}
+/* 小さいピン */
+.pin-sm .pin-circle{width:20px;height:20px;}
+.pin-sm .pin-number{font-size:9px;}
+.pin-sm .pin-tip{border-left-width:4px;border-right-width:4px;border-top-width:5px;}
 
 /* ── 写真一覧 ── */
 .photo-list{flex:1;overflow-y:auto;padding:12px 16px;}
@@ -659,10 +663,29 @@ async function handleDrawingFile(input) {
 function renderPins() {
   const layer = document.getElementById('pins-layer');
   const cur = activeProject.currentFloor || 0;
-  layer.innerHTML = (activeProject.photos||[])
-    .filter(ph => (ph.floorIndex||0) === cur)
-    .map(ph => `
-    <div class="pin" style="left:${ph.x}%;top:${ph.y}%;" onclick="openPinPopup(event,'${ph.id}')">
+  const pins = (activeProject.photos||[]).filter(ph => (ph.floorIndex||0) === cur);
+
+  // 重なり回避：近いピン同士を螺旋状にずらす（閾値3%以内）
+  const THRESHOLD = 3.0;
+  const placed = [];
+  const positions = pins.map(ph => {
+    let x = ph.x, y = ph.y;
+    let attempts = 0;
+    while (attempts < 20) {
+      const overlap = placed.find(p => Math.hypot(p.x - x, p.y - y) < THRESHOLD);
+      if (!overlap) break;
+      const angle = attempts * 137.5 * Math.PI / 180;
+      const dist = THRESHOLD * 0.8 * Math.ceil(attempts / 8);
+      x = ph.x + Math.cos(angle) * dist;
+      y = ph.y + Math.sin(angle) * dist;
+      attempts++;
+    }
+    placed.push({x, y});
+    return {x, y};
+  });
+
+  layer.innerHTML = pins.map((ph, i) => `
+    <div class="pin pin-sm" style="left:${positions[i].x}%;top:${positions[i].y}%;" onclick="openPinPopup(event,'${ph.id}')">
       <div class="pin-circle"><span class="pin-number">${ph.num}</span></div>
       <div class="pin-tip"></div>
     </div>`).join('');
