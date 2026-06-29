@@ -116,6 +116,7 @@ input,textarea{font-family:inherit;font-size:inherit;}
 .shutter{width:70px;height:70px;border-radius:50%;background:#fff;border:4px solid rgba(255,255,255,.4);display:flex;align-items:center;justify-content:center;}
 .shutter-inner{width:56px;height:56px;border-radius:50%;background:#fff;}
 .camera-btn-txt{color:#fff;font-size:15px;font-weight:500;padding:10px;}
+/* 横向き時：コントロールを右端にfixedで固定表示 */
 @media (orientation:landscape){
   #screen-camera{flex-direction:row;}
   #camera-video{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;}
@@ -142,7 +143,7 @@ input,textarea{font-family:inherit;font-size:inherit;}
 #pin-popup .popup-actions{display:flex;gap:10px;}
 #pin-popup .popup-actions button{flex:1;padding:12px;border-radius:10px;font-size:14px;font-weight:600;}
 
-/* ── PDFページスタイル ── */
+/* ── PDFページスタイル（Excel写真台紙完全一致） ── */
 .pdf-page{
   width:190mm;margin:0 auto;
   display:flex;flex-direction:column;
@@ -151,6 +152,8 @@ input,textarea{font-family:inherit;font-size:inherit;}
   font-size:9pt;color:#000;
 }
 .pdf-page:last-child{page-break-after:auto;}
+
+/* ページヘッダー「別添２ 関係写真」 */
 .pdf-page-header{
   display:flex;justify-content:space-between;align-items:flex-end;
   margin-bottom:1mm;
@@ -158,6 +161,8 @@ input,textarea{font-family:inherit;font-size:inherit;}
 .pdf-page-header-left{font-size:8pt;}
 .pdf-page-header-title{font-size:12pt;text-align:center;flex:1;}
 .pdf-page-header-right{font-size:8pt;text-align:right;}
+
+/* 写真1枚分のスロット */
 .pdf-slot{
   border:1px solid #000;
   margin-bottom:2mm;
@@ -168,6 +173,8 @@ input,textarea{font-family:inherit;font-size:inherit;}
   height:110mm;
   margin-bottom:2mm;
 }
+
+/* ヘッダー行（部位・番号・調査項目・調査結果） */
 .pdf-slot-head{
   display:flex;
   border-bottom:1px solid #000;
@@ -193,6 +200,8 @@ input,textarea{font-family:inherit;font-size:inherit;}
   padding:1mm 2mm;
   font-size:8pt;
 }
+
+/* 写真・特記事項エリア */
 .pdf-slot-body{
   display:flex;
   height:100mm;
@@ -228,6 +237,7 @@ input,textarea{font-family:inherit;font-size:inherit;}
   word-break:break-all;
 }
 .pdf-date-text{font-size:7pt;color:#555;margin-top:2mm;text-align:right;}
+
 .pdf-footer{text-align:center;font-size:7.5pt;color:#555;margin-top:1mm;}
 
 /* ── PDF印刷用 ── */
@@ -238,7 +248,6 @@ input,textarea{font-family:inherit;font-size:inherit;}
   #pdf-print-area,#pdf-print-area *{visibility:visible;}
   #pdf-print-area{display:block!important;position:fixed;top:0;left:0;width:100%;background:#fff;}
 }
-
 /* ── ケンタくん ── */
 .kenta-bubble{
   position:fixed;bottom:80px;left:50%;transform:translateX(-50%);
@@ -248,7 +257,9 @@ input,textarea{font-family:inherit;font-size:inherit;}
 }
 @keyframes kentaIn{from{opacity:0;transform:translateX(-50%) translateY(12px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}
 .kenta-bubble.hidden{display:none;}
+/* カメラ画面ではシャッターボタンと被るため上にずらす */
 .kenta-bubble.kenta-high{bottom:150px;}
+/* 横向き時はケンタくんを非表示（UIが狭いため） */
 @media (orientation:landscape){.kenta-bubble{display:none !important;}}
 .kenta-char{flex-shrink:0;width:60px;height:60px;}
 .kenta-char svg{width:100%;height:100%;}
@@ -269,18 +280,26 @@ input,textarea{font-family:inherit;font-size:inherit;}
 <div id="kenta-bubble" class="kenta-bubble hidden" onclick="kentaNext()">
   <div class="kenta-char">
     <svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+      <!-- ヘルメット -->
       <ellipse cx="30" cy="18" rx="16" ry="10" fill="#F59E0B"/>
       <rect x="14" y="22" width="32" height="5" rx="2" fill="#F59E0B"/>
       <rect x="12" y="25" width="36" height="3" rx="1.5" fill="#D97706"/>
+      <!-- 顔 -->
       <ellipse cx="30" cy="34" rx="13" ry="12" fill="#FDE68A"/>
+      <!-- 目 -->
       <ellipse cx="25" cy="32" rx="2" ry="2.5" fill="#1C4ED8"/>
       <ellipse cx="35" cy="32" rx="2" ry="2.5" fill="#1C4ED8"/>
+      <!-- ハイライト -->
       <circle cx="26" cy="31" r="0.8" fill="#fff"/>
       <circle cx="36" cy="31" r="0.8" fill="#fff"/>
+      <!-- 口 -->
       <path d="M25 38 Q30 42 35 38" stroke="#D97706" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+      <!-- ほっぺ -->
       <ellipse cx="22" cy="36" rx="3" ry="2" fill="#FCA5A5" opacity="0.6"/>
       <ellipse cx="38" cy="36" rx="3" ry="2" fill="#FCA5A5" opacity="0.6"/>
+      <!-- 体 -->
       <rect x="22" y="46" width="16" height="12" rx="4" fill="#1C4ED8"/>
+      <!-- 腕 -->
       <rect x="12" y="47" width="10" height="5" rx="2.5" fill="#1C4ED8"/>
       <rect x="38" y="47" width="10" height="5" rx="2.5" fill="#1C4ED8"/>
     </svg>
@@ -305,7 +324,7 @@ input,textarea{font-family:inherit;font-size:inherit;}
     <div class="section-label">プロジェクト</div>
     <div id="project-list"></div>
   </div>
-  <input type="file" id="json-import-list-input" accept=".json,.txt" style="display:none" onchange="handleJSONImportNew(this)">
+<input type="file" id="json-import-list-input" accept=".json,.txt" style="display:none" onchange="handleJSONImportNew(this)">
 </div>
 
 <!-- ══ 画面2: プロジェクト詳細 ══ -->
@@ -316,6 +335,7 @@ input,textarea{font-family:inherit;font-size:inherit;}
     <button class="btn-outline" id="drawing-change-btn" style="font-size:12px;display:none;" onclick="confirmChangeDrawing()">図面変更</button>
   </div>
   <div class="body">
+    <!-- 図面タブ -->
     <div id="tab-drawing" style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
       <div id="floor-tabs" class="floor-tabs"></div>
       <div id="upload-zone" class="upload-zone" onclick="drawingFileRef.click()">
@@ -331,6 +351,7 @@ input,textarea{font-family:inherit;font-size:inherit;}
         </div>
       </div>
     </div>
+    <!-- 写真一覧タブ -->
     <div id="tab-photos" style="flex:1;display:none;flex-direction:column;overflow:hidden;">
       <div style="padding:10px 14px;border-bottom:1px solid #E2E5EA;background:#fff;">
         <button onclick="downloadAllPhotos()" style="width:100%;padding:11px;border-radius:10px;background:#EFF4FF;color:#1C4ED8;font-size:14px;font-weight:600;border:none;">
@@ -355,6 +376,7 @@ input,textarea{font-family:inherit;font-size:inherit;}
     </button>
   </div>
 </div>
+<!-- JSONインポート用の非表示input -->
 <input type="file" id="json-import-input" accept=".json,.txt" style="display:none" onchange="handleJSONImport(this)">
 
 <!-- ══ 画面3: カメラ ══ -->
@@ -527,10 +549,13 @@ window.addEventListener('load', async () => {
   projects = await dbAll() || [];
   renderProjectList();
 
+  // 直前に開いていたプロジェクトがあれば自動的に復元
+  // （iOSがバックグラウンドでアプリ/タブを終了させた場合に備える）
   const lastId = localStorage.getItem('last_open_project');
   if (lastId && projects.some(p => p.id === lastId)) {
     openProject(lastId);
   } else if (!localStorage.getItem('kenta_welcomed')) {
+    // 初回のみウェルカム表示
     setTimeout(() => kentaShow('welcome'), 600);
     localStorage.setItem('kenta_welcomed', '1');
   }
@@ -608,6 +633,7 @@ function openProject(id) {
   renderDrawing();
   showScreen('screen-project');
 }
+// 旧データ構造（drawing単数）→ 新データ構造（drawings配列＋floorIndex）へ変換
 function migrateProjectToFloors(p) {
   if (!p.drawings) {
     p.drawings = p.drawing ? [{ name: '1階', image: p.drawing }] : [];
@@ -650,6 +676,8 @@ function renderDrawing() {
   renderPins();
   renderFloorTabs();
 
+  // 図面タップ（ピン以外）でカメラ起動／左右スワイプでフロア切替
+  // ピンチズーム・パン操作と誤判定しないよう、指がほとんど動いていない場合だけ「タップ」として扱う
   const wrapper = document.getElementById('drawing-wrapper');
   const container = document.getElementById('drawing-container');
   wrapper.onclick = null;
@@ -676,15 +704,19 @@ function renderDrawing() {
     touchStartX = null;
 
     if (dist < 12) {
+      // ほぼ動いていない＝タップ → 撮影
       if (!e.target.closest('.pin')) handleDrawingTap(e.changedTouches[0]);
     } else if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.5 && elapsed < 600) {
+      // 横方向に大きく素早く動いた＝スワイプ → フロア切替
       if (dx < 0) changeFloor(activeProject.currentFloor + 1);
       else changeFloor(activeProject.currentFloor - 1);
     }
+    // それ以外（ズーム後の指離しや緩慢なドラッグ等）は何もしない
   };
+  // PC（マウス）操作用：クリックはそのまま撮影として扱う
   wrapper.addEventListener('click', e => {
     if (e.target.closest('.pin')) return;
-    if ('ontouchstart' in window) return;
+    if ('ontouchstart' in window) return; // タッチ端末ではtouchendで処理済み
     handleDrawingTap(e);
   });
 }
@@ -705,6 +737,7 @@ async function changeFloor(idx) {
 }
 function setAllFloorNames(startName) {
   const drawings = activeProject.drawings || [];
+  // 開始階から連番を生成
   const sequence = ['PIT階','1階','2階','3階','4階','5階',
                     '6階','7階','8階','9階','10階','11階','12階','13階','14階','15階',
                     '16階','17階','18階','19階','20階','RF','屋上','塔屋',
@@ -724,6 +757,7 @@ function setAllFloorNames(startName) {
     }
   });
 }
+
 function openFloorNameEditor() {
   const drawings = activeProject.drawings || [];
   if (!drawings.length) return;
@@ -733,6 +767,7 @@ function openFloorNameEditor() {
     <input class="field-input" id="floor-name-${i}" value="${esc(d.name)}" placeholder="例：1階、2階、屋上など">
   `).join('');
   document.getElementById('overlay-floor-names').classList.add('open');
+  // 最初の入力欄にフォーカス
   setTimeout(() => document.getElementById('floor-name-0')?.focus(), 300);
 }
 async function saveFloorNames() {
@@ -754,6 +789,7 @@ async function handleDrawingFile(input) {
   const file = input.files[0]; if (!file) return;
 
   if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
+    // PDF → 全ページをCanvas → dataURL変換し、各ページをフロアとして追加
     const reader = new FileReader();
     reader.onload = async e => {
       try {
@@ -781,6 +817,7 @@ async function handleDrawingFile(input) {
     };
     reader.readAsArrayBuffer(file);
   } else {
+    // 画像ファイル（1枚＝1フロアとして追加）
     const reader = new FileReader();
     reader.onload = async e => {
       const floorNum = (activeProject.drawings||[]).length + 1;
@@ -842,9 +879,10 @@ function takePicture() {
   const vw = video.videoWidth;
   const vh = video.videoHeight;
 
+  // 縦向き（portrait）で撮った場合は90度回転して横向きにする
   const isPortrait = vh > vw;
   if (isPortrait) {
-    canvas.width  = vh;
+    canvas.width  = vh;  // 回転後は縦横が入れ替わる
     canvas.height = vw;
     const ctx = canvas.getContext('2d');
     ctx.translate(vh / 2, vw / 2);
@@ -949,6 +987,7 @@ function renderPhotoList() {
     </div>`).join('') +
     `</div>`;
 
+  // イベント委譲：削除ボタン・ドラッグハンドルをリスト全体で受け取る
   const sortList = document.getElementById('photo-sort-list');
 
   sortList.addEventListener('click', e => {
@@ -990,11 +1029,14 @@ function renderPhotoList() {
     document.addEventListener('mouseup', dragEnd);
   });
 }
-
-// ══ 写真並び替え ══════════════════════════════════════════════
+// ══ 写真一覧 並び替え（ドラッグ&ドロップ） ══════════════════════
 let dragState = null;
 
-function dragTouchMove(e) { e.preventDefault(); const t = e.touches[0]; dragMove(t.clientY, t.clientX); }
+function dragTouchMove(e) {
+  e.preventDefault();
+  const t = e.touches[0];
+  dragMove(t.clientY, t.clientX);
+}
 function dragMouseMove(e) { dragMove(e.clientY, e.clientX); }
 
 function dragBegin(id, clientY, clientX) {
@@ -1002,14 +1044,21 @@ function dragBegin(id, clientY, clientX) {
   const card = list.querySelector(`.photo-item[data-id="${id}"]`);
   if (!card) return;
   const rect = card.getBoundingClientRect();
+
   const ghost = card.cloneNode(true);
   ghost.classList.add('drag-ghost');
   ghost.style.left = rect.left + 'px';
   ghost.style.top = rect.top + 'px';
   ghost.style.height = rect.height + 'px';
   document.body.appendChild(ghost);
+
   card.classList.add('dragging');
-  dragState = { id, list, card, ghost, offsetY: clientY - rect.top, offsetX: clientX - rect.left };
+
+  dragState = {
+    id, list, card, ghost,
+    offsetY: clientY - rect.top,
+    offsetX: clientX - rect.left,
+  };
 }
 
 function dragMove(clientY, clientX) {
@@ -1017,11 +1066,13 @@ function dragMove(clientY, clientX) {
   const { ghost, list, card } = dragState;
   ghost.style.top = (clientY - dragState.offsetY) + 'px';
   ghost.style.left = (clientX - dragState.offsetX) + 'px';
+
   const siblings = Array.from(list.querySelectorAll('.photo-item:not(.dragging)'));
   let target = null;
   for (const sib of siblings) {
     const r = sib.getBoundingClientRect();
-    if (clientY < r.top + r.height / 2) { target = sib; break; }
+    const mid = r.top + r.height / 2;
+    if (clientY < mid) { target = sib; break; }
   }
   if (target) list.insertBefore(card, target);
   else list.appendChild(card);
@@ -1033,13 +1084,17 @@ async function dragEnd() {
   document.removeEventListener('mousemove', dragMouseMove);
   document.removeEventListener('mouseup', dragEnd);
   if (!dragState) return;
+
   const { list, card, ghost } = dragState;
   ghost.remove();
   card.classList.remove('dragging');
+
+  // DOM上の現在の並び順からphotos配列を再構築し、番号を振り直す
   const newOrderIds = Array.from(list.querySelectorAll('.photo-item')).map(el => el.dataset.id);
   const byId = {};
   activeProject.photos.forEach(p => byId[p.id] = p);
   activeProject.photos = newOrderIds.map((id, i) => ({ ...byId[id], num: i + 1 }));
+
   dragState = null;
   await dbSave(activeProject);
   renderPhotoList();
@@ -1145,7 +1200,7 @@ async function exportPDF() {
     const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
     let firstPage = true;
 
-    // フロアごとの撮影位置図ページ
+    // ── フロアごとの図面+ピン一覧ページを先頭に追加 ──
     const drawings = activeProject.drawings || [];
     for (let fi = 0; fi < drawings.length; fi++) {
       const floor = drawings[fi];
@@ -1153,11 +1208,13 @@ async function exportPDF() {
       const floorPhotos = photos.filter(p => (p.floorIndex||0) === fi);
       if (!floorPhotos.length) continue;
 
+      // Canvasで図面にピンを描画
       const img = new Image();
       img.src = floor.image;
       await new Promise(res => { img.onload = res; img.onerror = res; });
 
       const canvas = document.createElement('canvas');
+      // A4比率で描画（図面エリアは左70%、一覧表は右30%）
       const A4W = 1240, A4H = 1754;
       canvas.width  = A4W;
       canvas.height = A4H;
@@ -1165,17 +1222,20 @@ async function exportPDF() {
       ctx.fillStyle = '#fff';
       ctx.fillRect(0, 0, A4W, A4H);
 
+      // ヘッダー
       ctx.fillStyle = '#000';
       ctx.font = 'bold 36px sans-serif';
-      ctx.fillText(`${activeProject.name}　${floor.name}　撮影位置図`, 40, 60);
+      ctx.fillText(`${esc(activeProject.name)}　${floor.name}　撮影位置図`, 40, 60);
       ctx.strokeStyle = '#000';
       ctx.lineWidth = 2;
       ctx.beginPath(); ctx.moveTo(40, 72); ctx.lineTo(A4W - 40, 72); ctx.stroke();
 
+      // 図面エリア（左側70%）
       const mapX = 40, mapY = 90;
       const mapW = Math.floor(A4W * 0.65) - 40;
       const mapH = A4H - 130;
 
+      // 図面画像をcontainで描画
       const scale = Math.min(mapW / img.width, mapH / img.height);
       const dw = img.width * scale;
       const dh = img.height * scale;
@@ -1183,19 +1243,23 @@ async function exportPDF() {
       const dy = mapY + (mapH - dh) / 2;
       ctx.drawImage(img, dx, dy, dw, dh);
 
+      // ピン描画
       floorPhotos.forEach(ph => {
         const px = dx + (ph.x / 100) * dw;
         const py = dy + (ph.y / 100) * dh;
         const r = 18;
         ctx.fillStyle = '#E53E3E';
         ctx.beginPath(); ctx.arc(px, py - r, r, 0, Math.PI * 2); ctx.fill();
-        ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+        ctx.stroke();
+        // ピン下の三角
         ctx.fillStyle = '#E53E3E';
         ctx.beginPath();
         ctx.moveTo(px - 6, py - r * 0.5);
         ctx.lineTo(px + 6, py - r * 0.5);
         ctx.lineTo(px, py + 2);
         ctx.fill();
+        // 番号
         ctx.fillStyle = '#fff';
         ctx.font = `bold ${r}px sans-serif`;
         ctx.textAlign = 'center';
@@ -1205,6 +1269,7 @@ async function exportPDF() {
       ctx.textAlign = 'left';
       ctx.textBaseline = 'alphabetic';
 
+      // 一覧表（右側30%）
       const tableX = mapX + mapW + 20;
       const tableW = A4W - tableX - 20;
       const rowH = 48;
@@ -1216,7 +1281,7 @@ async function exportPDF() {
 
       floorPhotos.forEach((ph, idx) => {
         const ty = mapY + 48 + idx * rowH;
-        if (ty + rowH > A4H - 40) return;
+        if (ty + rowH > A4H - 40) return; // 枠外は省略
         ctx.fillStyle = idx % 2 === 0 ? '#F7F8FA' : '#fff';
         ctx.fillRect(tableX, ty, tableW, rowH);
         ctx.strokeStyle = '#ddd'; ctx.lineWidth = 1;
@@ -1230,19 +1295,21 @@ async function exportPDF() {
         ctx.fillText(item, tableX + 36, ty + rowH * 0.65);
       });
 
+      // フッター
       ctx.fillStyle = '#555';
       ctx.font = '20px sans-serif';
       ctx.textAlign = 'right';
       ctx.fillText(new Date().toLocaleDateString('ja-JP'), A4W - 40, A4H - 20);
       ctx.textAlign = 'left';
 
+      // PDFに追加
       const imgData = canvas.toDataURL('image/jpeg', 0.92);
       if (!firstPage) pdf.addPage();
       pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
       firstPage = false;
     }
 
-    // 写真台紙ページ
+    // ── 写真台紙ページ ──
     const stage = document.createElement('div');
     stage.id = 'pdf-render-stage';
     stage.style = 'position:fixed;left:-99999px;top:0;width:210mm;background:#fff;';
@@ -1376,7 +1443,7 @@ async function downloadAllPhotos() {
   }
 }
 
-// ══ JSONインポート ════════════════════════════════════════════
+// ══ JSONインポート（新規プロジェクトとして取り込み） ══════════
 function handleJSONImportNew(input) {
   const file = input.files[0];
   if (!file) return;
@@ -1385,6 +1452,7 @@ function handleJSONImportNew(input) {
     try {
       const data = JSON.parse(e.target.result);
       if (!data.project || !data.photos) throw new Error('JSONの形式が正しくありません');
+      // 既存プロジェクトと名前が重複しないようにする
       let name = data.project.name || 'インポート';
       const existing = projects.map(p => p.name);
       if (existing.includes(name)) name = name + '_' + new Date().toLocaleDateString('ja-JP').replace(/\//g,'-');
@@ -1456,7 +1524,6 @@ function exportJSON() {
   alert(`📤 「施工フォト_${activeProject.name}.txt」をダウンロードしました。\nPCに転送してExcel自動入力スクリプトで使ってください。`);
   setTimeout(() => kentaShow('export'), 500);
 }
-
 function esc(s) {
   return String(s)
     .replace(/&/g,'&amp;').replace(/</g,'&lt;')
@@ -1471,7 +1538,9 @@ const KENTA_SCRIPTS = {
     'まずは「＋ 新規」ボタンをタップして、物件名を登録してね！',
     'わからないことがあったらいつでも呼んでね！'
   ],
-  newProject: ['物件名と所在地を入力して「作成」をタップしてね！（所在地は任意だよ）'],
+  newProject: [
+    '物件名と所在地を入力して「作成」をタップしてね！（所在地は任意だよ）',
+  ],
   drawingUpload: [
     'ここに図面をアップロードするよ！タップして画像を選んでね📄',
     '図面はJPGやPNGの画像ファイルがオススメだよ！',
@@ -1493,6 +1562,10 @@ const KENTA_SCRIPTS = {
     '写真を長押しして「写真に保存」するとカメラロールにも保存されるよ📥',
     'バックアップとして保存しておくのがオススメ！',
   ],
+  pdf: [
+    'PDF出力をタップすると関係写真のHTMLファイルがダウンロードされるよ🖨️',
+    'ダウンロードしたファイルをSafariで開いて「印刷/PDF保存」ボタンを押してね！',
+  ],
   export: [
     'Excel連携ボタンを押したよ！JSONファイルがダウンロードされるよ📤',
     'このJSONファイルをPCに転送してね。AirDrop・メール・iCloudどれでもOK！',
@@ -1500,7 +1573,9 @@ const KENTA_SCRIPTS = {
   ],
 };
 
-let kentaQueue = [], kentaIndex = 0;
+let kentaQueue = [];
+let kentaIndex = 0;
+let kentaShown = false;
 
 function kentaShow(scriptKey) {
   const msgs = KENTA_SCRIPTS[scriptKey];
@@ -1522,6 +1597,10 @@ function kentaNext() {
     return;
   }
   document.getElementById('kenta-msg').textContent = kentaQueue[kentaIndex];
+}
+
+function kentaHide() {
+  document.getElementById('kenta-bubble').classList.add('hidden');
 }
 </script>
 </body>
