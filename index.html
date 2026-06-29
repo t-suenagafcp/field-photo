@@ -7,30 +7,45 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="施工フォト">
 <script>
-// PWAアイコンをCanvasで生成してapple-touch-iconに設定
+// PWAアイコンをCanvasでケンタくんSVGから生成
 (function(){
   const c = document.createElement('canvas');
   c.width = c.height = 192;
   const ctx = c.getContext('2d');
-  // 背景
+  // 青背景
   ctx.fillStyle = '#1C4ED8';
-  const r = 40;
   ctx.beginPath();
-  ctx.moveTo(r,0); ctx.lineTo(192-r,0);
-  ctx.arcTo(192,0,192,r,r); ctx.lineTo(192,192-r);
-  ctx.arcTo(192,192,192-r,192,r); ctx.lineTo(r,192);
-  ctx.arcTo(0,192,0,192-r,r); ctx.lineTo(0,r);
-  ctx.arcTo(0,0,r,0,r); ctx.closePath();
+  ctx.roundRect(0, 0, 192, 192, 40);
   ctx.fill();
-  // アイコン文字
-  ctx.font = '100px serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('📐', 96, 100);
-  const link = document.createElement('link');
-  link.rel = 'apple-touch-icon';
-  link.href = c.toDataURL('image/png');
-  document.head.appendChild(link);
+  // ケンタくんSVGをImageとして描画
+  const svg = `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg" width="140" height="140">
+    <ellipse cx="30" cy="18" rx="16" ry="10" fill="#F59E0B"/>
+    <rect x="14" y="22" width="32" height="5" rx="2" fill="#F59E0B"/>
+    <rect x="12" y="25" width="36" height="3" rx="1.5" fill="#D97706"/>
+    <ellipse cx="30" cy="34" rx="13" ry="12" fill="#FDE68A"/>
+    <ellipse cx="25" cy="32" rx="2" ry="2.5" fill="#1C4ED8"/>
+    <ellipse cx="35" cy="32" rx="2" ry="2.5" fill="#1C4ED8"/>
+    <circle cx="26" cy="31" r="0.8" fill="#fff"/>
+    <circle cx="36" cy="31" r="0.8" fill="#fff"/>
+    <path d="M25 38 Q30 42 35 38" stroke="#D97706" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    <ellipse cx="22" cy="36" rx="3" ry="2" fill="#FCA5A5" opacity="0.6"/>
+    <ellipse cx="38" cy="36" rx="3" ry="2" fill="#FCA5A5" opacity="0.6"/>
+    <rect x="22" y="46" width="16" height="12" rx="4" fill="#fff" opacity="0.9"/>
+    <rect x="12" y="47" width="10" height="5" rx="2.5" fill="#fff" opacity="0.9"/>
+    <rect x="38" y="47" width="10" height="5" rx="2.5" fill="#fff" opacity="0.9"/>
+  </svg>`;
+  const blob = new Blob([svg], {type:'image/svg+xml'});
+  const url = URL.createObjectURL(blob);
+  const img = new Image();
+  img.onload = () => {
+    ctx.drawImage(img, 26, 20, 140, 140);
+    URL.revokeObjectURL(url);
+    const link = document.createElement('link');
+    link.rel = 'apple-touch-icon';
+    link.href = c.toDataURL('image/png');
+    document.head.appendChild(link);
+  };
+  img.src = url;
 })();
 </script>
 <meta name="apple-mobile-web-app-capable" content="yes">
