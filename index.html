@@ -4,6 +4,36 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="施工フォト">
+<script>
+// PWAアイコンをCanvasで生成してapple-touch-iconに設定
+(function(){
+  const c = document.createElement('canvas');
+  c.width = c.height = 192;
+  const ctx = c.getContext('2d');
+  // 背景
+  ctx.fillStyle = '#1C4ED8';
+  const r = 40;
+  ctx.beginPath();
+  ctx.moveTo(r,0); ctx.lineTo(192-r,0);
+  ctx.arcTo(192,0,192,r,r); ctx.lineTo(192,192-r);
+  ctx.arcTo(192,192,192-r,192,r); ctx.lineTo(r,192);
+  ctx.arcTo(0,192,0,192-r,r); ctx.lineTo(0,r);
+  ctx.arcTo(0,0,r,0,r); ctx.closePath();
+  ctx.fill();
+  // アイコン文字
+  ctx.font = '100px serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('📐', 96, 100);
+  const link = document.createElement('link');
+  link.rel = 'apple-touch-icon';
+  link.href = c.toDataURL('image/png');
+  document.head.appendChild(link);
+})();
+</script>
+<meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="施工フォト">
 <meta name="theme-color" content="#1C4ED8">
@@ -736,11 +766,10 @@ async function changeFloor(idx) {
 function setAllFloorNames(startName) {
   const drawings = activeProject.drawings || [];
   // 開始階から連番を生成
-  const sequence = ['PIT階','B3階','B2階','B1階','1階','2階','3階','4階','5階',
+  const sequence = ['PIT階','1階','2階','3階','4階','5階',
                     '6階','7階','8階','9階','10階','11階','12階','13階','14階','15階',
                     '16階','17階','18階','19階','20階','RF','屋上','塔屋',
-                    'PIT階平面図','B3階平面図','B2階平面図','B1階平面図',
-                    '1階平面図','2階平面図','3階平面図','4階平面図','5階平面図',
+                    'PIT階平面図','1階平面図','2階平面図','3階平面図','4階平面図','5階平面図',
                     '6階平面図','7階平面図','8階平面図','9階平面図','10階平面図',
                     '11階平面図','12階平面図','13階平面図','14階平面図','15階平面図',
                     '16階平面図','17階平面図','18階平面図','19階平面図','20階平面図',
