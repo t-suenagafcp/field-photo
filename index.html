@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="施工フォト">
 <meta name="theme-color" content="#1C4ED8">
 <link rel="manifest" href="manifest.json">
@@ -15,26 +15,19 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
-/* ── リセット & ベース ── */
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 html,body{height:100%;overflow:hidden;}
 body{font-family:'Hiragino Sans','Meiryo',sans-serif;background:#F7F8FA;color:#111827;font-size:15px;}
 button{cursor:pointer;border:none;background:none;font-family:inherit;font-size:inherit;}
 input,textarea{font-family:inherit;font-size:inherit;}
-
-/* ── 画面切替 ── */
 .screen{display:none;height:100dvh;flex-direction:column;overflow:hidden;}
 .screen.active{display:flex;}
-
-/* ── ヘッダー ── */
 .header{background:#fff;border-bottom:1px solid #E2E5EA;padding:12px 16px;display:flex;align-items:center;gap:12px;flex-shrink:0;position:relative;}
 .header-title{font-size:17px;font-weight:700;flex:1;}
 .header-back{width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:8px;color:#1C4ED8;font-size:22px;flex-shrink:0;}
 .btn-primary{background:#1C4ED8;color:#fff;padding:8px 14px;border-radius:8px;font-weight:600;font-size:13px;}
 .btn-outline{border:1.5px solid #E2E5EA;color:#111827;padding:8px 14px;border-radius:8px;font-weight:600;font-size:13px;}
 .btn-danger{background:#EF4444;color:#fff;padding:8px 14px;border-radius:8px;font-weight:600;font-size:13px;}
-
-/* ── プロジェクト一覧 ── */
 #screen-list .body{flex:1;overflow-y:auto;padding:20px 16px;}
 .section-label{font-size:12px;font-weight:700;color:#6B7280;letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px;}
 .project-card{background:#fff;border:1px solid #E2E5EA;border-radius:12px;padding:16px;margin-bottom:10px;display:flex;align-items:center;gap:14px;}
@@ -47,15 +40,12 @@ input,textarea{font-family:inherit;font-size:inherit;}
 .empty-icon{font-size:48px;margin-bottom:12px;}
 .empty-text{font-size:15px;font-weight:600;margin-bottom:6px;}
 .empty-sub{font-size:13px;color:#6B7280;}
-
-/* ── 図面・写真画面 ── */
 #screen-project .body{flex:1;display:flex;flex-direction:column;overflow:hidden;}
 .drawing-container{flex:1;overflow:auto;background:#D1D5DB;position:relative;}
 .floor-tabs{display:flex;gap:6px;padding:8px 10px;background:#fff;border-bottom:1px solid #E2E5EA;overflow-x:auto;white-space:nowrap;}
 .floor-tab{flex-shrink:0;padding:6px 14px;border-radius:16px;background:#F3F4F6;color:#374151;font-size:13px;font-weight:600;border:none;}
 .floor-tab.active{background:#1C4ED8;color:#fff;}
 .floor-tab-edit{background:none;color:#9CA3AF;font-size:14px;padding:6px 8px;}
-.floor-quick-btn{padding:6px 12px;border-radius:16px;background:#F3F4F6;color:#374151;font-size:13px;border:1px solid #E2E5EA;cursor:pointer;}
 .photo-floor-tag{display:inline-block;background:#EFF4FF;color:#1C4ED8;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;margin-bottom:4px;}
 .drawing-wrapper{position:relative;display:inline-block;min-width:100%;min-height:100%;}
 .drawing-img{display:block;max-width:100%;height:auto;user-select:none;}
@@ -64,17 +54,23 @@ input,textarea{font-family:inherit;font-size:inherit;}
 .upload-zone-icon{font-size:40px;margin-bottom:10px;}
 .upload-zone-text{font-size:15px;font-weight:600;}
 .upload-zone-sub{font-size:12px;color:#6B7280;margin-top:4px;}
-
-/* ── ピン ── */
-.pin{position:absolute;transform:translate(-50%,-100%);display:flex;flex-direction:column;align-items:center;cursor:pointer;z-index:10;}
-.pin-circle{width:28px;height:28px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:#1C4ED8;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.3);border:2px solid #fff;}
-.pin-number{transform:rotate(45deg);font-size:11px;font-weight:700;color:#fff;}
-.pin-tip{width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:7px solid #1C4ED8;margin-top:-1px;}
-
-/* ── 写真一覧 ── */
+.pin{position:absolute;transform:translate(-50%,-50%);cursor:pointer;z-index:10;width:32px;height:32px;}
+.pin-sm{width:24px;height:24px;}
+#rotate-ui{
+  position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+  background:rgba(255,255,255,0.95);backdrop-filter:blur(10px);
+  border:1.5px solid #E0E7FF;border-radius:20px;
+  padding:14px 18px;z-index:300;
+  box-shadow:0 4px 20px rgba(0,0,0,0.18);
+  display:none;width:calc(100% - 32px);max-width:360px;
+}
+#rotate-ui.open{display:block;}
+.rotate-ui-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.rotate-ui-title{font-size:13px;font-weight:700;color:#1C4ED8;}
+.rotate-ui-close{font-size:18px;color:#6B7280;background:none;border:none;cursor:pointer;padding:2px 6px;}
 .photo-list{flex:1;overflow-y:auto;padding:12px 16px;}
 .photo-count{font-size:13px;color:#6B7280;margin-bottom:12px;}
-.photo-item{background:#fff;border:1px solid #E2E5EA;border-radius:12px;padding:12px;margin-bottom:10px;display:flex;gap:12px;align-items:flex-start;transition:transform .15s,box-shadow .15s;}
+.photo-item{background:#fff;border:1px solid #E2E5EA;border-radius:12px;padding:12px;margin-bottom:10px;display:flex;gap:12px;align-items:flex-start;}
 .photo-item.dragging{opacity:.4;}
 .photo-item.drag-ghost{position:fixed;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.25);pointer-events:none;width:calc(100% - 28px);}
 .photo-drag-handle{flex-shrink:0;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:18px;color:#9CA3AF;touch-action:none;cursor:grab;align-self:center;}
@@ -86,16 +82,11 @@ input,textarea{font-family:inherit;font-size:inherit;}
 .photo-comment{font-size:13px;color:#111827;line-height:1.5;word-break:break-all;}
 .photo-date{font-size:11px;color:#6B7280;margin-top:4px;}
 .photo-del{color:#EF4444;font-size:20px;padding:8px;flex-shrink:0;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:none;border:none;touch-action:manipulation;}
-.photo-del.confirm-state{background:#FEF2F2;color:#DC2626;font-size:11px;font-weight:700;padding:6px 8px;min-width:56px;}
 .photo-del.confirm-state{color:#fff;background:#DC2626;font-size:12px;font-weight:700;border-radius:8px;white-space:nowrap;}
-
-/* ── タブ ── */
 .tabs{display:flex;border-top:1px solid #E2E5EA;background:#fff;flex-shrink:0;}
 .tab{flex:1;padding:10px 4px 8px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;font-weight:600;color:#6B7280;}
 .tab.active{color:#1C4ED8;}
 .tab-icon{font-size:20px;}
-
-/* ── モーダル共通 ── */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;display:flex;align-items:flex-end;visibility:hidden;pointer-events:none;opacity:0;transition:opacity 0.15s;}
 .overlay.open{visibility:visible;pointer-events:auto;opacity:1;}
 .sheet{background:#fff;border-radius:20px 20px 0 0;padding:22px 20px 40px;width:100%;max-height:90dvh;overflow-y:auto;}
@@ -108,23 +99,18 @@ input,textarea{font-family:inherit;font-size:inherit;}
 .btn-row{display:flex;gap:10px;}
 .btn-row button{flex:1;padding:13px;border-radius:10px;font-size:15px;font-weight:600;}
 .preview-img-sm{width:100%;border-radius:10px;margin-bottom:14px;max-height:180px;object-fit:cover;}
-
-/* ── カメラ画面 ── */
 #screen-camera{background:#000;}
 #camera-video{flex:1;object-fit:cover;width:100%;}
 .camera-controls{padding:20px;display:flex;align-items:center;justify-content:space-between;background:#000;flex-shrink:0;}
 .shutter{width:70px;height:70px;border-radius:50%;background:#fff;border:4px solid rgba(255,255,255,.4);display:flex;align-items:center;justify-content:center;}
 .shutter-inner{width:56px;height:56px;border-radius:50%;background:#fff;}
 .camera-btn-txt{color:#fff;font-size:15px;font-weight:500;padding:10px;}
-/* 横向き時：コントロールを右端にfixedで固定表示 */
 @media (orientation:landscape){
   #screen-camera{flex-direction:row;}
   #camera-video{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;}
   .camera-controls{position:fixed;right:0;top:0;bottom:0;width:90px;flex-direction:column;justify-content:center;gap:24px;padding:16px 8px;background:rgba(0,0,0,0.6);z-index:1;}
   #screen-preview .preview-controls{position:fixed;right:0;top:0;bottom:0;width:120px;flex-direction:column;justify-content:center;gap:12px;padding:16px 8px;background:rgba(0,0,0,0.7);z-index:1;}
 }
-
-/* ── 撮影プレビュー ── */
 #screen-preview{background:#000;}
 #preview-img{flex:1;object-fit:contain;width:100%;}
 .preview-controls{padding:20px;background:#000;display:flex;gap:12px;flex-shrink:0;}
@@ -140,107 +126,22 @@ input,textarea{font-family:inherit;font-size:inherit;}
 #pin-popup .popup-item{font-size:13px;font-weight:600;color:#1C4ED8;margin-bottom:4px;}
 #pin-popup .popup-comment{font-size:14px;line-height:1.6;color:#111827;white-space:pre-wrap;word-break:break-all;margin-bottom:6px;}
 #pin-popup .popup-date{font-size:11px;color:#6B7280;margin-bottom:16px;}
-#pin-popup .popup-actions{display:flex;gap:10px;}
-#pin-popup .popup-actions button{flex:1;padding:12px;border-radius:10px;font-size:14px;font-weight:600;}
 
-/* ── PDFページスタイル（Excel写真台紙完全一致） ── */
-.pdf-page{
-  width:190mm;margin:0 auto;
-  display:flex;flex-direction:column;
-  page-break-after:always;
-  font-family:'ＭＳ 明朝','MS Mincho','Hiragino Mincho Pro',serif;
-  font-size:9pt;color:#000;
+/* ── ピンポップアップのアクションボタン: 2x2グリッド ── */
+#pin-popup .popup-actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
 }
-.pdf-page:last-child{page-break-after:auto;}
-
-/* ページヘッダー「別添２ 関係写真」 */
-.pdf-page-header{
-  display:flex;justify-content:space-between;align-items:flex-end;
-  margin-bottom:1mm;
-}
-.pdf-page-header-left{font-size:8pt;}
-.pdf-page-header-title{font-size:12pt;text-align:center;flex:1;}
-.pdf-page-header-right{font-size:8pt;text-align:right;}
-
-/* 写真1枚分のスロット */
-.pdf-slot{
-  border:1px solid #000;
-  margin-bottom:2mm;
-  width:100%;
-}
-.pdf-slot-empty{
-  border:1px dashed #ccc;
-  height:110mm;
-  margin-bottom:2mm;
+#pin-popup .popup-actions button{
+  padding:12px 8px;
+  border-radius:10px;
+  font-size:13px;
+  font-weight:600;
+  text-align:center;
 }
 
-/* ヘッダー行（部位・番号・調査項目・調査結果） */
-.pdf-slot-head{
-  display:flex;
-  border-bottom:1px solid #000;
-}
-.pdf-slot-head-left{
-  display:flex;
-  flex:1;
-  border-right:1px solid #000;
-}
-.pdf-head-cell{
-  padding:1mm 2mm;
-  border-right:1px solid #000;
-  white-space:nowrap;
-}
-.pdf-head-cell:last-child{border-right:none;flex:1;min-width:40mm;}
-.pdf-head-label{font-size:8pt;color:#333;}
-.pdf-head-value{font-size:8.5pt;font-family:'ＭＳ ゴシック','MS Gothic','Hiragino Sans',sans-serif;}
-.pdf-head-butsui{width:14mm;}
-.pdf-head-bangou{width:22mm;}
-.pdf-head-item{flex:1;}
-.pdf-slot-head-right{
-  width:38mm;
-  padding:1mm 2mm;
-  font-size:8pt;
-}
-
-/* 写真・特記事項エリア */
-.pdf-slot-body{
-  display:flex;
-  height:100mm;
-}
-.pdf-photo-area{
-  flex:1;
-  border-right:1px solid #000;
-  display:flex;align-items:center;justify-content:center;
-  overflow:hidden;background:#fafafa;
-  position:relative;
-}
-.pdf-photo-area img{
-  width:100%;height:100%;object-fit:contain;
-}
-.pdf-photo-none{
-  color:#aaa;font-size:10pt;
-  position:absolute;
-}
-.pdf-comment-area{
-  width:42mm;
-  padding:2mm;
-  display:flex;flex-direction:column;
-  border-top:1px solid #000;
-}
-.pdf-comment-label{
-  font-size:8pt;
-  border-bottom:1px solid #ccc;
-  padding-bottom:1mm;margin-bottom:2mm;
-}
-.pdf-comment-text{
-  font-size:8.5pt;line-height:1.5;flex:1;
-  font-family:'ＭＳ Ｐ明朝','MS PMincho','Hiragino Mincho Pro',serif;
-  word-break:break-all;
-}
-.pdf-date-text{font-size:7pt;color:#555;margin-top:2mm;text-align:right;}
-
-.pdf-footer{text-align:center;font-size:7.5pt;color:#555;margin-top:1mm;}
-
-/* ── PDF印刷用 ── */
+/* ── PDF ── */
 #pdf-print-area{display:none;}
 #pdf-print-btn{position:fixed;bottom:24px;right:20px;background:#1C4ED8;color:#fff;border:none;border-radius:12px;padding:14px 22px;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.25);display:none;z-index:200;}
 @media print{
@@ -248,30 +149,33 @@ input,textarea{font-family:inherit;font-size:inherit;}
   #pdf-print-area,#pdf-print-area *{visibility:visible;}
   #pdf-print-area{display:block!important;position:fixed;top:0;left:0;width:100%;background:#fff;}
 }
+
+/* ── ツアー ── */
+.tour-highlight{position:fixed;z-index:2002;border-radius:10px;box-shadow:0 0 0 4px #F59E0B,0 0 0 9999px rgba(0,0,0,0.55);pointer-events:none;transition:all 0.3s;}
+.tour-bubble{position:fixed;z-index:2003;background:#fff;border-radius:14px;padding:12px 16px;max-width:220px;box-shadow:0 4px 20px rgba(0,0,0,0.2);pointer-events:auto;}
+.tour-bubble.arrow-bottom::after{content:'';position:absolute;bottom:-10px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-top:10px solid #fff;}
+.tour-bubble.arrow-top::after{content:'';position:absolute;top:-10px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-bottom:10px solid #fff;}
+.tour-title{font-size:13px;font-weight:700;color:#1C4ED8;margin-bottom:3px;}
+.tour-text{font-size:12px;color:#374151;line-height:1.5;margin-bottom:10px;}
+.tour-btn{background:#1C4ED8;color:#fff;border:none;border-radius:8px;padding:7px 16px;font-size:12px;font-weight:700;cursor:pointer;width:100%;}
+.tour-skip{font-size:11px;color:#9CA3AF;text-align:center;margin-top:6px;cursor:pointer;}
+
 /* ── ケンタくん ── */
-.kenta-bubble{
-  position:fixed;bottom:80px;left:50%;transform:translateX(-50%);
-  z-index:500;display:flex;align-items:flex-end;gap:10px;
-  padding:0 16px;width:100%;max-width:380px;
-  animation:kentaIn 0.4s ease;
-}
+.kenta-bubble{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:500;display:flex;align-items:flex-end;gap:10px;padding:0 16px;width:100%;max-width:380px;animation:kentaIn 0.4s ease;}
 @keyframes kentaIn{from{opacity:0;transform:translateX(-50%) translateY(12px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}
 .kenta-bubble.hidden{display:none;}
-/* カメラ画面ではシャッターボタンと被るため上にずらす */
 .kenta-bubble.kenta-high{bottom:150px;}
-/* 横向き時はケンタくんを非表示（UIが狭いため） */
 @media (orientation:landscape){.kenta-bubble{display:none !important;}}
 .kenta-char{flex-shrink:0;width:60px;height:60px;}
 .kenta-char svg{width:100%;height:100%;}
-.kenta-text{
-  background:#fff;border:2px solid #1C4ED8;
-  border-radius:16px 16px 16px 4px;
-  padding:10px 13px;font-size:13px;line-height:1.6;color:#111827;
-  box-shadow:0 4px 16px rgba(0,0,0,0.15);
-  cursor:pointer;flex:1;
-}
+.kenta-text{background:#fff;border:2px solid #1C4ED8;border-radius:16px 16px 16px 4px;padding:10px 13px;font-size:13px;line-height:1.6;color:#111827;box-shadow:0 4px 16px rgba(0,0,0,0.15);cursor:pointer;flex:1;}
 .kenta-name{font-size:10px;font-weight:700;color:#1C4ED8;margin-bottom:3px;}
 .kenta-tap{font-size:11px;color:#6B7280;margin-top:5px;}
+
+/* ── 図面名クイック選択ボタン ── */
+.floor-quick-btns{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
+.floor-quick-btn{padding:6px 12px;border-radius:20px;background:#EFF4FF;color:#1C4ED8;font-size:12px;font-weight:600;border:1.5px solid #C7D7FD;cursor:pointer;}
+.floor-quick-btn:active{background:#1C4ED8;color:#fff;}
 </style>
 </head>
 <body>
@@ -280,26 +184,18 @@ input,textarea{font-family:inherit;font-size:inherit;}
 <div id="kenta-bubble" class="kenta-bubble hidden" onclick="kentaNext()">
   <div class="kenta-char">
     <svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
-      <!-- ヘルメット -->
       <ellipse cx="30" cy="18" rx="16" ry="10" fill="#F59E0B"/>
       <rect x="14" y="22" width="32" height="5" rx="2" fill="#F59E0B"/>
       <rect x="12" y="25" width="36" height="3" rx="1.5" fill="#D97706"/>
-      <!-- 顔 -->
       <ellipse cx="30" cy="34" rx="13" ry="12" fill="#FDE68A"/>
-      <!-- 目 -->
       <ellipse cx="25" cy="32" rx="2" ry="2.5" fill="#1C4ED8"/>
       <ellipse cx="35" cy="32" rx="2" ry="2.5" fill="#1C4ED8"/>
-      <!-- ハイライト -->
       <circle cx="26" cy="31" r="0.8" fill="#fff"/>
       <circle cx="36" cy="31" r="0.8" fill="#fff"/>
-      <!-- 口 -->
       <path d="M25 38 Q30 42 35 38" stroke="#D97706" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-      <!-- ほっぺ -->
       <ellipse cx="22" cy="36" rx="3" ry="2" fill="#FCA5A5" opacity="0.6"/>
       <ellipse cx="38" cy="36" rx="3" ry="2" fill="#FCA5A5" opacity="0.6"/>
-      <!-- 体 -->
       <rect x="22" y="46" width="16" height="12" rx="4" fill="#1C4ED8"/>
-      <!-- 腕 -->
       <rect x="12" y="47" width="10" height="5" rx="2.5" fill="#1C4ED8"/>
       <rect x="38" y="47" width="10" height="5" rx="2.5" fill="#1C4ED8"/>
     </svg>
@@ -324,7 +220,7 @@ input,textarea{font-family:inherit;font-size:inherit;}
     <div class="section-label">プロジェクト</div>
     <div id="project-list"></div>
   </div>
-<input type="file" id="json-import-list-input" accept=".json,.txt" style="display:none" onchange="handleJSONImportNew(this)">
+  <input type="file" id="json-import-list-input" accept=".json,.txt" style="display:none" onchange="handleJSONImportNew(this)">
 </div>
 
 <!-- ══ 画面2: プロジェクト詳細 ══ -->
@@ -335,7 +231,6 @@ input,textarea{font-family:inherit;font-size:inherit;}
     <button class="btn-outline" id="drawing-change-btn" style="font-size:12px;display:none;" onclick="confirmChangeDrawing()">図面変更</button>
   </div>
   <div class="body">
-    <!-- 図面タブ -->
     <div id="tab-drawing" style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
       <div id="floor-tabs" class="floor-tabs"></div>
       <div id="upload-zone" class="upload-zone" onclick="drawingFileRef.click()">
@@ -351,7 +246,6 @@ input,textarea{font-family:inherit;font-size:inherit;}
         </div>
       </div>
     </div>
-    <!-- 写真一覧タブ -->
     <div id="tab-photos" style="flex:1;display:none;flex-direction:column;overflow:hidden;">
       <div style="padding:10px 14px;border-bottom:1px solid #E2E5EA;background:#fff;">
         <button onclick="downloadAllPhotos()" style="width:100%;padding:11px;border-radius:10px;background:#EFF4FF;color:#1C4ED8;font-size:14px;font-weight:600;border:none;">
@@ -376,7 +270,6 @@ input,textarea{font-family:inherit;font-size:inherit;}
     </button>
   </div>
 </div>
-<!-- JSONインポート用の非表示input -->
 <input type="file" id="json-import-input" accept=".json,.txt" style="display:none" onchange="handleJSONImport(this)">
 
 <!-- ══ 画面3: カメラ ══ -->
@@ -393,16 +286,6 @@ input,textarea{font-family:inherit;font-size:inherit;}
 <div id="screen-preview" class="screen">
   <div style="flex:1;position:relative;overflow:hidden;">
     <img id="preview-img" src="" alt="プレビュー" style="width:100%;height:100%;object-fit:contain;display:block;">
-    <div id="preview-save-hint" style="
-      position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-      background:rgba(0,0,0,0.65);color:#fff;
-      border-radius:14px;padding:12px 18px;
-      font-size:13px;line-height:1.6;text-align:center;
-      display:none;pointer-events:none;
-      max-width:80%;
-    ">
-      📥 写真を<strong>長押し</strong>して<br>「写真に保存」でカメラロールに保存できるよ！
-    </div>
   </div>
   <div style="background:#1C4ED8;color:#fff;padding:10px 16px;font-size:13px;text-align:center;line-height:1.5;flex-shrink:0;">
     📥 写真を長押し →「写真に保存」でカメラロールにも保存できます
@@ -413,36 +296,12 @@ input,textarea{font-family:inherit;font-size:inherit;}
   </div>
 </div>
 
-<!-- ══ 図面名入力モーダル ══ -->
-<div class="overlay" id="overlay-floor-names">
-  <div class="sheet" onclick="event.stopPropagation()">
-    <div class="sheet-title">図面の名前を入力</div>
-    <div style="margin-bottom:12px;">
-      <div style="font-size:12px;color:#6B7280;margin-bottom:6px;">よく使う名前（タップで入力）</div>
-      <div style="display:flex;flex-wrap:wrap;gap:6px;" id="floor-quick-btns">
-        <button class="floor-quick-btn" onclick="setAllFloorNames('PIT階')">PIT階から</button>
-        <button class="floor-quick-btn" onclick="setAllFloorNames('B2階')">B2階から</button>
-        <button class="floor-quick-btn" onclick="setAllFloorNames('B1階')">B1階から</button>
-        <button class="floor-quick-btn" onclick="setAllFloorNames('1階')">1階から</button>
-        <button class="floor-quick-btn" onclick="setAllFloorNames('屋上')">屋上のみ</button>
-        <button class="floor-quick-btn" onclick="setAllFloorNames('PIT階平面図')">PIT階平面図から</button>
-        <button class="floor-quick-btn" onclick="setAllFloorNames('B1階平面図')">B1階平面図から</button>
-        <button class="floor-quick-btn" onclick="setAllFloorNames('1階平面図')">1階平面図から</button>
-      </div>
-    </div>
-    <div id="floor-name-inputs"></div>
-    <div class="btn-row">
-      <button class="btn-primary" onclick="saveFloorNames()" style="width:100%;">決定</button>
-    </div>
-  </div>
-</div>
-
 <!-- ══ 新規プロジェクトモーダル ══ -->
 <div class="overlay" id="overlay-new-project" onclick="closeNewProject(event)">
   <div class="sheet" onclick="event.stopPropagation()">
     <div class="sheet-title">新規プロジェクト</div>
     <div class="field-label">物件名 *</div>
-    <input class="field-input" id="input-name" placeholder="例：○○マンション定期調査">
+    <input class="field-input" id="input-name" placeholder="例：○○マンション定期調査" oninput="if(this.value.trim()) tourAdvanceIfWaiting('input-name')">
     <div class="field-label">所在地</div>
     <input class="field-input" id="input-address" placeholder="例：東京都渋谷区…">
     <div class="btn-row">
@@ -479,9 +338,122 @@ input,textarea{font-family:inherit;font-size:inherit;}
     <div class="popup-item" id="popup-item"></div>
     <div class="popup-comment" id="popup-comment"></div>
     <div class="popup-date" id="popup-date"></div>
+    <!-- 2x2グリッドで4ボタン確実表示 -->
     <div class="popup-actions">
       <button class="btn-outline" onclick="deleteFromPopup()">🗑 削除</button>
-      <button class="btn-primary" onclick="editCommentFromPopup()">✏️ コメント編集</button>
+      <button class="btn-primary" onclick="editCommentFromPopup()">✏️ 編集</button>
+      <button class="btn-outline" onclick="openRotateUI()" style="color:#1C4ED8;border-color:#1C4ED8;">🧭 向き調整</button>
+      <button class="btn-outline" onclick="openMoveUI()" style="color:#10B981;border-color:#10B981;">📍 ピン移動</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ピン移動フローティングUI ══ -->
+<div id="move-ui" style="
+  position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+  background:rgba(255,255,255,0.95);backdrop-filter:blur(10px);
+  border:1.5px solid #D1FAE5;border-radius:20px;
+  padding:14px 18px;z-index:300;
+  box-shadow:0 4px 20px rgba(0,0,0,0.18);
+  display:none;width:calc(100% - 32px);max-width:360px;text-align:center;
+">
+  <div style="font-size:13px;font-weight:700;color:#10B981;margin-bottom:6px;">📍 ピン移動モード</div>
+  <div style="font-size:12px;color:#6B7280;margin-bottom:12px;">ピンをドラッグして移動してください</div>
+  <button onclick="closeMoveUI()" style="background:#10B981;color:#fff;border:none;border-radius:10px;padding:10px 32px;font-size:14px;font-weight:700;cursor:pointer;">完了</button>
+</div>
+
+<!-- ══ ピン向き調整フローティングUI ══ -->
+<div id="rotate-ui">
+  <div class="rotate-ui-header">
+    <span class="rotate-ui-title">🧭 ピンの向き調整</span>
+    <button class="rotate-ui-close" onclick="closeRotateUI()">✕</button>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <span style="font-size:22px;cursor:pointer;padding:4px;" onclick="stepRotate(-15)">↺</span>
+    <input type="range" id="pin-rotate-slider" min="0" max="359" value="0"
+      style="flex:1;height:8px;accent-color:#1C4ED8;"
+      oninput="onPinRotateSlider(this.value)">
+    <span style="font-size:22px;cursor:pointer;padding:4px;" onclick="stepRotate(15)">↻</span>
+  </div>
+  <div style="text-align:center;font-size:12px;color:#6B7280;margin-top:8px;">
+    <span id="pin-rotate-deg">0</span>° &nbsp;|&nbsp; ↺↻ボタンで15°ずつ調整
+  </div>
+</div>
+
+<!-- ══ Safari案内モーダル ══ -->
+<div id="overlay-safari" style="position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:none;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#fff;border-radius:20px;padding:24px 20px;width:100%;max-width:360px;">
+    <div style="text-align:center;font-size:17px;font-weight:800;color:#EF4444;margin-bottom:6px;">⚠️ Safariで開いてください</div>
+    <div style="text-align:center;font-size:13px;color:#6B7280;margin-bottom:20px;line-height:1.6;">このアプリはSafariでのみ<br>カメラやPDF出力が正しく動作します</div>
+    <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px;">
+      <div style="display:flex;align-items:flex-start;gap:12px;">
+        <div style="width:28px;height:28px;border-radius:50%;background:#1C4ED8;color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">1</div>
+        <div>
+          <div style="font-size:13px;font-weight:600;margin-bottom:4px;">下のボタンでURLをコピー</div>
+          <button onclick="copyURL()" style="background:#EFF4FF;color:#1C4ED8;border:1.5px solid #1C4ED8;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;width:100%;">📋 URLをコピーする</button>
+          <div id="copy-done" style="color:#10B981;font-size:12px;margin-top:4px;display:none;">✅ コピーしました！</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:12px;">
+        <div style="width:28px;height:28px;border-radius:50%;background:#1C4ED8;color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">2</div>
+        <div style="font-size:13px;color:#374151;line-height:1.6;">iPhoneの<strong>Safariアプリ</strong>を開く</div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:12px;">
+        <div style="width:28px;height:28px;border-radius:50%;background:#1C4ED8;color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">3</div>
+        <div style="font-size:13px;color:#374151;line-height:1.6;">アドレスバーに<strong>貼り付けて</strong>開く</div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:12px;">
+        <div style="width:28px;height:28px;border-radius:50%;background:#F59E0B;color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">4</div>
+        <div style="font-size:13px;color:#374151;line-height:1.6;">共有ボタン（□↑）→「<strong>ホーム画面に追加</strong>」</div>
+      </div>
+    </div>
+    <button onclick="closeSafariGuide()" style="width:100%;padding:13px;background:#F3F4F6;color:#6B7280;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;">このまま続ける（一部機能が制限されます）</button>
+  </div>
+</div>
+
+<!-- ══ ホーム画面追加案内 ══ -->
+<div id="overlay-homescreen" style="position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:none;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#fff;border-radius:20px;padding:28px 20px;width:100%;max-width:360px;text-align:center;">
+    <div style="font-size:48px;margin-bottom:12px;">📱</div>
+    <div style="font-size:18px;font-weight:800;color:#1C4ED8;margin-bottom:8px;">ホーム画面に追加しよう！</div>
+    <div style="font-size:13px;color:#6B7280;margin-bottom:24px;line-height:1.7;">アイコンから起動できて<br>データもずっと保存されるよ！<br><strong style="color:#EF4444;">必ずホーム画面のアイコンから起動してね</strong></div>
+    <div style="background:#F0F4FF;border-radius:16px;padding:16px;margin-bottom:20px;">
+      <div style="display:flex;align-items:center;justify-content:center;gap:12px;font-size:14px;font-weight:600;color:#1C4ED8;margin-bottom:12px;">
+        <span style="font-size:28px;">□↑</span><span>画面下の共有ボタンをタップ</span>
+      </div>
+      <div style="font-size:24px;color:#9CA3AF;margin-bottom:8px;">↓</div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:12px;font-size:14px;font-weight:600;color:#1C4ED8;">
+        <span style="font-size:24px;">➕</span><span>「ホーム画面に追加」をタップ</span>
+      </div>
+    </div>
+    <button onclick="closeHomescreenGuide()" style="width:100%;padding:14px;background:linear-gradient(135deg,#1C4ED8,#3B82F6);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;">わかった！</button>
+  </div>
+</div>
+
+<!-- ══ 写真編集モーダル ══ -->
+<div class="overlay" id="overlay-photo-edit" onclick="closePhotoEdit(event)">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <div class="sheet-title">写真を編集</div>
+    <img id="photo-edit-thumb" style="width:100%;border-radius:10px;margin-bottom:14px;max-height:160px;object-fit:cover;" src="" alt="">
+    <div class="field-label">調査項目</div>
+    <input class="field-input" id="photo-edit-inspection" placeholder="例：外壁、防火設備">
+    <div class="field-label">特記事項・コメント</div>
+    <textarea class="field-textarea" id="photo-edit-comment" placeholder="例：外壁ひび割れ確認、補修必要"></textarea>
+    <div class="btn-row">
+      <button class="btn-outline" onclick="closePhotoEdit()">キャンセル</button>
+      <button class="btn-primary" onclick="savePhotoEdit()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 図面名編集モーダル ══ -->
+<div class="overlay" id="overlay-floor-name" onclick="closeFloorNameModal(event)">
+  <div class="sheet" onclick="event.stopPropagation()" style="padding-bottom:30px;">
+    <div class="sheet-title">図面名を入力</div>
+    <div id="floor-name-inputs"></div>
+    <div class="btn-row" style="margin-top:8px;">
+      <button class="btn-outline" onclick="closeFloorNameModal()">キャンセル</button>
+      <button class="btn-primary" onclick="saveFloorNames()">次へ / 完了</button>
     </div>
   </div>
 </div>
@@ -496,7 +468,7 @@ input,textarea{font-family:inherit;font-size:inherit;}
 <canvas id="snapshot-canvas" style="display:none;"></canvas>
 
 <script>
-// ══ IndexedDB ══════════════════════════════════════════════════
+// ══ IndexedDB ══
 const DB_NAME = 'ConstructionPhotoApp', DB_VER = 1;
 function openDB() {
   return new Promise((res, rej) => {
@@ -534,7 +506,7 @@ async function dbDelete(id) {
   });
 }
 
-// ══ 状態 ══════════════════════════════════════════════════════
+// ══ 状態 ══
 let projects = [];
 let activeProject = null;
 let pendingPin = null;
@@ -544,30 +516,49 @@ let mediaStream = null;
 const drawingFileRef = document.getElementById('drawing-file-input');
 const photoFileRef   = document.getElementById('photo-file-input');
 
-// ══ 初期化 ════════════════════════════════════════════════════
+// ══ 初期化 ══
 window.addEventListener('load', async () => {
   projects = await dbAll() || [];
   renderProjectList();
-
-  // 直前に開いていたプロジェクトがあれば自動的に復元
-  // （iOSがバックグラウンドでアプリ/タブを終了させた場合に備える）
   const lastId = localStorage.getItem('last_open_project');
-  if (lastId && projects.some(p => p.id === lastId)) {
-    openProject(lastId);
+  if (lastId && projects.some(p => p.id === lastId)) openProject(lastId);
+
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  const isStandalone = window.navigator.standalone === true;
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+
+  if (isIOS && !isSafari) {
+    document.getElementById('overlay-safari').style.display = 'flex';
+  } else if (isIOS && isSafari && !isStandalone && !localStorage.getItem('homescreen_guided')) {
+    setTimeout(() => {
+      document.getElementById('overlay-homescreen').style.display = 'flex';
+      localStorage.setItem('homescreen_guided', '1');
+    }, 1500);
   } else if (!localStorage.getItem('kenta_welcomed')) {
-    // 初回のみウェルカム表示
     setTimeout(() => kentaShow('welcome'), 600);
     localStorage.setItem('kenta_welcomed', '1');
+    setTimeout(() => startTour(), 1200);
   }
 });
 
-// ══ 画面切替 ══════════════════════════════════════════════════
+function copyURL() {
+  navigator.clipboard.writeText(location.href).catch(() => {
+    const el = document.createElement('textarea');
+    el.value = location.href;
+    document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el);
+  });
+  document.getElementById('copy-done').style.display = 'block';
+}
+function closeSafariGuide() { document.getElementById('overlay-safari').style.display = 'none'; }
+function closeHomescreenGuide() { document.getElementById('overlay-homescreen').style.display = 'none'; }
+
+// ══ 画面切替 ══
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
 }
 
-// ══ プロジェクト一覧 ══════════════════════════════════════════
+// ══ プロジェクト一覧 ══
 function renderProjectList() {
   const el = document.getElementById('project-list');
   if (!projects.length) {
@@ -575,6 +566,10 @@ function renderProjectList() {
       <div class="empty-icon">🏗️</div>
       <div class="empty-text">プロジェクトがありません</div>
       <div class="empty-sub">「＋ 新規」から作成してください</div>
+      <br>
+      <button onclick="openNewProject()" style="background:linear-gradient(135deg,#1C4ED8,#3B82F6);color:#fff;border:none;border-radius:14px;padding:14px 32px;font-size:16px;font-weight:700;cursor:pointer;margin-top:12px;">
+        ＋ 最初のプロジェクトを作成
+      </button>
     </div>`;
     return;
   }
@@ -595,6 +590,7 @@ function openNewProject() {
   document.getElementById('input-address').value = '';
   document.getElementById('overlay-new-project').classList.add('open');
   setTimeout(() => kentaShow('newProject'), 300);
+  tourAdvanceIfWaiting('new-btn');
 }
 function closeNewProject(e) {
   if (e && !e.target.classList.contains('overlay')) return;
@@ -614,6 +610,7 @@ async function createProject() {
   document.getElementById('overlay-new-project').classList.remove('open');
   renderProjectList();
   openProject(p.id);
+  tourAdvanceIfWaiting('create-btn');
 }
 async function deleteProject(e, id) {
   e.stopPropagation();
@@ -623,7 +620,7 @@ async function deleteProject(e, id) {
   renderProjectList();
 }
 
-// ══ プロジェクト詳細 ══════════════════════════════════════════
+// ══ プロジェクト詳細 ══
 function openProject(id) {
   activeProject = projects.find(p => p.id === id);
   migrateProjectToFloors(activeProject);
@@ -632,17 +629,15 @@ function openProject(id) {
   switchTab('drawing');
   renderDrawing();
   showScreen('screen-project');
+  tourAdvanceTo('upload-zone');
 }
-// 旧データ構造（drawing単数）→ 新データ構造（drawings配列＋floorIndex）へ変換
 function migrateProjectToFloors(p) {
   if (!p.drawings) {
     p.drawings = p.drawing ? [{ name: '1階', image: p.drawing }] : [];
     p.currentFloor = 0;
   }
   if (typeof p.currentFloor !== 'number') p.currentFloor = 0;
-  if (p.photos) {
-    p.photos = p.photos.map(ph => ({ floorIndex: 0, ...ph }));
-  }
+  if (p.photos) p.photos = p.photos.map(ph => ({ floorIndex: 0, ...ph }));
 }
 function backToList() {
   localStorage.removeItem('last_open_project');
@@ -657,7 +652,7 @@ function switchTab(t) {
   if (t==='photos') renderPhotoList();
 }
 
-// ══ 図面 ══════════════════════════════════════════════════════
+// ══ 図面 ══
 function renderDrawing() {
   const drawings = activeProject.drawings || [];
   const hasDrawing = drawings.length > 0;
@@ -671,20 +666,14 @@ function renderDrawing() {
   }
   if (activeProject.currentFloor >= drawings.length) activeProject.currentFloor = 0;
   const cur = drawings[activeProject.currentFloor];
-
   document.getElementById('drawing-img').src = cur.image;
   renderPins();
   renderFloorTabs();
 
-  // 図面タップ（ピン以外）でカメラ起動／左右スワイプでフロア切替
-  // ピンチズーム・パン操作と誤判定しないよう、指がほとんど動いていない場合だけ「タップ」として扱う
-  const wrapper = document.getElementById('drawing-wrapper');
   const container = document.getElementById('drawing-container');
-  wrapper.onclick = null;
-  wrapper.ontouchend = null;
+  const wrapper   = document.getElementById('drawing-wrapper');
 
   let touchStartX = null, touchStartY = null, touchStartTime = 0, multiTouch = false;
-
   container.ontouchstart = e => {
     if (e.touches.length > 1) { multiTouch = true; touchStartX = null; return; }
     multiTouch = false;
@@ -692,9 +681,7 @@ function renderDrawing() {
     touchStartY = e.touches[0].clientY;
     touchStartTime = Date.now();
   };
-  container.ontouchmove = e => {
-    if (e.touches.length > 1) multiTouch = true;
-  };
+  container.ontouchmove = e => { if (e.touches.length > 1) multiTouch = true; };
   container.ontouchend = e => {
     if (multiTouch || touchStartX === null) { touchStartX = null; multiTouch = false; return; }
     const dx = e.changedTouches[0].clientX - touchStartX;
@@ -702,24 +689,20 @@ function renderDrawing() {
     const dist = Math.hypot(dx, dy);
     const elapsed = Date.now() - touchStartTime;
     touchStartX = null;
-
     if (dist < 12) {
-      // ほぼ動いていない＝タップ → 撮影
       if (!e.target.closest('.pin')) handleDrawingTap(e.changedTouches[0]);
     } else if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.5 && elapsed < 600) {
-      // 横方向に大きく素早く動いた＝スワイプ → フロア切替
       if (dx < 0) changeFloor(activeProject.currentFloor + 1);
       else changeFloor(activeProject.currentFloor - 1);
     }
-    // それ以外（ズーム後の指離しや緩慢なドラッグ等）は何もしない
   };
-  // PC（マウス）操作用：クリックはそのまま撮影として扱う
   wrapper.addEventListener('click', e => {
     if (e.target.closest('.pin')) return;
-    if ('ontouchstart' in window) return; // タッチ端末ではtouchendで処理済み
+    if (e.sourceCapabilities && e.sourceCapabilities.firesTouchEvents) return;
     handleDrawingTap(e);
   });
 }
+
 function renderFloorTabs() {
   const drawings = activeProject.drawings || [];
   const tabsEl = document.getElementById('floor-tabs');
@@ -728,6 +711,7 @@ function renderFloorTabs() {
     <button class="floor-tab${i===activeProject.currentFloor?' active':''}" onclick="changeFloor(${i})">${esc(d.name)}</button>
   `).join('') + `<button class="floor-tab floor-tab-edit" onclick="openFloorNameEditor()">✎</button>`;
 }
+
 async function changeFloor(idx) {
   const drawings = activeProject.drawings || [];
   if (idx < 0 || idx >= drawings.length) return;
@@ -735,61 +719,119 @@ async function changeFloor(idx) {
   await dbSave(activeProject);
   renderDrawing();
 }
-function setAllFloorNames(startName) {
-  const drawings = activeProject.drawings || [];
-  // 開始階から連番を生成
-  const sequence = ['PIT階','1階','2階','3階','4階','5階',
-                    '6階','7階','8階','9階','10階','11階','12階','13階','14階','15階',
-                    '16階','17階','18階','19階','20階','RF','屋上','塔屋',
-                    'PIT階平面図','1階平面図','2階平面図','3階平面図','4階平面図','5階平面図',
-                    '6階平面図','7階平面図','8階平面図','9階平面図','10階平面図',
-                    '11階平面図','12階平面図','13階平面図','14階平面図','15階平面図',
-                    '16階平面図','17階平面図','18階平面図','19階平面図','20階平面図',
-                    'RF平面図','屋上平面図','塔屋平面図'];
-  let startIdx = sequence.indexOf(startName);
-  if (startIdx === -1) startIdx = 0;
 
-  drawings.forEach((d, i) => {
-    const input = document.getElementById(`floor-name-${i}`);
-    if (input) {
-      const name = sequence[startIdx + i] || `${i+1}階`;
-      input.value = name;
+// ── 図面名モーダル（ステップ式 + クイック選択） ──
+let floorNameStep = 0;
+
+// クイック選択パターン
+const QUICK_PATTERNS = {
+  pit_to: ['PIT階','B2階','B1階','1階','2階','3階','4階','5階'],
+  b2_to:  ['B2階','B1階','1階','2階','3階','4階','5階'],
+  b1_to:  ['B1階','1階','2階','3階','4階','5階'],
+  floor1_to: ['1階','2階','3階','4階','5階','6階','7階','8階'],
+  roof_only: ['屋上'],
+  pit_plan: ['PIT階平面図','B1階平面図','1階平面図','2階平面図','3階平面図'],
+  b1_plan:  ['B1階平面図','1階平面図','2階平面図','3階平面図','4階平面図'],
+  floor1_plan: ['1階平面図','2階平面図','3階平面図','4階平面図','5階平面図'],
+};
+
+function buildQuickNames(total) {
+  // 枚数に合わせてパターンから自動生成
+  const results = {};
+  for (const [key, arr] of Object.entries(QUICK_PATTERNS)) {
+    if (arr.length >= total) results[key] = arr.slice(0, total);
+  }
+  return results;
+}
+
+function openFloorNameModalStep(idx) {
+  const drawings = activeProject.drawings || [];
+  if (idx >= drawings.length) {
+    dbSave(activeProject);
+    renderDrawing();
+    document.getElementById('overlay-floor-name').classList.remove('open');
+    tourAdvanceIfWaiting('upload-zone');
+    return;
+  }
+  floorNameStep = idx;
+  const d = drawings[idx];
+  const total = drawings.length;
+  const saveBtn = document.querySelector('#overlay-floor-name .btn-primary');
+  if (saveBtn) saveBtn.textContent = idx < total - 1 ? '次へ →' : '完了';
+
+  const inputsEl = document.getElementById('floor-name-inputs');
+
+  // クイックボタン（1枚目のみ表示 → 全枚に一括適用）
+  let quickHTML = '';
+  if (idx === 0 && total > 1) {
+    const patterns = buildQuickNames(total);
+    const btnLabels = {
+      pit_to: 'PIT階から', b2_to: 'B2階から', b1_to: 'B1階から',
+      floor1_to: '1階から', roof_only: '屋上のみ',
+      pit_plan: 'PIT階平面図から', b1_plan: 'B1階平面図から', floor1_plan: '1階平面図から',
+    };
+    const btns = Object.entries(patterns).map(([key, names]) =>
+      `<button class="floor-quick-btn" onclick="applyQuickPattern(${JSON.stringify(names)})">${btnLabels[key]||key}</button>`
+    ).join('');
+    if (btns) {
+      quickHTML = `<div style="margin-bottom:10px;">
+        <div class="field-label">クイック選択（全図面に一括適用）</div>
+        <div class="floor-quick-btns">${btns}</div>
+      </div>`;
     }
-  });
+  }
+
+  inputsEl.innerHTML = `
+    ${quickHTML}
+    <div style="font-size:13px;color:#6B7280;margin-bottom:8px;">${idx + 1} / ${total} 枚目の図面名</div>
+    <input class="field-input" id="floor-name-single-input"
+      value="${esc(d.name)}"
+      placeholder="例：1階"
+      style="font-size:16px;">
+  `;
+
+  document.getElementById('overlay-floor-name').classList.add('open');
+  setTimeout(() => {
+    const input = document.getElementById('floor-name-single-input');
+    if (input) { input.focus(); input.select(); }
+  }, 400);
+}
+
+async function applyQuickPattern(names) {
+  const drawings = activeProject.drawings || [];
+  names.forEach((name, i) => { if (drawings[i]) drawings[i].name = name; });
+  await dbSave(activeProject);
+  document.getElementById('overlay-floor-name').classList.remove('open');
+  renderDrawing();
+  tourAdvanceIfWaiting('upload-zone');
+}
+
+function closeFloorNameModal(e) {
+  if (e && !e.target.classList.contains('overlay')) return;
+  document.getElementById('overlay-floor-name').classList.remove('open');
+}
+
+async function saveFloorNames() {
+  const drawings = activeProject.drawings || [];
+  const val = document.getElementById('floor-name-single-input')?.value.trim();
+  if (val) drawings[floorNameStep].name = val;
+  openFloorNameModalStep(floorNameStep + 1);
 }
 
 function openFloorNameEditor() {
   const drawings = activeProject.drawings || [];
   if (!drawings.length) return;
-  const container = document.getElementById('floor-name-inputs');
-  container.innerHTML = drawings.map((d, i) => `
-    <div class="field-label">${i+1}枚目の図面名</div>
-    <input class="field-input" id="floor-name-${i}" value="${esc(d.name)}" placeholder="例：1階、2階、屋上など">
-  `).join('');
-  document.getElementById('overlay-floor-names').classList.add('open');
-  // 最初の入力欄にフォーカス
-  setTimeout(() => document.getElementById('floor-name-0')?.focus(), 300);
+  openFloorNameModalStep(0);
 }
-async function saveFloorNames() {
-  const drawings = activeProject.drawings || [];
-  drawings.forEach((d, i) => {
-    const input = document.getElementById(`floor-name-${i}`);
-    if (input && input.value.trim()) d.name = input.value.trim();
-  });
-  await dbSave(activeProject);
-  document.getElementById('overlay-floor-names').classList.remove('open');
-  renderDrawing();
-  setTimeout(() => kentaShow('drawingReady'), 300);
-}
-function confirmChangeDrawing(){
-  if((activeProject.photos||[]).length && !confirm('図面を変更すると、撮影済みの写真と図面の対応がずれる場合があります。続けますか？')) return;
+
+function confirmChangeDrawing() {
+  if ((activeProject.photos||[]).length && !confirm('図面を変更すると、撮影済みの写真と図面の対応がずれる場合があります。続けますか？')) return;
   drawingFileRef.click();
 }
+
 async function handleDrawingFile(input) {
   const file = input.files[0]; if (!file) return;
-
   if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
-    // PDF → 全ページをCanvas → dataURL変換し、各ページをフロアとして追加
     const reader = new FileReader();
     reader.onload = async e => {
       try {
@@ -801,8 +843,7 @@ async function handleDrawingFile(input) {
           const page = await pdf.getPage(i);
           const viewport = page.getViewport({scale: 2.0});
           const canvas = document.createElement('canvas');
-          canvas.width  = viewport.width;
-          canvas.height = viewport.height;
+          canvas.width = viewport.width; canvas.height = viewport.height;
           await page.render({canvasContext: canvas.getContext('2d'), viewport}).promise;
           newDrawings.push({ name: `${i}階`, image: canvas.toDataURL('image/jpeg', 0.9) });
         }
@@ -810,39 +851,181 @@ async function handleDrawingFile(input) {
         activeProject.currentFloor = 0;
         await dbSave(activeProject);
         renderDrawing();
-        setTimeout(() => openFloorNameEditor(), 400);
+        setTimeout(() => openFloorNameModalStep(0), 400);
       } catch(err) {
         alert('PDFの読み込みに失敗しました。画像ファイル（JPG/PNG）をお試しください。');
       }
     };
     reader.readAsArrayBuffer(file);
   } else {
-    // 画像ファイル（1枚＝1フロアとして追加）
     const reader = new FileReader();
     reader.onload = async e => {
       const floorNum = (activeProject.drawings||[]).length + 1;
-      const newDrawing = { name: `${floorNum}階`, image: e.target.result };
-      activeProject.drawings = [...(activeProject.drawings||[]), newDrawing];
+      activeProject.drawings = [...(activeProject.drawings||[]), { name: `${floorNum}階`, image: e.target.result }];
       activeProject.currentFloor = activeProject.drawings.length - 1;
       await dbSave(activeProject);
       renderDrawing();
-      setTimeout(() => openFloorNameEditor(), 400);
+      if (activeProject.drawings.length === 1) {
+        setTimeout(() => openFloorNameModalStep(0), 400);
+      } else {
+        setTimeout(() => kentaShow('drawingReady'), 400);
+        tourAdvanceIfWaiting('upload-zone');
+      }
     };
     reader.readAsDataURL(file);
   }
   input.value = '';
 }
+
+// ══ ピン描画 ══
 function renderPins() {
   const layer = document.getElementById('pins-layer');
   const cur = activeProject.currentFloor || 0;
-  layer.innerHTML = (activeProject.photos||[])
-    .filter(ph => (ph.floorIndex||0) === cur)
-    .map(ph => `
-    <div class="pin" style="left:${ph.x}%;top:${ph.y}%;" onclick="openPinPopup(event,'${ph.id}')">
-      <div class="pin-circle"><span class="pin-number">${ph.num}</span></div>
-      <div class="pin-tip"></div>
-    </div>`).join('');
+  const pins = (activeProject.photos||[]).filter(ph => (ph.floorIndex||0) === cur);
+
+  const THRESHOLD = 3.0;
+  const placed = [];
+  const positions = pins.map(ph => {
+    let x = ph.x, y = ph.y;
+    let attempts = 0;
+    while (attempts < 20) {
+      const overlap = placed.find(p => Math.hypot(p.x - x, p.y - y) < THRESHOLD);
+      if (!overlap) break;
+      const angle = attempts * 137.5 * Math.PI / 180;
+      const dist = THRESHOLD * 0.8 * Math.ceil(attempts / 8);
+      x = ph.x + Math.cos(angle) * dist;
+      y = ph.y + Math.sin(angle) * dist;
+      attempts++;
+    }
+    placed.push({x, y});
+    return {x, y};
+  });
+
+  layer.innerHTML = pins.map((ph, i) => {
+    const rot = ph.rotation || 0;
+    const R = 10;
+    const tipLen = 10;
+    const rad = (rot - 90) * Math.PI / 180;
+    const tx = Math.cos(rad) * (R + tipLen);
+    const ty = Math.sin(rad) * (R + tipLen);
+    const lx = Math.cos(rad + 0.4) * R;
+    const ly = Math.sin(rad + 0.4) * R;
+    const rx2 = Math.cos(rad - 0.4) * R;
+    const ry2 = Math.sin(rad - 0.4) * R;
+    return `
+    <div class="pin pin-sm" data-pin-id="${ph.id}" style="left:${positions[i].x}%;top:${positions[i].y}%;">
+      <svg width="48" height="48" viewBox="-24 -24 48 48" style="overflow:visible;display:block;">
+        <polygon points="${lx},${ly} ${rx2},${ry2} ${tx},${ty}" fill="#1C4ED8"/>
+        <circle cx="0" cy="0" r="${R}" fill="#1C4ED8" stroke="white" stroke-width="2"/>
+        <text x="0" y="0" text-anchor="middle" dominant-baseline="central"
+          font-size="9" font-weight="bold" fill="white" style="user-select:none;">${ph.num}</text>
+      </svg>
+    </div>`;
+  }).join('');
+
+  layer.querySelectorAll('.pin').forEach(pinEl => {
+    const id = pinEl.dataset.pinId;
+    pinEl.addEventListener('touchend', e => { e.stopPropagation(); openPinPopup(e, id); });
+    pinEl.addEventListener('click',    e => { e.stopPropagation(); openPinPopup(e, id); });
+  });
 }
+
+// ── ピン移動 ──
+let pinMoveMode = false;
+
+function openMoveUI() {
+  document.getElementById('overlay-pin').classList.remove('open');
+  switchTab('drawing');
+  pinMoveMode = true;
+  document.getElementById('move-ui').style.display = 'block';
+  enablePinDrag();
+}
+async function closeMoveUI() {
+  pinMoveMode = false;
+  document.getElementById('move-ui').style.display = 'none';
+  await dbSave(activeProject);
+  renderPins();
+}
+function enablePinDrag() {
+  const layer = document.getElementById('pins-layer');
+  layer.querySelectorAll('.pin').forEach(pinEl => {
+    const id = pinEl.dataset.pinId;
+    pinEl.style.cursor = 'grab';
+    pinEl.ontouchstart = e => {
+      e.stopPropagation();
+      pinEl.style.opacity = '0.6';
+      const onMove = ev => {
+        const wrapper = document.getElementById('drawing-wrapper');
+        const rect = wrapper.getBoundingClientRect();
+        const x = Math.max(0, Math.min(100, ((ev.touches[0].clientX - rect.left) / rect.width) * 100));
+        const y = Math.max(0, Math.min(100, ((ev.touches[0].clientY - rect.top) / rect.height) * 100));
+        pinEl.style.left = x + '%'; pinEl.style.top = y + '%';
+        const ph = activeProject.photos.find(p => p.id === id);
+        if (ph) { ph.x = x; ph.y = y; }
+      };
+      const onEnd = () => {
+        pinEl.style.opacity = '1';
+        pinEl.removeEventListener('touchmove', onMove);
+        pinEl.removeEventListener('touchend', onEnd);
+      };
+      pinEl.addEventListener('touchmove', onMove, {passive:true});
+      pinEl.addEventListener('touchend', onEnd);
+    };
+    pinEl.onmousedown = e => {
+      e.stopPropagation();
+      pinEl.style.opacity = '0.6';
+      const onMove = ev => {
+        const wrapper = document.getElementById('drawing-wrapper');
+        const rect = wrapper.getBoundingClientRect();
+        const x = Math.max(0, Math.min(100, ((ev.clientX - rect.left) / rect.width) * 100));
+        const y = Math.max(0, Math.min(100, ((ev.clientY - rect.top) / rect.height) * 100));
+        pinEl.style.left = x + '%'; pinEl.style.top = y + '%';
+        const ph = activeProject.photos.find(p => p.id === id);
+        if (ph) { ph.x = x; ph.y = y; }
+      };
+      const onUp = () => {
+        pinEl.style.opacity = '1';
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+      };
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    };
+  });
+}
+
+// ── ピン向き調整 ──
+async function onPinRotateSlider(val) {
+  const deg = parseInt(val);
+  document.getElementById('pin-rotate-deg').textContent = deg;
+  const ph = activeProject.photos.find(p => p.id === selectedPhotoId);
+  if (!ph) return;
+  ph.rotation = deg;
+  renderPins();
+  clearTimeout(onPinRotateSlider._timer);
+  onPinRotateSlider._timer = setTimeout(() => dbSave(activeProject), 500);
+}
+function stepRotate(step) {
+  const slider = document.getElementById('pin-rotate-slider');
+  const newVal = ((parseInt(slider.value) + step) + 360) % 360;
+  slider.value = newVal;
+  onPinRotateSlider(newVal);
+}
+function openRotateUI() {
+  const ph = activeProject.photos.find(p => p.id === selectedPhotoId);
+  if (!ph) return;
+  const rot = ph.rotation || 0;
+  document.getElementById('pin-rotate-slider').value = rot;
+  document.getElementById('pin-rotate-deg').textContent = rot;
+  document.getElementById('overlay-pin').classList.remove('open');
+  switchTab('drawing');
+  document.getElementById('rotate-ui').classList.add('open');
+}
+function closeRotateUI() {
+  document.getElementById('rotate-ui').classList.remove('open');
+  dbSave(activeProject);
+}
+
 function handleDrawingTap(src) {
   if (src.target && src.target.closest && src.target.closest('.pin')) return;
   const rect = document.getElementById('drawing-wrapper').getBoundingClientRect();
@@ -854,7 +1037,7 @@ function handleDrawingTap(src) {
   startCamera();
 }
 
-// ══ カメラ ════════════════════════════════════════════════════
+// ══ カメラ ══
 async function startCamera() {
   showScreen('screen-camera');
   setTimeout(() => kentaShow('camera'), 400);
@@ -870,48 +1053,32 @@ function stopCamera() {
   if (mediaStream) { mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null; }
   document.getElementById('camera-video').srcObject = null;
 }
-function cancelCamera() {
-  stopCamera(); pendingPin = null; showScreen('screen-project');
-}
+function cancelCamera() { stopCamera(); pendingPin = null; showScreen('screen-project'); }
 function takePicture() {
-  const video  = document.getElementById('camera-video');
+  const video = document.getElementById('camera-video');
   const canvas = document.getElementById('snapshot-canvas');
-  const vw = video.videoWidth;
-  const vh = video.videoHeight;
-
-  // 縦向き（portrait）で撮った場合は90度回転して横向きにする
+  const vw = video.videoWidth, vh = video.videoHeight;
   const isPortrait = vh > vw;
   if (isPortrait) {
-    canvas.width  = vh;  // 回転後は縦横が入れ替わる
-    canvas.height = vw;
+    canvas.width = vh; canvas.height = vw;
     const ctx = canvas.getContext('2d');
-    ctx.translate(vh / 2, vw / 2);
-    ctx.rotate(Math.PI / 2);
-    ctx.drawImage(video, -vw / 2, -vh / 2, vw, vh);
+    ctx.translate(vh/2, vw/2); ctx.rotate(Math.PI/2);
+    ctx.drawImage(video, -vw/2, -vh/2, vw, vh);
   } else {
-    canvas.width  = vw;
-    canvas.height = vh;
+    canvas.width = vw; canvas.height = vh;
     canvas.getContext('2d').drawImage(video, 0, 0);
   }
-
   capturedPhoto = canvas.toDataURL('image/jpeg', 0.85);
   stopCamera();
   document.getElementById('preview-img').src = capturedPhoto;
   showScreen('screen-preview');
-  const hint = document.getElementById('preview-save-hint');
-  hint.style.display = 'block';
-  setTimeout(() => { hint.style.display = 'none'; }, 3500);
   setTimeout(() => kentaShow('preview'), 400);
 }
-function retakePhoto() {
-  capturedPhoto = null; pendingPin = null;
-  showScreen('screen-project');
-}
+function retakePhoto() { capturedPhoto = null; pendingPin = null; showScreen('screen-project'); }
 function acceptPhoto() {
-  stopCamera();
   document.getElementById('comment-preview-img').src = capturedPhoto;
-  document.getElementById('input-inspection').value  = '';
-  document.getElementById('input-comment').value     = '';
+  document.getElementById('input-inspection').value = '';
+  document.getElementById('input-comment').value = '';
   document.getElementById('overlay-comment').classList.add('open');
   showScreen('screen-project');
   setTimeout(() => kentaShow('comment'), 300);
@@ -923,8 +1090,8 @@ function handleFilePhoto(input) {
   reader.onload = e => {
     capturedPhoto = e.target.result;
     document.getElementById('comment-preview-img').src = capturedPhoto;
-    document.getElementById('input-inspection').value  = '';
-    document.getElementById('input-comment').value     = '';
+    document.getElementById('input-inspection').value = '';
+    document.getElementById('input-comment').value = '';
     document.getElementById('overlay-comment').classList.add('open');
   };
   reader.readAsDataURL(file);
@@ -951,12 +1118,11 @@ async function savePhoto() {
   await dbSave(activeProject);
   document.getElementById('overlay-comment').classList.remove('open');
   capturedPhoto = null; pendingPin = null;
-  stopCamera();
   showScreen('screen-project');
   renderPins();
 }
 
-// ══ 写真一覧 ══════════════════════════════════════════════════
+// ══ 写真一覧 ══
 function renderPhotoList() {
   const photos = activeProject.photos || [];
   const el = document.getElementById('photo-list-body');
@@ -974,40 +1140,34 @@ function renderPhotoList() {
     <div class="photo-item" data-id="${ph.id}" data-idx="${idx}">
       <div class="photo-drag-handle" data-drag-id="${ph.id}">☰</div>
       <div class="photo-num">${ph.num}</div>
-      ${ph.photo
-        ? `<img class="photo-thumb" src="${ph.photo}" alt="">`
-        : `<div class="photo-thumb-ph">📷</div>`}
+      ${ph.photo ? `<img class="photo-thumb" src="${ph.photo}" alt="">` : `<div class="photo-thumb-ph">📷</div>`}
       <div class="photo-info">
         ${(activeProject.drawings||[]).length > 1 ? `<div class="photo-floor-tag">${esc((activeProject.drawings[ph.floorIndex||0]||{}).name||'')}</div>` : ''}
-        ${ph.inspectionItem ? `<div class="photo-item-title">${esc(ph.inspectionItem)}</div>` : ''}
+        ${ph.inspectionItem ? `<div class="photo-item-title">${esc(ph.inspectionItem)}</div>` : `<div class="photo-item-title" style="color:#9CA3AF;">調査項目未入力</div>`}
         <div class="photo-comment">${esc(ph.comment||'（コメントなし）')}</div>
-        <div class="photo-date">${ph.date}</div>
+        <div class="photo-date">${ph.date} <span style="color:#9CA3AF;font-size:10px;">✏️ タップして編集</span></div>
       </div>
       <button class="photo-del" data-del-id="${ph.id}">🗑</button>
     </div>`).join('') +
     `</div>`;
 
-  // イベント委譲：削除ボタン・ドラッグハンドルをリスト全体で受け取る
   const sortList = document.getElementById('photo-sort-list');
-
   sortList.addEventListener('click', e => {
     const btn = e.target.closest('[data-del-id]');
-    if (!btn) return;
-    const id = btn.dataset.delId;
-    if (btn.classList.contains('confirm-state')) {
-      deletePhotoById(id);
-    } else {
-      document.querySelectorAll('.photo-del.confirm-state').forEach(b => {
-        b.classList.remove('confirm-state'); b.textContent = '🗑';
-      });
-      btn.classList.add('confirm-state');
-      btn.textContent = '削除する';
-      setTimeout(() => {
-        if (btn.classList.contains('confirm-state')) {
-          btn.classList.remove('confirm-state'); btn.textContent = '🗑';
-        }
-      }, 3000);
+    if (btn) {
+      const id = btn.dataset.delId;
+      if (btn.classList.contains('confirm-state')) {
+        deletePhotoById(id);
+      } else {
+        document.querySelectorAll('.photo-del.confirm-state').forEach(b => { b.classList.remove('confirm-state'); b.textContent = '🗑'; });
+        btn.classList.add('confirm-state'); btn.textContent = '削除する';
+        setTimeout(() => { if (btn.classList.contains('confirm-state')) { btn.classList.remove('confirm-state'); btn.textContent = '🗑'; } }, 3000);
+      }
+      return;
     }
+    if (e.target.closest('[data-drag-id]')) return;
+    const item = e.target.closest('.photo-item');
+    if (item) openPhotoEdit(item.dataset.id);
   });
 
   sortList.addEventListener('touchstart', e => {
@@ -1029,92 +1189,104 @@ function renderPhotoList() {
     document.addEventListener('mouseup', dragEnd);
   });
 }
-// ══ 写真一覧 並び替え（ドラッグ&ドロップ） ══════════════════════
+
 let dragState = null;
-
-function dragTouchMove(e) {
-  e.preventDefault();
-  const t = e.touches[0];
-  dragMove(t.clientY, t.clientX);
-}
+function dragTouchMove(e) { e.preventDefault(); const t = e.touches[0]; dragMove(t.clientY, t.clientX); }
 function dragMouseMove(e) { dragMove(e.clientY, e.clientX); }
-
 function dragBegin(id, clientY, clientX) {
   const list = document.getElementById('photo-sort-list');
   const card = list.querySelector(`.photo-item[data-id="${id}"]`);
   if (!card) return;
   const rect = card.getBoundingClientRect();
-
   const ghost = card.cloneNode(true);
   ghost.classList.add('drag-ghost');
-  ghost.style.left = rect.left + 'px';
-  ghost.style.top = rect.top + 'px';
-  ghost.style.height = rect.height + 'px';
+  ghost.style.left = rect.left + 'px'; ghost.style.top = rect.top + 'px'; ghost.style.height = rect.height + 'px';
   document.body.appendChild(ghost);
-
   card.classList.add('dragging');
-
-  dragState = {
-    id, list, card, ghost,
-    offsetY: clientY - rect.top,
-    offsetX: clientX - rect.left,
-  };
+  dragState = { id, list, card, ghost, offsetY: clientY - rect.top, offsetX: clientX - rect.left };
 }
-
 function dragMove(clientY, clientX) {
   if (!dragState) return;
   const { ghost, list, card } = dragState;
   ghost.style.top = (clientY - dragState.offsetY) + 'px';
   ghost.style.left = (clientX - dragState.offsetX) + 'px';
-
   const siblings = Array.from(list.querySelectorAll('.photo-item:not(.dragging)'));
   let target = null;
   for (const sib of siblings) {
     const r = sib.getBoundingClientRect();
-    const mid = r.top + r.height / 2;
-    if (clientY < mid) { target = sib; break; }
+    if (clientY < r.top + r.height / 2) { target = sib; break; }
   }
   if (target) list.insertBefore(card, target);
   else list.appendChild(card);
 }
-
 async function dragEnd() {
   document.removeEventListener('touchmove', dragTouchMove);
   document.removeEventListener('touchend', dragEnd);
   document.removeEventListener('mousemove', dragMouseMove);
   document.removeEventListener('mouseup', dragEnd);
   if (!dragState) return;
-
   const { list, card, ghost } = dragState;
-  ghost.remove();
-  card.classList.remove('dragging');
-
-  // DOM上の現在の並び順からphotos配列を再構築し、番号を振り直す
+  ghost.remove(); card.classList.remove('dragging');
   const newOrderIds = Array.from(list.querySelectorAll('.photo-item')).map(el => el.dataset.id);
   const byId = {};
   activeProject.photos.forEach(p => byId[p.id] = p);
   activeProject.photos = newOrderIds.map((id, i) => ({ ...byId[id], num: i + 1 }));
-
   dragState = null;
   await dbSave(activeProject);
-  renderPhotoList();
-  renderPins();
+  renderPhotoList(); renderPins();
 }
 
-// ══ ピンポップアップ ══════════════════════════════════════════
+async function deletePhotoById(id) {
+  activeProject.photos = activeProject.photos.filter(p => p.id !== id).map((p,i) => ({...p, num: i+1}));
+  await dbSave(activeProject);
+  renderPhotoList(); renderPins();
+}
+
+// ══ 写真編集モーダル ══
+let editingPhotoId = null;
+function openPhotoEdit(id) {
+  const ph = activeProject.photos.find(p => p.id === id);
+  if (!ph) return;
+  editingPhotoId = id;
+  document.getElementById('photo-edit-thumb').src = ph.photo || '';
+  document.getElementById('photo-edit-thumb').style.display = ph.photo ? 'block' : 'none';
+  document.getElementById('photo-edit-inspection').value = ph.inspectionItem || '';
+  document.getElementById('photo-edit-comment').value = ph.comment || '';
+  document.getElementById('overlay-photo-edit').classList.add('open');
+}
+function closePhotoEdit(e) {
+  if (e && !e.target.classList.contains('overlay')) return;
+  document.getElementById('overlay-photo-edit').classList.remove('open');
+  editingPhotoId = null;
+}
+async function savePhotoEdit() {
+  const ph = activeProject.photos.find(p => p.id === editingPhotoId);
+  if (!ph) return;
+  ph.inspectionItem = document.getElementById('photo-edit-inspection').value.trim();
+  ph.comment = document.getElementById('photo-edit-comment').value.trim();
+  await dbSave(activeProject);
+  document.getElementById('overlay-photo-edit').classList.remove('open');
+  editingPhotoId = null;
+  renderPhotoList(); renderPins();
+}
+
+// ══ ピンポップアップ ══
 function openPinPopup(e, id) {
   e.stopPropagation();
   const ph = activeProject.photos.find(p => p.id === id);
   if (!ph) return;
   selectedPhotoId = id;
-  document.getElementById('popup-num').textContent   = ph.num;
+  document.getElementById('popup-num').textContent = ph.num;
   document.getElementById('popup-title').textContent = `撮影ポイント ${ph.num}`;
-  document.getElementById('popup-item').textContent  = ph.inspectionItem || '';
+  document.getElementById('popup-item').textContent = ph.inspectionItem || '';
   document.getElementById('popup-comment').textContent = ph.comment || '（コメントなし）';
-  document.getElementById('popup-date').textContent  = '📅 ' + ph.date;
+  document.getElementById('popup-date').textContent = '📅 ' + ph.date;
   document.getElementById('popup-photo-wrap').innerHTML = ph.photo
     ? `<img class="popup-img" src="${ph.photo}" alt="">`
     : `<div class="popup-no-photo">📷</div>`;
+  const rot = ph.rotation || 0;
+  document.getElementById('pin-rotate-slider').value = rot;
+  document.getElementById('pin-rotate-deg').textContent = rot;
   document.getElementById('overlay-pin').classList.add('open');
 }
 function closePinPopup(e) {
@@ -1124,67 +1296,57 @@ function closePinPopup(e) {
 }
 async function deleteFromPopup() {
   if (!confirm('この写真を削除しますか？')) return;
-  activeProject.photos = activeProject.photos
-    .filter(p => p.id !== selectedPhotoId)
-    .map((p,i) => ({...p, num: i+1}));
+  activeProject.photos = activeProject.photos.filter(p => p.id !== selectedPhotoId).map((p,i) => ({...p, num: i+1}));
   await dbSave(activeProject);
   document.getElementById('overlay-pin').classList.remove('open');
   selectedPhotoId = null;
   renderPins();
 }
 async function editCommentFromPopup() {
-  const ph = activeProject.photos.find(p => p.id === selectedPhotoId);
-  if (!ph) return;
-  const newVal = prompt('コメントを編集', ph.comment || '');
-  if (newVal === null) return;
-  ph.comment = newVal.trim();
-  await dbSave(activeProject);
-  document.getElementById('popup-comment').textContent = ph.comment || '（コメントなし）';
+  openPhotoEdit(selectedPhotoId);
+  document.getElementById('overlay-pin').classList.remove('open');
 }
 
-// ══ PDF出力 ═══════════════════════════════════════════════════
+// ══ PDF出力 ══
 async function exportPDF() {
   const photos = activeProject?.photos || [];
   if (!photos.length) { alert('写真がありません'); return; }
-
   const pages = [];
-  for (let i = 0; i < photos.length; i += 2)
-    pages.push([photos[i], photos[i+1]||null]);
+  for (let i = 0; i < photos.length; i += 2) pages.push([photos[i], photos[i+1]||null]);
 
   const slot = (ph) => {
-    if (!ph) return `<div class="pdf-slot-empty"></div>`;
-    return `<div class="pdf-slot">
-      <div class="pdf-slot-head">
-        <div class="pdf-slot-head-left">
-          <div class="pdf-head-cell pdf-head-butsui">
-            <div class="pdf-head-label">部位</div>
-            <div class="pdf-head-value">${esc((activeProject.drawings && activeProject.drawings[ph.floorIndex||0]) ? activeProject.drawings[ph.floorIndex||0].name : '')}</div>
+    if (!ph) return `<div style="border:1px dashed #ccc;height:95mm;margin-bottom:2mm;"></div>`;
+    return `<div style="border:1px solid #000;margin-bottom:2mm;">
+      <div style="display:flex;border-bottom:1px solid #000;">
+        <div style="display:flex;flex:1;border-right:1px solid #000;">
+          <div style="padding:1mm 2mm;border-right:1px solid #000;width:14mm;">
+            <div style="font-size:7pt;color:#333;">部位</div>
+            <div style="font-size:8.5pt;">${esc((activeProject.drawings&&activeProject.drawings[ph.floorIndex||0])?activeProject.drawings[ph.floorIndex||0].name:'')}</div>
           </div>
-          <div class="pdf-head-cell pdf-head-bangou">
-            <div class="pdf-head-label">番号</div>
-            <div class="pdf-head-value">${ph.num}</div>
+          <div style="padding:1mm 2mm;border-right:1px solid #000;width:20mm;">
+            <div style="font-size:7pt;color:#333;">番号</div>
+            <div style="font-size:8.5pt;">${ph.num}</div>
           </div>
-          <div class="pdf-head-cell pdf-head-item">
-            <div class="pdf-head-label">調査項目</div>
-            <div class="pdf-head-value">${esc(ph.inspectionItem||'')}</div>
+          <div style="padding:1mm 2mm;flex:1;">
+            <div style="font-size:7pt;color:#333;">調査項目</div>
+            <div style="font-size:8.5pt;">${esc(ph.inspectionItem||'')}</div>
           </div>
         </div>
-        <div class="pdf-slot-head-right">
-          <div class="pdf-result-label">調査結果</div>
-          <div class="pdf-result-checks">
-            <div class="pdf-check"><span class="pdf-checkbox"></span>要是正</div>
-            <div class="pdf-check"><span class="pdf-checkbox"></span>その他</div>
+        <div style="width:40mm;padding:1mm 2mm;">
+          <div style="font-size:7pt;color:#333;margin-bottom:1mm;">調査結果</div>
+          <div style="display:flex;gap:3mm;font-size:8pt;">
+            <div>□ 要是正</div><div>□ その他</div>
           </div>
         </div>
       </div>
-      <div class="pdf-slot-body">
-        <div class="pdf-photo-area">
-          ${ph.photo ? `<img src="${ph.photo}" alt="">` : `<div class="pdf-photo-none">写真なし</div>`}
+      <div style="display:flex;height:95mm;">
+        <div style="flex:1;border-right:1px solid #000;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#fafafa;">
+          ${ph.photo ? `<img src="${ph.photo}" style="width:100%;height:100%;object-fit:contain;">` : `<div style="color:#aaa;">写真なし</div>`}
         </div>
-        <div class="pdf-comment-area">
-          <div class="pdf-comment-label">特記事項</div>
-          <div class="pdf-comment-text">${esc(ph.comment||'').replace(/\n/g,'<br>')}</div>
-          <div class="pdf-date-text">${ph.date}</div>
+        <div style="width:40mm;padding:2mm;display:flex;flex-direction:column;">
+          <div style="font-size:7pt;color:#333;border-bottom:1px solid #ccc;padding-bottom:1mm;margin-bottom:2mm;">特記事項</div>
+          <div style="font-size:8.5pt;line-height:1.5;flex:1;word-break:break-all;">${esc(ph.comment||'').replace(/\n/g,'<br>')}</div>
+          <div style="font-size:6.5pt;color:#555;margin-top:2mm;text-align:right;">${ph.date}</div>
         </div>
       </div>
     </div>`;
@@ -1194,413 +1356,326 @@ async function exportPDF() {
   loadingEl.style = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:600;';
   loadingEl.textContent = '📄 PDFを作成中...';
   document.body.appendChild(loadingEl);
-
   try {
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
     let firstPage = true;
 
-    // ── フロアごとの図面+ピン一覧ページを先頭に追加 ──
+    // 図面+ピン位置図ページ
     const drawings = activeProject.drawings || [];
     for (let fi = 0; fi < drawings.length; fi++) {
       const floor = drawings[fi];
       if (!floor.image) continue;
       const floorPhotos = photos.filter(p => (p.floorIndex||0) === fi);
       if (!floorPhotos.length) continue;
-
-      // Canvasで図面にピンを描画
       const img = new Image();
       img.src = floor.image;
       await new Promise(res => { img.onload = res; img.onerror = res; });
-
       const canvas = document.createElement('canvas');
-      // A4比率で描画（図面エリアは左70%、一覧表は右30%）
       const A4W = 1240, A4H = 1754;
-      canvas.width  = A4W;
-      canvas.height = A4H;
+      canvas.width = A4W; canvas.height = A4H;
       const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#fff';
-      ctx.fillRect(0, 0, A4W, A4H);
-
-      // ヘッダー
-      ctx.fillStyle = '#000';
-      ctx.font = 'bold 36px sans-serif';
-      ctx.fillText(`${esc(activeProject.name)}　${floor.name}　撮影位置図`, 40, 60);
-      ctx.strokeStyle = '#000';
-      ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(40, 72); ctx.lineTo(A4W - 40, 72); ctx.stroke();
-
-      // 図面エリア（左側70%）
-      const mapX = 40, mapY = 90;
-      const mapW = Math.floor(A4W * 0.65) - 40;
-      const mapH = A4H - 130;
-
-      // 図面画像をcontainで描画
-      const scale = Math.min(mapW / img.width, mapH / img.height);
-      const dw = img.width * scale;
-      const dh = img.height * scale;
-      const dx = mapX + (mapW - dw) / 2;
-      const dy = mapY + (mapH - dh) / 2;
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, A4W, A4H);
+      const PAD = 40;
+      ctx.fillStyle = '#000'; ctx.font = 'bold 30px sans-serif';
+      ctx.fillText(`${activeProject.name}　${floor.name}　撮影位置図`, PAD, 50);
+      ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(PAD, 62); ctx.lineTo(A4W-PAD, 62); ctx.stroke();
+      const mapX = PAD, mapY = 76, mapW = A4W-PAD*2, mapH = Math.floor(A4H*0.50);
+      ctx.strokeStyle = '#ccc'; ctx.lineWidth = 1; ctx.strokeRect(mapX, mapY, mapW, mapH);
+      const scale = Math.min(mapW/img.width, mapH/img.height);
+      const dw = img.width*scale, dh = img.height*scale;
+      const dx = mapX+(mapW-dw)/2, dy = mapY+(mapH-dh)/2;
       ctx.drawImage(img, dx, dy, dw, dh);
-
-      // ピン描画
       floorPhotos.forEach(ph => {
-        const px = dx + (ph.x / 100) * dw;
-        const py = dy + (ph.y / 100) * dh;
-        const r = 18;
-        ctx.fillStyle = '#E53E3E';
-        ctx.beginPath(); ctx.arc(px, py - r, r, 0, Math.PI * 2); ctx.fill();
-        ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
-        ctx.stroke();
-        // ピン下の三角
-        ctx.fillStyle = '#E53E3E';
-        ctx.beginPath();
-        ctx.moveTo(px - 6, py - r * 0.5);
-        ctx.lineTo(px + 6, py - r * 0.5);
-        ctx.lineTo(px, py + 2);
-        ctx.fill();
-        // 番号
-        ctx.fillStyle = '#fff';
-        ctx.font = `bold ${r}px sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(String(ph.num), px, py - r);
+        const px = dx+(ph.x/100)*dw, py = dy+(ph.y/100)*dh;
+        const r = 16, rotRad = ((ph.rotation||0)*Math.PI)/180;
+        ctx.fillStyle = '#E53E3E'; ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI*2); ctx.fill();
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+        ctx.save(); ctx.translate(px, py); ctx.rotate(rotRad);
+        ctx.fillStyle = '#E53E3E'; ctx.beginPath();
+        ctx.moveTo(-5, r*0.4); ctx.lineTo(5, r*0.4); ctx.lineTo(0, r+8); ctx.fill();
+        ctx.restore();
+        ctx.fillStyle = '#fff'; ctx.font = `bold ${r}px sans-serif`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(String(ph.num), px, py);
       });
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'alphabetic';
-
-      // 一覧表（右側30%）
-      const tableX = mapX + mapW + 20;
-      const tableW = A4W - tableX - 20;
-      const rowH = 48;
-      ctx.font = 'bold 22px sans-serif';
-      ctx.fillStyle = '#000';
-      ctx.fillText('番号　調査項目', tableX, mapY + 24);
-      ctx.strokeStyle = '#999'; ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(tableX, mapY + 32); ctx.lineTo(tableX + tableW, mapY + 32); ctx.stroke();
-
+      ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+      const tblY = mapY+mapH+20, tblX = PAD, tblW = A4W-PAD*2;
+      const hdrH = 40, numW = 60, itemW = 300;
+      ctx.fillStyle = '#1C4ED8'; ctx.fillRect(tblX, tblY, tblW, hdrH);
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 20px sans-serif';
+      ctx.fillText('No.', tblX+10, tblY+27);
+      ctx.fillText('調査項目', tblX+numW+10, tblY+27);
+      ctx.fillText('特記事項', tblX+numW+itemW+10, tblY+27);
+      const rowH2 = Math.min(38, Math.floor((A4H-tblY-hdrH-PAD)/Math.max(floorPhotos.length,1)));
       floorPhotos.forEach((ph, idx) => {
-        const ty = mapY + 48 + idx * rowH;
-        if (ty + rowH > A4H - 40) return; // 枠外は省略
-        ctx.fillStyle = idx % 2 === 0 ? '#F7F8FA' : '#fff';
-        ctx.fillRect(tableX, ty, tableW, rowH);
-        ctx.strokeStyle = '#ddd'; ctx.lineWidth = 1;
-        ctx.strokeRect(tableX, ty, tableW, rowH);
-        ctx.fillStyle = '#E53E3E';
-        ctx.font = 'bold 20px sans-serif';
-        ctx.fillText(String(ph.num), tableX + 6, ty + rowH * 0.65);
-        ctx.fillStyle = '#111';
-        ctx.font = '18px sans-serif';
-        const item = (ph.inspectionItem || '').substring(0, 10);
-        ctx.fillText(item, tableX + 36, ty + rowH * 0.65);
+        const ry = tblY+hdrH+idx*rowH2;
+        if (ry+rowH2 > A4H-PAD+10) return;
+        ctx.fillStyle = idx%2===0?'#F0F4FF':'#fff'; ctx.fillRect(tblX, ry, tblW, rowH2);
+        ctx.strokeStyle = '#E2E5EA'; ctx.lineWidth = 1; ctx.strokeRect(tblX, ry, tblW, rowH2);
+        ctx.fillStyle = '#E53E3E'; ctx.font = `bold ${Math.min(20,rowH2-8)}px sans-serif`;
+        ctx.textBaseline = 'middle';
+        ctx.fillText(String(ph.num), tblX+10, ry+rowH2/2);
+        ctx.fillStyle = '#111'; ctx.font = `${Math.min(18,rowH2-10)}px sans-serif`;
+        ctx.fillText((ph.inspectionItem||'').substring(0,16), tblX+numW+10, ry+rowH2/2);
+        ctx.fillStyle = '#444'; ctx.font = `${Math.min(17,rowH2-10)}px sans-serif`;
+        ctx.fillText((ph.comment||'').substring(0,30), tblX+numW+itemW+10, ry+rowH2/2);
       });
-
-      // フッター
-      ctx.fillStyle = '#555';
-      ctx.font = '20px sans-serif';
-      ctx.textAlign = 'right';
-      ctx.fillText(new Date().toLocaleDateString('ja-JP'), A4W - 40, A4H - 20);
-      ctx.textAlign = 'left';
-
-      // PDFに追加
+      ctx.textBaseline = 'alphabetic';
       const imgData = canvas.toDataURL('image/jpeg', 0.92);
       if (!firstPage) pdf.addPage();
       pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
       firstPage = false;
     }
 
-    // ── 写真台紙ページ ──
+    // 写真台紙ページ
     const stage = document.createElement('div');
-    stage.id = 'pdf-render-stage';
     stage.style = 'position:fixed;left:-99999px;top:0;width:210mm;background:#fff;';
     stage.innerHTML = `<style>
-#pdf-render-stage{font-family:'ＭＳ 明朝','MS Mincho','Hiragino Mincho Pro',serif;font-size:9pt;color:#000;}
-#pdf-render-stage *{box-sizing:border-box;margin:0;padding:0;}
-.pdf-page{width:210mm;min-height:297mm;padding:12mm 10mm;display:flex;flex-direction:column;background:#fff;}
-.pdf-page-header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:1.5mm;font-size:9pt;}
-.pdf-page-header-title{font-size:12pt;text-align:center;flex:1;}
-.pdf-slot{border:1px solid #000;margin-bottom:2mm;}
-.pdf-slot-empty{border:1px dashed #ccc;height:95mm;margin-bottom:2mm;}
-.pdf-slot-head{display:flex;border-bottom:1px solid #000;}
-.pdf-slot-head-left{display:flex;flex:1;border-right:1px solid #000;}
-.pdf-head-cell{padding:1mm 2mm;border-right:1px solid #000;}
-.pdf-head-cell:last-child{border-right:none;flex:1;min-width:35mm;}
-.pdf-head-label{font-size:7pt;color:#333;}
-.pdf-head-value{font-size:8.5pt;font-family:'ＭＳ ゴシック','MS Gothic',sans-serif;}
-.pdf-head-butsui{width:14mm;}
-.pdf-head-bangou{width:20mm;}
-.pdf-slot-head-right{width:40mm;padding:1mm 2mm;border-left:0;}
-.pdf-result-label{font-size:7pt;color:#333;margin-bottom:1mm;}
-.pdf-result-checks{display:flex;gap:3mm;font-size:8pt;}
-.pdf-check{display:flex;align-items:center;gap:1mm;}
-.pdf-checkbox{width:3mm;height:3mm;border:1px solid #000;display:inline-block;flex-shrink:0;}
-.pdf-slot-body{display:flex;height:95mm;}
-.pdf-photo-area{flex:1;border-right:1px solid #000;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#fafafa;}
-.pdf-photo-area img{width:100%;height:100%;object-fit:contain;}
-.pdf-photo-none{color:#aaa;font-size:10pt;}
-.pdf-comment-area{width:40mm;padding:2mm;display:flex;flex-direction:column;}
-.pdf-comment-label{font-size:7pt;color:#333;border-bottom:1px solid #ccc;padding-bottom:1mm;margin-bottom:2mm;}
-.pdf-comment-text{font-size:8.5pt;line-height:1.5;flex:1;word-break:break-all;font-family:'ＭＳ Ｐ明朝','MS PMincho',serif;}
-.pdf-date-text{font-size:6.5pt;color:#555;margin-top:2mm;text-align:right;}
-.pdf-notes{border:1px solid #000;border-top:none;padding:2mm 3mm;font-size:7.5pt;line-height:1.6;}
-.pdf-notes-title{font-weight:bold;margin-bottom:1mm;}
-.pdf-note-row{display:flex;gap:2mm;margin-bottom:0.5mm;}
-.pdf-note-num{flex-shrink:0;width:4mm;}
-.pdf-note-a4{text-align:right;font-size:7pt;color:#555;margin-top:1mm;}
+*{box-sizing:border-box;margin:0;padding:0;}
+.pdf-page{width:210mm;min-height:297mm;padding:12mm 10mm;display:flex;flex-direction:column;background:#fff;font-family:'ＭＳ 明朝','MS Mincho',serif;font-size:9pt;}
 .pdf-footer{text-align:center;font-size:7pt;color:#555;margin-top:1mm;}
 </style>
 ${pages.map((pair, pi) => `
-<div class="pdf-page" data-page="${pi}">
-  <div class="pdf-page-header">
-    <span style="font-size:8pt;">別添２</span>
-    <span class="pdf-page-header-title">関係写真</span>
+<div class="pdf-page">
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:1.5mm;font-size:9pt;">
+    <span>別添２</span>
+    <span style="font-size:12pt;text-align:center;flex:1;">関係写真</span>
     <span style="text-align:right;font-size:8pt;">${esc(activeProject.name)}<br>${esc(activeProject.address||'')}</span>
   </div>
-  ${slot(pair[0])}
-  ${slot(pair[1])}
-  <div class="pdf-notes">
-    <div class="pdf-notes-title">（注意）</div>
-    <div class="pdf-note-row"><span class="pdf-note-num">①</span><span>この書類は、調査の結果「要是正」かつ「既存不適格」ではない項目について作成してください。また、「既存不適格」及び「指摘なし」の項目についても、特記すべき事項があれば、必要に応じて作成してください。「要是正」の項目がない場合は、この書類は省略しても構いません。</span></div>
-    <div class="pdf-note-row"><span class="pdf-note-num">②</span><span>記入欄が不足する場合は、枠を拡大、行を追加して記入するか、別紙に必要な事項を記入して添えてください。</span></div>
-    <div class="pdf-note-row"><span class="pdf-note-num">③</span><span>「部位」欄の「番号」及び「調査項目」は、それぞれ別記様式の番号及び調査項目に対応したものを記入してください。</span></div>
-    <div class="pdf-note-row"><span class="pdf-note-num">④</span><span>「調査結果」欄は、調査の結果、要是正の指摘があった場合は「要是正」のチェックボックスに「レ」マークを入れ、それ以外の場合で特記すべき事項がある場合は「その他」のチェックボックスに「レ」マークを入れてください。</span></div>
-    <div class="pdf-note-row"><span class="pdf-note-num">⑤</span><span>写真は、当該部位の外観の状況が確認できるように撮影したものを添付してください。</span></div>
-    <div class="pdf-note-a4">（日本産業規格Ａ列４番）</div>
+  ${slot(pair[0])}${slot(pair[1])}
+  <div style="border:1px solid #000;border-top:none;padding:2mm 3mm;font-size:7.5pt;line-height:1.6;">
+    <div style="font-weight:bold;margin-bottom:1mm;">備考</div>
+    <div>・本写真は現地調査時に撮影したものです。</div>
+    <div style="text-align:right;font-size:7pt;color:#555;margin-top:1mm;">（日本産業規格Ａ列４番）</div>
   </div>
   <div class="pdf-footer">${pi+1} / ${pages.length}</div>
 </div>`).join('')}`;
     document.body.appendChild(stage);
-
     const imgs = stage.querySelectorAll('img');
     await Promise.all(Array.from(imgs).map(img => img.complete ? Promise.resolve() :
       new Promise(res => { img.onload = res; img.onerror = res; })));
-
-    imgs.forEach(img => {
-      const area = img.parentElement;
-      const areaW = area.clientWidth;
-      const areaH = area.clientHeight;
-      const natW = img.naturalWidth;
-      const natH = img.naturalHeight;
-      if (!natW || !natH || !areaW || !areaH) return;
-      const scale = Math.min(areaW / natW, areaH / natH);
-      img.style.width = natW * scale + 'px';
-      img.style.height = natH * scale + 'px';
-      img.style.objectFit = '';
-      img.style.display = 'block';
-    });
-
     const pageEls = stage.querySelectorAll('.pdf-page');
     for (let i = 0; i < pageEls.length; i++) {
-      const canvas = await html2canvas(pageEls[i], { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
-      const imgData = canvas.toDataURL('image/jpeg', 0.92);
+      const canvas2 = await html2canvas(pageEls[i], { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+      const imgData2 = canvas2.toDataURL('image/jpeg', 0.92);
       if (!firstPage) pdf.addPage();
-      pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
+      pdf.addImage(imgData2, 'JPEG', 0, 0, 210, 297);
       firstPage = false;
     }
-
     document.body.removeChild(stage);
     pdf.save(`関係写真_${activeProject.name}.pdf`);
-  } catch (err) {
+  } catch(err) {
     alert('PDF作成中にエラーが発生しました: ' + err.message);
   } finally {
     document.body.removeChild(loadingEl);
   }
 }
 
-// ══ 写真まとめてダウンロード(ZIP) ═══════════════════════════════
+// ══ ZIP一括ダウンロード ══
 async function downloadAllPhotos() {
-  const photos = (activeProject?.photos || []).filter(p => p.photo);
+  const photos = (activeProject?.photos||[]).filter(p => p.photo);
   if (!photos.length) { alert('写真がありません'); return; }
-
   const loadingEl = document.createElement('div');
   loadingEl.style = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:600;';
   loadingEl.textContent = '📦 ZIPを作成中...';
   document.body.appendChild(loadingEl);
-
   try {
     const zip = new JSZip();
     photos.forEach((ph, i) => {
       const m = ph.photo.match(/^data:image\/(\w+);base64,(.+)$/);
       if (!m) return;
-      const ext = m[1] === 'jpeg' ? 'jpg' : m[1];
-      const num = String(ph.num || (i+1)).padStart(2, '0');
-      const floorName = (activeProject.drawings && activeProject.drawings[ph.floorIndex||0]) ? activeProject.drawings[ph.floorIndex||0].name + '_' : '';
-      zip.file(`写真${num}_${floorName}${ph.inspectionItem || ''}.${ext}`, m[2], { base64: true });
+      const ext = m[1]==='jpeg'?'jpg':m[1];
+      const num = String(ph.num||(i+1)).padStart(2,'0');
+      const floorName = (activeProject.drawings&&activeProject.drawings[ph.floorIndex||0])?activeProject.drawings[ph.floorIndex||0].name+'_':'';
+      zip.file(`写真${num}_${floorName}${ph.inspectionItem||''}.${ext}`, m[2], {base64:true});
     });
-    const blob = await zip.generateAsync({ type: 'blob' });
+    const blob = await zip.generateAsync({type:'blob'});
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url;
-    a.download = `施工フォト_${activeProject.name}.zip`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    a.href = url; a.download = `施工フォト_${activeProject.name}.zip`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(url), 1000);
-  } catch (err) {
+  } catch(err) {
     alert('ZIP作成中にエラーが発生しました: ' + err.message);
   } finally {
     document.body.removeChild(loadingEl);
   }
 }
 
-// ══ JSONインポート（新規プロジェクトとして取り込み） ══════════
+// ══ JSONインポート ══
 function handleJSONImportNew(input) {
-  const file = input.files[0];
-  if (!file) return;
+  const file = input.files[0]; if (!file) return;
   const reader = new FileReader();
   reader.onload = async e => {
     try {
       const data = JSON.parse(e.target.result);
       if (!data.project || !data.photos) throw new Error('JSONの形式が正しくありません');
-      // 既存プロジェクトと名前が重複しないようにする
       let name = data.project.name || 'インポート';
       const existing = projects.map(p => p.name);
       if (existing.includes(name)) name = name + '_' + new Date().toLocaleDateString('ja-JP').replace(/\//g,'-');
       const p = {
-        id: Date.now().toString(),
-        name,
+        id: Date.now().toString(), name,
         address: data.project.address || '',
         createdAt: data.project.createdAt || new Date().toISOString(),
         drawings: data.project.drawings || [],
         currentFloor: 0,
         photos: data.photos.map((ph, i) => ({
-          id: ph.id || Date.now().toString() + i,
-          num: ph.num || i+1,
-          x: ph.pinX || ph.x || 0,
-          y: ph.pinY || ph.y || 0,
-          floorIndex: ph.floorIndex || 0,
-          photo: ph.photo || null,
-          inspectionItem: ph.inspectionItem || '',
-          comment: ph.comment || '',
-          date: ph.date || ''
+          id: ph.id||Date.now().toString()+i, num: ph.num||i+1,
+          x: ph.pinX||ph.x||0, y: ph.pinY||ph.y||0,
+          floorIndex: ph.floorIndex||0, photo: ph.photo||null,
+          inspectionItem: ph.inspectionItem||'', comment: ph.comment||'', date: ph.date||''
         }))
       };
       projects.push(p);
       await dbSave(p);
       renderProjectList();
       alert(`「${name}」をインポートしました（写真${p.photos.length}枚）`);
-    } catch(err) {
-      alert('インポートに失敗しました: ' + err.message);
-    }
+    } catch(err) { alert('インポートに失敗しました: ' + err.message); }
     input.value = '';
   };
   reader.readAsText(file, 'utf-8');
 }
 
-// ══ Excelエクスポート用JSON出力 ══════════════════════════════
+// ══ Excel連携JSON出力 ══
 function exportJSON() {
   const photos = activeProject?.photos || [];
   if (!photos.length) { alert('写真がありません'); return; }
-
   const data = {
     exportedAt: new Date().toLocaleString('ja-JP'),
     project: {
       name: activeProject.name,
       address: activeProject.address || '',
+      drawings: (activeProject.drawings||[]).map(d => ({name: d.name}))
     },
     photos: photos.map(ph => ({
       num: ph.num,
-      floor: (activeProject.drawings && activeProject.drawings[ph.floorIndex||0]) ? activeProject.drawings[ph.floorIndex||0].name : '',
-      inspectionItem: ph.inspectionItem || '',
-      comment: ph.comment || '',
-      date: ph.date,
-      pinX: Math.round(ph.x * 10) / 10,
-      pinY: Math.round(ph.y * 10) / 10,
-      photo: ph.photo || null,
+      floor: (activeProject.drawings&&activeProject.drawings[ph.floorIndex||0])?activeProject.drawings[ph.floorIndex||0].name:'',
+      inspectionItem: ph.inspectionItem||'', comment: ph.comment||'', date: ph.date,
+      pinX: Math.round(ph.x*10)/10, pinY: Math.round(ph.y*10)/10,
+      photo: ph.photo||null,
     }))
   };
-
   const json = JSON.stringify(data, null, 2);
-  const blob = new Blob([json], {type: 'text/plain;charset=utf-8'});
+  const blob = new Blob([json], {type:'text/plain;charset=utf-8'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url;
-  a.download = `施工フォト_${activeProject.name}.txt`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+  a.href = url; a.download = `施工フォト_${activeProject.name}.txt`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
   setTimeout(() => URL.revokeObjectURL(url), 1000);
-
-  alert(`📤 「施工フォト_${activeProject.name}.txt」をダウンロードしました。\nPCに転送してExcel自動入力スクリプトで使ってください。`);
+  alert('📤 JSONファイルをダウンロードしました！\n\nAirDrop・メール・iCloudなどでPCに転送してください。');
   setTimeout(() => kentaShow('export'), 500);
 }
+
 function esc(s) {
-  return String(s)
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// ══ ケンタくん ════════════════════════════════════════════════
+// ══ オンボーディングツアー ══
+let tourStep = 0, tourHighlight = null, tourBubble = null, tourActive = false;
+const TOUR_STEPS = [
+  { id:'new-btn',    target:()=>document.querySelector('#screen-list .btn-primary'),           title:'① まず物件を登録しよう', text:'「＋ 新規」をタップしてね',                arrow:'arrow-top',    position:'below', type:'wait' },
+  { id:'input-name', target:()=>document.getElementById('input-name'),                         title:'② 物件名を入力',         text:'物件名を入力してね',                            arrow:'arrow-top',    position:'below', type:'wait' },
+  { id:'create-btn', target:()=>document.querySelector('#overlay-new-project .btn-primary'),   title:'③ 作成をタップ',         text:'入力したら「作成」をタップしてね',              arrow:'arrow-top',    position:'below', type:'wait' },
+  { id:'upload-zone',target:()=>document.getElementById('upload-zone'),                        title:'④ 図面をアップロード',   text:'ここをタップして図面を選んでね（画像・PDF対応）', arrow:'arrow-top',    position:'below', type:'wait' },
+  { id:'tab-photos', target:()=>document.getElementById('tab-btn-photos'),                     title:'⑤ 写真一覧',             text:'撮影した写真の一覧はここで確認できるよ',        arrow:'arrow-bottom', position:'above', type:'highlight' },
+  { id:'pdf-btn',    target:()=>document.querySelector('[onclick="exportPDF()"]'),             title:'⑥ PDF出力',              text:'報告書PDFをここから出力できるよ',               arrow:'arrow-bottom', position:'above', type:'highlight' },
+  { id:'excel-btn',  target:()=>document.querySelector('[onclick="exportJSON()"]'),            title:'⑦ Excel連携',            text:'データをExcelに書き出せるよ。これで完璧！',     arrow:'arrow-bottom', position:'above', type:'highlight', last:true },
+];
+
+function startTour() {
+  if (localStorage.getItem('tour_done')) return;
+  tourActive = true; tourStep = 0; showTourStep();
+}
+function showTourStep() {
+  clearTourUI();
+  if (tourStep >= TOUR_STEPS.length) { endTour(); return; }
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      const step = TOUR_STEPS[tourStep];
+      const el = step.target();
+      if (!el || !document.body.contains(el)) { tourStep++; showTourStep(); return; }
+      const rect = el.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) { tourStep++; showTourStep(); return; }
+      tourHighlight = document.createElement('div');
+      tourHighlight.className = 'tour-highlight';
+      tourHighlight.style.cssText = `left:${rect.left-5}px;top:${rect.top-5}px;width:${rect.width+10}px;height:${rect.height+10}px;`;
+      document.body.appendChild(tourHighlight);
+      tourBubble = document.createElement('div');
+      tourBubble.className = `tour-bubble ${step.arrow}`;
+      const isEarlyStep = tourStep <= 3;
+      const btnLabel = step.last ? '完了！🎉' : '次へ →';
+      const showNextBtn = !isEarlyStep && step.type === 'highlight';
+      tourBubble.innerHTML = `
+        <div class="tour-title">${step.title}</div>
+        <div class="tour-text">${step.text}</div>
+        ${showNextBtn ? `<button class="tour-btn" onclick="nextTourStep()">${btnLabel}</button>` : `<div style="font-size:11px;color:#9CA3AF;text-align:center;">↑ 操作すると次に進むよ</div>`}
+        ${!isEarlyStep ? `<div class="tour-skip" onclick="endTour()">スキップ</div>` : ''}
+      `;
+      const bubbleW = 230;
+      let left = rect.left + rect.width/2 - bubbleW/2;
+      left = Math.max(10, Math.min(left, window.innerWidth - bubbleW - 10));
+      if (step.position === 'above') {
+        tourBubble.style.cssText = `left:${left}px;bottom:${window.innerHeight-rect.top+16}px;width:${bubbleW}px;`;
+      } else {
+        tourBubble.style.cssText = `left:${left}px;top:${rect.bottom+16}px;width:${bubbleW}px;`;
+      }
+      document.body.appendChild(tourBubble);
+    }, 350);
+  });
+}
+function nextTourStep() { tourStep++; showTourStep(); }
+function clearTourUI() {
+  if (tourHighlight) { tourHighlight.remove(); tourHighlight = null; }
+  if (tourBubble) { tourBubble.remove(); tourBubble = null; }
+}
+function endTour() { tourActive = false; clearTourUI(); localStorage.setItem('tour_done','1'); }
+function tourAdvanceIfWaiting(stepId) {
+  if (!tourActive) return;
+  const step = TOUR_STEPS[tourStep];
+  if (step && step.id === stepId && step.type === 'wait') { tourStep++; setTimeout(() => showTourStep(), 400); }
+}
+function tourAdvanceTo(stepId) {
+  if (!tourActive) return;
+  const idx = TOUR_STEPS.findIndex(s => s.id === stepId);
+  if (idx > tourStep) { tourStep = idx; setTimeout(() => showTourStep(), 400); }
+}
+
+// ══ ケンタくん ══
 const KENTA_SCRIPTS = {
-  welcome: [
-    'はじめまして！ぼくケンタくん！施工フォトのナビゲーターだよ🪖',
-    'このアプリはSafariで使ってね！ChromeだとカメラやPDF出力がうまく動かないことがあるよ⚠️',
-    'まずは「＋ 新規」ボタンをタップして、物件名を登録してね！',
-    'わからないことがあったらいつでも呼んでね！'
-  ],
-  newProject: [
-    '物件名と所在地を入力して「作成」をタップしてね！（所在地は任意だよ）',
-  ],
-  drawingUpload: [
-    'ここに図面をアップロードするよ！タップして画像を選んでね📄',
-    '図面はJPGやPNGの画像ファイルがオススメだよ！',
-  ],
-  drawingReady: [
-    '図面のアップロード完了！📐',
-    '調査したい場所を図面上でタップするとカメラが起動するよ📷',
-    'ピン①②③…と番号が自動でつくよ！',
-  ],
-  camera: [
-    '白いボタンを押して撮影してね📷',
-    '撮り直したい場合は「撮り直す」をタップしてね！',
-  ],
-  comment: [
-    '調査項目と特記事項を入力して「保存」をタップしてね✏️',
-    '「外壁ひび割れ」「補修必要」など具体的に書くと報告書が作りやすくなるよ！',
-  ],
-  preview: [
-    '写真を長押しして「写真に保存」するとカメラロールにも保存されるよ📥',
-    'バックアップとして保存しておくのがオススメ！',
-  ],
-  pdf: [
-    'PDF出力をタップすると関係写真のHTMLファイルがダウンロードされるよ🖨️',
-    'ダウンロードしたファイルをSafariで開いて「印刷/PDF保存」ボタンを押してね！',
-  ],
-  export: [
-    'Excel連携ボタンを押したよ！JSONファイルがダウンロードされるよ📤',
-    'このJSONファイルをPCに転送してね。AirDrop・メール・iCloudどれでもOK！',
-    'PCの「施工フォト」フォルダにある「施工フォト変換ツール.exe」を開いて、JSONとExcelひな形を選んで変換開始を押してね🎉',
-  ],
+  welcome:       ['はじめまして！ぼくケンタくん！施工フォトのナビゲーターだよ🪖','このアプリはSafariで使ってね！ChromeだとカメラやPDF出力がうまく動かないことがあるよ⚠️','まずは「＋ 新規」ボタンをタップして、物件名を登録してね！'],
+  newProject:    ['物件名と所在地を入力して「作成」をタップしてね！'],
+  drawingUpload: ['ここに図面をアップロードするよ！タップして画像を選んでね📄','JPGやPNGの画像ファイルがオススメだよ！'],
+  drawingReady:  ['図面のアップロード完了！📐','調査したい場所を図面上でタップするとカメラが起動するよ📷'],
+  camera:        ['白いボタンを押して撮影してね📷','撮り直したい場合は「撮り直す」をタップしてね！'],
+  comment:       ['調査項目と特記事項を入力して「保存」をタップしてね✏️'],
+  preview:       ['写真を長押しして「写真に保存」するとカメラロールにも保存されるよ📥'],
+  export:        ['Excel連携ボタンを押したよ！JSONファイルがダウンロードされるよ📤','このJSONファイルをPCに転送してね。AirDrop・メール・iCloudどれでもOK！'],
 };
-
-let kentaQueue = [];
-let kentaIndex = 0;
-let kentaShown = false;
-
+let kentaQueue = [], kentaIndex = 0;
 function kentaShow(scriptKey) {
-  const msgs = KENTA_SCRIPTS[scriptKey];
-  if (!msgs) return;
-  kentaQueue = msgs;
-  kentaIndex = 0;
+  const msgs = KENTA_SCRIPTS[scriptKey]; if (!msgs) return;
+  kentaQueue = msgs; kentaIndex = 0;
   const bubble = document.getElementById('kenta-bubble');
   document.getElementById('kenta-msg').textContent = kentaQueue[0];
-  bubble.classList.remove('hidden');
-  bubble.classList.toggle('kenta-high', scriptKey === 'camera');
+  bubble.classList.toggle('kenta-high', scriptKey==='camera');
   bubble.style.animation = 'none';
-  requestAnimationFrame(() => { bubble.style.animation = ''; bubble.classList.remove('hidden'); });
+  requestAnimationFrame(() => { bubble.style.animation=''; bubble.classList.remove('hidden'); });
 }
-
 function kentaNext() {
   kentaIndex++;
-  if (kentaIndex >= kentaQueue.length) {
-    document.getElementById('kenta-bubble').classList.add('hidden');
-    return;
-  }
+  if (kentaIndex >= kentaQueue.length) { document.getElementById('kenta-bubble').classList.add('hidden'); return; }
   document.getElementById('kenta-msg').textContent = kentaQueue[kentaIndex];
 }
 
-function kentaHide() {
-  document.getElementById('kenta-bubble').classList.add('hidden');
+// ══ Service Worker ══
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg => console.log('SW登録成功:', reg.scope))
+      .catch(err => console.warn('SW登録失敗:', err));
+  });
 }
 </script>
 </body>
