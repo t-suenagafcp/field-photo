@@ -49,6 +49,7 @@ input,textarea{font-family:inherit;font-size:inherit;}
 .photo-floor-tag{display:inline-block;background:#EFF4FF;color:#1C4ED8;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;margin-bottom:4px;}
 .drawing-wrapper{position:relative;display:inline-block;min-width:100%;min-height:100%;}
 .drawing-img{display:block;max-width:100%;height:auto;user-select:none;}
+#pins-layer{position:absolute;left:0;top:0;}
 .drawing-hint{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.65);color:#fff;padding:7px 14px;border-radius:20px;font-size:12px;white-space:nowrap;pointer-events:none;}
 .upload-zone{border:2px dashed #E2E5EA;border-radius:16px;padding:50px 20px;text-align:center;margin:20px 16px;cursor:pointer;}
 .upload-zone-icon{font-size:40px;margin-bottom:10px;}
@@ -660,6 +661,14 @@ function switchTab(t) {
 }
 
 // ══ 図面 ══
+function syncPinsLayerSize() {
+  const img = document.getElementById('drawing-img');
+  const layer = document.getElementById('pins-layer');
+  if (!img || !layer) return;
+  if (!img.clientWidth || !img.clientHeight) return;
+  layer.style.width  = img.clientWidth + 'px';
+  layer.style.height = img.clientHeight + 'px';
+}
 function renderDrawing() {
   const drawings = activeProject.drawings || [];
   const hasDrawing = drawings.length > 0;
@@ -673,7 +682,16 @@ function renderDrawing() {
   }
   if (activeProject.currentFloor >= drawings.length) activeProject.currentFloor = 0;
   const cur = drawings[activeProject.currentFloor];
-  document.getElementById('drawing-img').src = cur.image;
+  const drawingImgEl = document.getElementById('drawing-img');
+  drawingImgEl.src = cur.image;
+  syncPinsLayerSize();
+  if (!drawingImgEl.onload) {
+    drawingImgEl.onload = syncPinsLayerSize;
+  }
+  if (!window._pinsLayerResizeBound) {
+    window.addEventListener('resize', syncPinsLayerSize);
+    window._pinsLayerResizeBound = true;
+  }
   renderPins();
   renderFloorTabs();
 
@@ -976,8 +994,8 @@ function enablePinDrag() {
       e.stopPropagation();
       pinEl.style.opacity = '0.6';
       const onMove = ev => {
-        const wrapper = document.getElementById('drawing-wrapper');
-        const rect = wrapper.getBoundingClientRect();
+        const img = document.getElementById('drawing-img');
+        const rect = img.getBoundingClientRect();
         const x = Math.max(0, Math.min(100, ((ev.touches[0].clientX - rect.left) / rect.width) * 100));
         const y = Math.max(0, Math.min(100, ((ev.touches[0].clientY - rect.top) / rect.height) * 100));
         pinEl.style.left = x + '%'; pinEl.style.top = y + '%';
@@ -996,8 +1014,8 @@ function enablePinDrag() {
       e.stopPropagation();
       pinEl.style.opacity = '0.6';
       const onMove = ev => {
-        const wrapper = document.getElementById('drawing-wrapper');
-        const rect = wrapper.getBoundingClientRect();
+        const img = document.getElementById('drawing-img');
+        const rect = img.getBoundingClientRect();
         const x = Math.max(0, Math.min(100, ((ev.clientX - rect.left) / rect.width) * 100));
         const y = Math.max(0, Math.min(100, ((ev.clientY - rect.top) / rect.height) * 100));
         pinEl.style.left = x + '%'; pinEl.style.top = y + '%';
@@ -1053,10 +1071,10 @@ function closeRotateUI() {
 
 function handleDrawingTap(src) {
   if (src.target && src.target.closest && src.target.closest('.pin')) return;
-  const rect = document.getElementById('drawing-wrapper').getBoundingClientRect();
+  const rect = document.getElementById('drawing-img').getBoundingClientRect();
   pendingPin = {
-    x: ((src.clientX - rect.left) / rect.width)  * 100,
-    y: ((src.clientY - rect.top)  / rect.height) * 100,
+    x: Math.max(0, Math.min(100, ((src.clientX - rect.left) / rect.width)  * 100)),
+    y: Math.max(0, Math.min(100, ((src.clientY - rect.top)  / rect.height) * 100)),
     floorIndex: activeProject.currentFloor || 0
   };
   startCamera();
