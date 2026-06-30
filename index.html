@@ -212,7 +212,7 @@ input,textarea{font-family:inherit;font-size:inherit;}
   <div class="header">
     <span class="header-title">📐 施工フォト</span>
     <div style="display:flex;gap:8px;">
-      <button class="btn-outline" onclick="document.getElementById('json-import-list-input').click()" style="font-size:12px;">📥 インポート</button>
+      <button class="btn-outline" onclick="document.getElementById('json-import-list-input').click()" style="font-size:12px;border-color:#1C4ED8;color:#1C4ED8;font-weight:700;">📥 スマホから取込</button>
       <button class="btn-primary" onclick="openNewProject()">＋ 新規</button>
     </div>
   </div>
@@ -270,8 +270,6 @@ input,textarea{font-family:inherit;font-size:inherit;}
     </button>
   </div>
 </div>
-<input type="file" id="json-import-input" accept=".json,.txt" style="display:none" onchange="handleJSONImport(this)">
-
 <!-- ══ 画面3: カメラ ══ -->
 <div id="screen-camera" class="screen">
   <video id="camera-video" autoplay playsinline muted style="flex:1;object-fit:cover;width:100%;"></video>
@@ -1591,7 +1589,7 @@ function exportJSON() {
   a.href = url; a.download = `施工フォト_${activeProject.name}.txt`;
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   setTimeout(() => URL.revokeObjectURL(url), 1000);
-  alert('📤 JSONファイルをダウンロードしました！\n\nAirDrop・メール・iCloudなどでPCに転送してください。');
+  alert('📤 JSONファイルをダウンロードしました！\n\n①AirDrop・メール・LINEなどでPCに転送\n②PCで施工フォトを開き「プロジェクト一覧」画面の「📥 インポート」ボタンでこのファイルを選択\n\nこれで写真もピン位置もそのままPCに引き継がれます。');
   setTimeout(() => kentaShow('export'), 500);
 }
 
@@ -1775,7 +1773,7 @@ const KENTA_SCRIPTS = {
   camera:        ['白いボタンを押して撮影してね📷','撮り直したい場合は「撮り直す」をタップしてね！'],
   comment:       ['調査項目と特記事項を入力して「保存」をタップしてね✏️'],
   preview:       ['写真を長押しして「写真に保存」するとカメラロールにも保存されるよ📥'],
-  export:        ['Excel連携ボタンを押したよ！JSONファイルがダウンロードされるよ📤','このJSONファイルをPCに転送してね。AirDrop・メール・iCloudどれでもOK！'],
+  export:        ['Excel連携ボタンを押したよ！JSONファイルがダウンロードされるよ📤','このファイルをPCに転送してね。AirDrop・メール・LINEなど何でもOK！','PC側では「プロジェクト一覧」画面右上の「📥 インポート」ボタンからこのファイルを選んでね','取り込むと写真もピン位置もそのままPCで開けるよ💻✨'],
 };
 let kentaQueue = [], kentaIndex = 0;
 function kentaShow(scriptKey) {
