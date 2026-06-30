@@ -770,10 +770,11 @@ function openFloorNameModalStep(idx) {
 
   // クイックボタン（1枚目のみ表示 → 全枚に一括適用）
   let quickHTML = '';
+  let quickPatterns = null;
   if (idx === 0) {
-    const patterns = buildQuickNames(total);
-    const btns = Object.entries(patterns).map(([key, { label, names }]) =>
-      `<button class="floor-quick-btn" onclick="applyQuickPattern(${JSON.stringify(names)})">${label}</button>`
+    quickPatterns = buildQuickNames(total);
+    const btns = Object.entries(quickPatterns).map(([key, { label }]) =>
+      `<button class="floor-quick-btn" data-quick-key="${key}">${label}</button>`
     ).join('');
     if (btns) {
       quickHTML = `<div style="margin-bottom:10px;">
@@ -791,6 +792,14 @@ function openFloorNameModalStep(idx) {
       placeholder="例：1階"
       style="font-size:16px;">
   `;
+
+  // クイックボタンにイベントを付ける（innerHTML後なのでここで設定）
+  if (quickPatterns) {
+    inputsEl.querySelectorAll('.floor-quick-btn[data-quick-key]').forEach(btn => {
+      const key = btn.dataset.quickKey;
+      if (quickPatterns[key]) btn.addEventListener('click', () => applyQuickPattern(quickPatterns[key].names));
+    });
+  }
 
   document.getElementById('overlay-floor-name').classList.add('open');
   // 1枚目のときだけケンタくんが案内
