@@ -220,7 +220,7 @@ input,textarea{font-family:inherit;font-size:inherit;}
     <div class="section-label">プロジェクト</div>
     <div id="project-list"></div>
   </div>
-  <input type="file" id="json-import-list-input" accept=".json,.txt" style="display:none" onchange="handleJSONImportNew(this)">
+  <input type="file" id="json-import-list-input" accept=".json,.txt" multiple style="display:none" onchange="handleJSONImportNew(this)">
 </div>
 
 <!-- ══ 画面2: プロジェクト詳細 ══ -->
@@ -1063,7 +1063,15 @@ function handleDrawingTap(src) {
 }
 
 // ══ カメラ ══
+function isTouchDevice() {
+  return ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+}
 async function startCamera() {
+  // PC（タッチ非対応）はカメラを起動せず、最初からファイル選択にする
+  if (!isTouchDevice()) {
+    photoFileRef.click();
+    return;
+  }
   showScreen('screen-camera');
   setTimeout(() => kentaShow('camera'), 400);
   try {
@@ -1530,67 +1538,197 @@ async function downloadAllPhotos() {
 }
 
 // ══ JSONインポート ══
-function handleJSONImportNew(input) {
-  const file = input.files[0]; if (!file) return;
-  const reader = new FileReader();
-  reader.onload = async e => {
-    try {
-      const data = JSON.parse(e.target.result);
+function readFileAsJSON(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try { resolve(JSON.parse(e.target.result)); }
+      catch(err) { reject(new Error(file.name + ' の形式が正しくありません')); }
+    };
+    reader.onerror = () => reject(new Error(file.name + ' の読み込みに失敗しました'));
+    reader.readAsText(file, 'utf-8');
+  });
+}
+
+// 分割ファイル（part 1/3 等）も含め、複数ファイルを一括でインポート・マージする
+async function handleJSONImportNew(input) {
+  const files = Array.from(input.files || []); if (!files.length) return;
+  try {
+    const dataList = await Promise.all(files.map(readFileAsJSON));
+    for (const data of dataList) {
       if (!data.project || !data.photos) throw new Error('JSONの形式が正しくありません');
-      let name = data.project.name || 'インポート';
+    }
+    // exportGroupId（分割出力時の共通ID）でグループ化。無い場合は単独ファイルとして扱う
+    const groups = new Map();
+    dataList.forEach(data => {
+      const key = data.exportGroupId || ('single_' + Math.random());
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(data);
+    });
+
+    let totalImported = 0, lastName = '';
+    for (const groupDataList of groups.values()) {
+      groupDataList.sort((a,b) => (a.partIndex||0) - (b.partIndex||0));
+      const first = groupDataList[0];
+      let name = first.project.name || 'インポート';
       const existing = projects.map(p => p.name);
       if (existing.includes(name)) name = name + '_' + new Date().toLocaleDateString('ja-JP').replace(/\//g,'-');
+
+      const allPhotos = [];
+      groupDataList.forEach(data => {
+        data.photos.forEach((ph, i) => {
+          allPhotos.push({
+            id: ph.id||Date.now().toString()+Math.random().toString(36).slice(2), num: ph.num||i+1,
+            x: ph.pinX||ph.x||0, y: ph.pinY||ph.y||0,
+            floorIndex: ph.floorIndex||0, photo: ph.photo||null,
+            inspectionItem: ph.inspectionItem||'', comment: ph.comment||'', date: ph.date||''
+          });
+        });
+      });
+
       const p = {
-        id: Date.now().toString(), name,
-        address: data.project.address || '',
-        createdAt: data.project.createdAt || new Date().toISOString(),
-        drawings: data.project.drawings || [],
+        id: Date.now().toString() + Math.random().toString(36).slice(2), name,
+        address: first.project.address || '',
+        createdAt: first.project.createdAt || new Date().toISOString(),
+        drawings: first.project.drawings || [],
         currentFloor: 0,
-        photos: data.photos.map((ph, i) => ({
-          id: ph.id||Date.now().toString()+i, num: ph.num||i+1,
-          x: ph.pinX||ph.x||0, y: ph.pinY||ph.y||0,
-          floorIndex: ph.floorIndex||0, photo: ph.photo||null,
-          inspectionItem: ph.inspectionItem||'', comment: ph.comment||'', date: ph.date||''
-        }))
+        photos: allPhotos
       };
       projects.push(p);
       await dbSave(p);
-      renderProjectList();
-      alert(`「${name}」をインポートしました（写真${p.photos.length}枚）`);
-    } catch(err) { alert('インポートに失敗しました: ' + err.message); }
-    input.value = '';
-  };
-  reader.readAsText(file, 'utf-8');
+      totalImported += allPhotos.length;
+      lastName = name;
+    }
+    renderProjectList();
+    const groupCount = groups.size;
+    alert(`「${lastName}」${groupCount>1?`ほか${groupCount}件`:''}をインポートしました（写真${totalImported}枚）`);
+  } catch(err) { alert('インポートに失敗しました: ' + err.message); }
+  input.value = '';
 }
 
-// ══ Excel連携JSON出力 ══
-function exportJSON() {
-  const photos = activeProject?.photos || [];
-  if (!photos.length) { alert('写真がありません'); return; }
-  const data = {
-    exportedAt: new Date().toLocaleString('ja-JP'),
-    project: {
-      name: activeProject.name,
-      address: activeProject.address || '',
-      drawings: (activeProject.drawings||[]).map(d => ({name: d.name}))
-    },
-    photos: photos.map(ph => ({
-      num: ph.num,
-      floor: (activeProject.drawings&&activeProject.drawings[ph.floorIndex||0])?activeProject.drawings[ph.floorIndex||0].name:'',
-      inspectionItem: ph.inspectionItem||'', comment: ph.comment||'', date: ph.date,
-      pinX: Math.round(ph.x*10)/10, pinY: Math.round(ph.y*10)/10,
-      photo: ph.photo||null,
-    }))
-  };
-  const json = JSON.stringify(data, null, 2);
-  const blob = new Blob([json], {type:'text/plain;charset=utf-8'});
+// ══ 画像圧縮ユーティリティ（エクスポート専用：原本はDB内に保持） ══
+function compressImageForExport(dataUrl, maxSize, quality) {
+  return new Promise((resolve) => {
+    if (!dataUrl) { resolve(null); return; }
+    const img = new Image();
+    img.onload = () => {
+      let { width, height } = img;
+      if (width > maxSize || height > maxSize) {
+        if (width > height) { height = Math.round(height * maxSize / width); width = maxSize; }
+        else { width = Math.round(width * maxSize / height); height = maxSize; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width; canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = () => resolve(dataUrl); // 失敗時は元データのまま
+    img.src = dataUrl;
+  });
+}
+
+// ══ Excel連携JSON出力（写真・図面は自動圧縮してファイルサイズを抑える） ══
+// 1ファイルあたりの目安上限（メール添付を考慮し安全マージンを取って18MB）
+const EXPORT_CHUNK_LIMIT_BYTES = 18 * 1024 * 1024;
+
+function downloadBlob(blob, filename) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; a.download = `施工フォト_${activeProject.name}.txt`;
+  a.href = url; a.download = filename;
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   setTimeout(() => URL.revokeObjectURL(url), 1000);
-  alert('📤 JSONファイルをダウンロードしました！\n\n①AirDrop・メール・LINEなどでPCに転送\n②PCで施工フォトを開き「プロジェクト一覧」画面の「📥 インポート」ボタンでこのファイルを選択\n\nこれで写真もピン位置もそのままPCに引き継がれます。');
-  setTimeout(() => kentaShow('export'), 500);
+}
+
+// 写真を1枚も削らず、サイズ上限に収まるよう複数ファイルに分割する
+function splitPhotosBySize(compressedPhotos, baseProjectJsonSize) {
+  const chunks = [];
+  let current = [];
+  let currentSize = baseProjectJsonSize;
+  for (const ph of compressedPhotos) {
+    const phSize = JSON.stringify(ph).length;
+    if (current.length && currentSize + phSize > EXPORT_CHUNK_LIMIT_BYTES) {
+      chunks.push(current);
+      current = [];
+      currentSize = baseProjectJsonSize;
+    }
+    current.push(ph);
+    currentSize += phSize;
+  }
+  if (current.length) chunks.push(current);
+  return chunks.length ? chunks : [[]];
+}
+
+async function exportJSON() {
+  const photos = activeProject?.photos || [];
+  if (!photos.length) { alert('写真がありません'); return; }
+
+  const loadingEl = document.createElement('div');
+  loadingEl.style = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:600;text-align:center;padding:20px;';
+  loadingEl.textContent = '📤 写真を圧縮してファイルを作成中...';
+  document.body.appendChild(loadingEl);
+
+  try {
+    // 図面は文字が見えるよう少し大きめ・高品質に圧縮
+    const drawings = await Promise.all(
+      (activeProject.drawings||[]).map(async d => ({
+        name: d.name,
+        image: await compressImageForExport(d.image, 1600, 0.7)
+      }))
+    );
+    // 現場写真は枚数が多くなる前提で強めに圧縮
+    const compressedPhotos = [];
+    for (let i = 0; i < photos.length; i++) {
+      const ph = photos[i];
+      loadingEl.textContent = `📤 写真を圧縮中... (${i+1}/${photos.length})`;
+      compressedPhotos.push({
+        num: ph.num,
+        floor: (activeProject.drawings&&activeProject.drawings[ph.floorIndex||0])?activeProject.drawings[ph.floorIndex||0].name:'',
+        inspectionItem: ph.inspectionItem||'', comment: ph.comment||'', date: ph.date,
+        pinX: Math.round(ph.x*10)/10, pinY: Math.round(ph.y*10)/10,
+        photo: await compressImageForExport(ph.photo, 900, 0.6),
+      });
+    }
+
+    const projectBase = {
+      name: activeProject.name,
+      address: activeProject.address || '',
+      drawings
+    };
+    const baseProjectJsonSize = JSON.stringify(projectBase).length;
+
+    // サイズ上限を超える場合は写真単位で複数ファイルに分割
+    const chunks = splitPhotosBySize(compressedPhotos, baseProjectJsonSize);
+    const exportGroupId = Date.now().toString() + Math.random().toString(36).slice(2);
+    const totalParts = chunks.length;
+
+    let totalBytes = 0;
+    chunks.forEach((chunkPhotos, idx) => {
+      const data = {
+        exportedAt: new Date().toLocaleString('ja-JP'),
+        exportGroupId,
+        partIndex: idx,
+        totalParts,
+        project: projectBase,
+        photos: chunkPhotos
+      };
+      const json = JSON.stringify(data);
+      const blob = new Blob([json], {type:'text/plain;charset=utf-8'});
+      totalBytes += blob.size;
+      const suffix = totalParts > 1 ? `_part${idx+1}of${totalParts}` : '';
+      downloadBlob(blob, `施工フォト_${activeProject.name}${suffix}.txt`);
+    });
+
+    const totalMB = (totalBytes / 1024 / 1024).toFixed(1);
+    const msg = totalParts > 1
+      ? `📤 ファイルサイズが大きいため${totalParts}個に分割してダウンロードしました！（合計約${totalMB}MB）\n\n①全てのファイルをまとめてAirDrop・メール・LINEなどでPCに転送\n②PCで施工フォトを開き「プロジェクト一覧」画面の「📥 インポート」ボタンで${totalParts}個まとめて選択\n\nファイルが1つでも欠けると写真も欠けるので、必ず全部まとめて送ってください。`
+      : `📤 JSONファイルをダウンロードしました！（約${totalMB}MB）\n\n①AirDrop・メール・LINEなどでPCに転送\n②PCで施工フォトを開き「プロジェクト一覧」画面の「📥 インポート」ボタンでこのファイルを選択\n\nこれで写真もピン位置もそのままPCに引き継がれます。`;
+    alert(msg);
+    setTimeout(() => kentaShow('export'), 500);
+  } catch(err) {
+    alert('ファイル作成中にエラーが発生しました: ' + err.message);
+  } finally {
+    document.body.removeChild(loadingEl);
+  }
 }
 
 function esc(s) {
@@ -1754,6 +1892,7 @@ function tourResetForDev() {
   // 開発用：ツアーリセット（コンソールから呼ぶ）
   localStorage.removeItem('tour_done');
   localStorage.removeItem('kenta_welcomed');
+  Object.keys(localStorage).filter(k => k.startsWith('kenta_seen_')).forEach(k => localStorage.removeItem(k));
   location.reload();
 }
 function tourAdvanceTo(stepId) {
@@ -1780,6 +1919,10 @@ function kentaShow(scriptKey) {
   const msgs = KENTA_SCRIPTS[scriptKey]; if (!msgs) return;
   // ツアー中はケンタくんを出さない（被って邪魔になるため）
   if (tourActive) return;
+  // 各シーンは初回だけ案内（くどくならないように）
+  const seenKey = 'kenta_seen_' + scriptKey;
+  if (localStorage.getItem(seenKey)) return;
+  localStorage.setItem(seenKey, '1');
   kentaCurrentScene = scriptKey;
   kentaQueue = msgs; kentaIndex = 0;
   const bubble = document.getElementById('kenta-bubble');
