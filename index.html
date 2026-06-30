@@ -1642,13 +1642,23 @@ async function handleJSONImportNew(input) {
       const existing = projects.map(p => p.name);
       if (existing.includes(name)) name = name + '_' + new Date().toLocaleDateString('ja-JP').replace(/\//g,'-');
 
+      const drawingsForGroup = first.project.drawings || [];
       const allPhotos = [];
       groupDataList.forEach(data => {
         data.photos.forEach((ph, i) => {
+          let resolvedFloorIndex = ph.floorIndex;
+          if (resolvedFloorIndex === undefined || resolvedFloorIndex === null) {
+            if (ph.floor) {
+              const idx = drawingsForGroup.findIndex(d => d.name === ph.floor);
+              resolvedFloorIndex = idx >= 0 ? idx : 0;
+            } else {
+              resolvedFloorIndex = 0;
+            }
+          }
           allPhotos.push({
             id: ph.id||Date.now().toString()+Math.random().toString(36).slice(2), num: ph.num||i+1,
             x: ph.pinX||ph.x||0, y: ph.pinY||ph.y||0,
-            floorIndex: ph.floorIndex||0, photo: ph.photo||null,
+            floorIndex: resolvedFloorIndex, photo: ph.photo||null,
             inspectionItem: ph.inspectionItem||'', comment: ph.comment||'', date: ph.date||''
           });
         });
@@ -1748,6 +1758,7 @@ async function exportJSON() {
       loadingEl.textContent = `📤 写真を圧縮中... (${i+1}/${photos.length})`;
       compressedPhotos.push({
         num: ph.num,
+        floorIndex: ph.floorIndex||0,
         floor: (activeProject.drawings&&activeProject.drawings[ph.floorIndex||0])?activeProject.drawings[ph.floorIndex||0].name:'',
         inspectionItem: ph.inspectionItem||'', comment: ph.comment||'', date: ph.date,
         pinX: Math.round(ph.x*10)/10, pinY: Math.round(ph.y*10)/10,
