@@ -757,7 +757,7 @@ function openFloorNameModalStep(idx) {
     document.getElementById('overlay-floor-name').classList.remove('open');
     // ツアーが残っていれば終了、ケンタくんを出す
     if (tourActive) endTour();
-    setTimeout(() => kentaShow('drawingReady'), 400);
+    setTimeout(() => kentaShow('floorNameDone'), 400);
     return;
   }
   floorNameStep = idx;
@@ -793,6 +793,8 @@ function openFloorNameModalStep(idx) {
   `;
 
   document.getElementById('overlay-floor-name').classList.add('open');
+  // 1枚目のときだけケンタくんが案内
+  if (idx === 0) setTimeout(() => kentaShow('floorName'), 600);
   setTimeout(() => {
     const input = document.getElementById('floor-name-single-input');
     if (input) { input.focus(); input.select(); }
@@ -805,7 +807,7 @@ async function applyQuickPattern(names) {
   await dbSave(activeProject);
   document.getElementById('overlay-floor-name').classList.remove('open');
   renderDrawing();
-  setTimeout(() => kentaShow('drawingReady'), 400);
+  setTimeout(() => kentaShow('floorNameDone'), 400);
 }
 
 function closeFloorNameModal(e) {
@@ -833,6 +835,8 @@ function confirmChangeDrawing() {
 
 async function handleDrawingFile(input) {
   const file = input.files[0]; if (!file) return;
+  // 図面選択した時点でツアーハイライトを即消去
+  if (tourActive) endTour();
   if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
     const reader = new FileReader();
     reader.onload = async e => {
@@ -870,7 +874,7 @@ async function handleDrawingFile(input) {
       if (activeProject.drawings.length === 1) {
         setTimeout(() => openFloorNameModalStep(0), 400);
       } else {
-        setTimeout(() => { if (tourActive) endTour(); kentaShow('drawingReady'); }, 400);
+        setTimeout(() => kentaShow('drawingReady'), 400);
       }
     };
     reader.readAsDataURL(file);
@@ -1683,6 +1687,8 @@ const KENTA_SCRIPTS = {
   welcome:       ['はじめまして！ぼくケンタくん！施工フォトのナビゲーターだよ🪖','このアプリはSafariで使ってね！ChromeだとカメラやPDF出力がうまく動かないことがあるよ⚠️','まずは「＋ 新規」ボタンをタップして、物件名を登録してね！'],
   newProject:    ['物件名と所在地を入力して「作成」をタップしてね！'],
   drawingUpload: ['ここに図面をアップロードするよ！タップして画像を選んでね📄','JPGやPNGの画像ファイルがオススメだよ！'],
+  floorName:     ['図面名をつけよう！クイック選択ボタンを使うと一括で入力できるよ✨','「PIT階から」「1階から」など当てはまるボタンをタップしてね！','手動で入力する場合は入力欄に直接入力して「次へ」をタップしてね'],
+  floorNameDone: ['図面名の設定完了！📐','調査したい場所を図面上でタップするとカメラが起動するよ📷','ピン番号が自動でつくから、あとはどんどん撮影していこう！'],
   drawingReady:  ['図面のアップロード完了！📐','調査したい場所を図面上でタップするとカメラが起動するよ📷'],
   camera:        ['白いボタンを押して撮影してね📷','撮り直したい場合は「撮り直す」をタップしてね！'],
   comment:       ['調査項目と特記事項を入力して「保存」をタップしてね✏️'],
