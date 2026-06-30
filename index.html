@@ -1341,6 +1341,76 @@ async function editCommentFromPopup() {
 }
 
 // ══ PDF出力 ══
+// ══ EXIF Orientation補正（PDF生成時、Canvas描画でEXIF回転が無視される問題への対策） ══
+function getExifOrientation(dataUrl) {
+  try {
+    const base64 = dataUrl.split(',')[1];
+    const binary = atob(base64);
+    const len = Math.min(binary.length, 128 * 1024); // 先頭128KBだけ見れば十分
+    const view = new DataView(new Uint8Array(len).buffer);
+    const arr = new Uint8Array(len);
+    for (let i = 0; i < len; i++) arr[i] = binary.charCodeAt(i);
+    const dv = new DataView(arr.buffer);
+    if (dv.getUint16(0, false) !== 0xFFD8) return 1; // JPEGでない
+    let offset = 2;
+    while (offset < len) {
+      const marker = dv.getUint16(offset, false);
+      offset += 2;
+      if (marker === 0xFFE1) {
+        if (dv.getUint32(offset + 2, false) !== 0x45786966) return 1; // "Exif"
+        const tiffOffset = offset + 8;
+        const little = dv.getUint16(tiffOffset, false) === 0x4949;
+        const firstIFD = dv.getUint32(tiffOffset + 4, little);
+        const dirOffset = tiffOffset + firstIFD;
+        const entries = dv.getUint16(dirOffset, little);
+        for (let i = 0; i < entries; i++) {
+          const entryOffset = dirOffset + 2 + i * 12;
+          if (dv.getUint16(entryOffset, little) === 0x0112) {
+            return dv.getUint16(entryOffset + 8, little);
+          }
+        }
+        return 1;
+      } else if ((marker & 0xFF00) !== 0xFF00) {
+        break;
+      } else {
+        offset += dv.getUint16(offset, false);
+      }
+    }
+  } catch(e) { /* 読めなければ無補正扱い */ }
+  return 1;
+}
+
+// EXIF Orientationを反映した状態で読み込んだ画像（向き・サイズとも補正済み）を返す
+function loadImageWithExifFix(dataUrl) {
+  return new Promise((resolve) => {
+    const orientation = getExifOrientation(dataUrl);
+    const img = new Image();
+    img.onload = () => {
+      if (orientation <= 1) { resolve(img); return; }
+      const canvas = document.createElement('canvas');
+      const swap = orientation >= 5 && orientation <= 8;
+      canvas.width = swap ? img.height : img.width;
+      canvas.height = swap ? img.width : img.height;
+      const ctx = canvas.getContext('2d');
+      switch (orientation) {
+        case 2: ctx.transform(-1, 0, 0, 1, img.width, 0); break;
+        case 3: ctx.transform(-1, 0, 0, -1, img.width, img.height); break;
+        case 4: ctx.transform(1, 0, 0, -1, 0, img.height); break;
+        case 5: ctx.transform(0, 1, 1, 0, 0, 0); break;
+        case 6: ctx.transform(0, 1, -1, 0, img.height, 0); break;
+        case 7: ctx.transform(0, -1, -1, 0, img.height, img.width); break;
+        case 8: ctx.transform(0, -1, 1, 0, 0, img.width); break;
+      }
+      ctx.drawImage(img, 0, 0);
+      const fixedImg = new Image();
+      fixedImg.onload = () => resolve(fixedImg);
+      fixedImg.src = canvas.toDataURL('image/jpeg', 0.95);
+    };
+    img.onerror = () => resolve(img);
+    img.src = dataUrl;
+  });
+}
+
 async function exportPDF() {
   const photos = activeProject?.photos || [];
   if (!photos.length) { alert('写真がありません'); return; }
@@ -1401,9 +1471,7 @@ async function exportPDF() {
       if (!floor.image) continue;
       const floorPhotos = photos.filter(p => (p.floorIndex||0) === fi);
       if (!floorPhotos.length) continue;
-      const img = new Image();
-      img.src = floor.image;
-      await new Promise(res => { img.onload = res; img.onerror = res; });
+      const img = await loadImageWithExifFix(floor.image);
       const canvas = document.createElement('canvas');
       const A4W = 1240, A4H = 1754;
       canvas.width = A4W; canvas.height = A4H;
@@ -1607,24 +1675,22 @@ async function handleJSONImportNew(input) {
 }
 
 // ══ 画像圧縮ユーティリティ（エクスポート専用：原本はDB内に保持） ══
-function compressImageForExport(dataUrl, maxSize, quality) {
-  return new Promise((resolve) => {
-    if (!dataUrl) { resolve(null); return; }
-    const img = new Image();
-    img.onload = () => {
-      let { width, height } = img;
-      if (width > maxSize || height > maxSize) {
-        if (width > height) { height = Math.round(height * maxSize / width); width = maxSize; }
-        else { width = Math.round(width * maxSize / height); height = maxSize; }
-      }
-      const canvas = document.createElement('canvas');
-      canvas.width = width; canvas.height = height;
-      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-      resolve(canvas.toDataURL('image/jpeg', quality));
-    };
-    img.onerror = () => resolve(dataUrl); // 失敗時は元データのまま
-    img.src = dataUrl;
-  });
+async function compressImageForExport(dataUrl, maxSize, quality) {
+  if (!dataUrl) return null;
+  try {
+    const img = await loadImageWithExifFix(dataUrl);
+    let { width, height } = img;
+    if (width > maxSize || height > maxSize) {
+      if (width > height) { height = Math.round(height * maxSize / width); width = maxSize; }
+      else { width = Math.round(width * maxSize / height); height = maxSize; }
+    }
+    const canvas = document.createElement('canvas');
+    canvas.width = width; canvas.height = height;
+    canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+    return canvas.toDataURL('image/jpeg', quality);
+  } catch(e) {
+    return dataUrl; // 失敗時は元データのまま
+  }
 }
 
 // ══ Excel連携JSON出力（写真・図面は自動圧縮してファイルサイズを抑える） ══
