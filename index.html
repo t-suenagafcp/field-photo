@@ -520,6 +520,7 @@ let activeProject = null;
 let pendingPin = null;
 let capturedPhoto = null;
 let capturedIsPortrait = false;
+let capturedIsPortrait = false;
 let selectedPhotoId = null;
 let mediaStream = null;
 const drawingFileRef = document.getElementById('drawing-file-input');
@@ -1120,6 +1121,7 @@ function takePicture() {
   const vw = video.videoWidth, vh = video.videoHeight;
   const isPortrait = vh > vw;
   capturedIsPortrait = isPortrait;
+  capturedIsPortrait = isPortrait;
   const MAX_DIM = 1600;
   if (isPortrait) {
     const scale = Math.min(1, MAX_DIM / vh);
@@ -1174,6 +1176,7 @@ async function savePhoto() {
     x: pendingPin.x, y: pendingPin.y,
     floorIndex: pendingPin.floorIndex || 0,
     photo: capturedPhoto,
+    isPortrait: capturedIsPortrait || false,
     isPortrait: capturedIsPortrait || false,
     inspectionItem: document.getElementById('input-inspection').value.trim(),
     comment: document.getElementById('input-comment').value.trim(),
