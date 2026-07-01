@@ -10,10 +10,10 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>施工フォト</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="vendor/pdf.min.js"></script>
+<script src="vendor/html2canvas.min.js"></script>
+<script src="vendor/jspdf.umd.min.js"></script>
+<script src="vendor/jszip.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 html,body{height:100%;overflow:hidden;}
@@ -519,6 +519,7 @@ let projects = [];
 let activeProject = null;
 let pendingPin = null;
 let capturedPhoto = null;
+let capturedIsPortrait = false;
 let selectedPhotoId = null;
 let mediaStream = null;
 const drawingFileRef = document.getElementById('drawing-file-input');
@@ -876,7 +877,15 @@ async function handleDrawingFile(input) {
     reader.onload = async e => {
       try {
         const pdfjsLib = window['pdfjs-dist/build/pdf'];
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        // file://環境でWorkerのCORSエラーを回避するためBlob URL方式で読み込む
+        fetch('vendor/pdf.worker.min.js')
+          .then(r => r.blob())
+          .then(blob => {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(blob);
+          })
+          .catch(() => {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+          });
         const pdf = await pdfjsLib.getDocument({data: e.target.result}).promise;
         const newDrawings = [];
         for (let i = 1; i <= pdf.numPages; i++) {
@@ -1110,6 +1119,7 @@ function takePicture() {
   const canvas = document.getElementById('snapshot-canvas');
   const vw = video.videoWidth, vh = video.videoHeight;
   const isPortrait = vh > vw;
+  capturedIsPortrait = isPortrait;
   const MAX_DIM = 1600;
   if (isPortrait) {
     const scale = Math.min(1, MAX_DIM / vh);
@@ -1164,6 +1174,7 @@ async function savePhoto() {
     x: pendingPin.x, y: pendingPin.y,
     floorIndex: pendingPin.floorIndex || 0,
     photo: capturedPhoto,
+    isPortrait: capturedIsPortrait || false,
     inspectionItem: document.getElementById('input-inspection').value.trim(),
     comment: document.getElementById('input-comment').value.trim(),
     date: new Date().toLocaleString('ja-JP')
