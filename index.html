@@ -315,8 +315,14 @@ input,textarea{font-family:inherit;font-size:inherit;}
   <div class="sheet" onclick="event.stopPropagation()">
     <img id="comment-preview-img" class="preview-img-sm" src="" alt="">
     <div class="field-label">調査項目</div>
+    <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;">
+      ${['外壁塗装面','外壁タイル面','ウレタン防水面','内壁','床','天井','屋上','階段','共用廊下','バルコニー','駐車場','機械室','電気室','受水槽','エレベーター','消防設備','給排水設備'].map(v=>`<button type="button" onclick="document.getElementById('input-inspection').value='${v}'" style="padding:4px 10px;border-radius:14px;background:#EFF4FF;color:#1C4ED8;font-size:12px;font-weight:600;border:1.5px solid #C7D7FD;cursor:pointer;">${v}</button>`).join('')}
+    </div>
     <input class="field-input" id="input-inspection" placeholder="例：外壁、防火設備、避難施設等">
     <div class="field-label">特記事項・コメント</div>
+    <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;">
+      ${['異常なし','ひび割れあり','雨漏り痕あり','剥離あり','錆び発生','変形あり','要経過観察','要補修','緊急対応要','撮影困難'].map(v=>`<button type="button" onclick="document.getElementById('input-comment').value='${v}'" style="padding:4px 10px;border-radius:14px;background:#F0FDF4;color:#059669;font-size:12px;font-weight:600;border:1.5px solid #A7F3D0;cursor:pointer;">${v}</button>`).join('')}
+    </div>
     <textarea class="field-textarea" id="input-comment" placeholder="例：外壁ひび割れ確認、補修必要"></textarea>
     <div class="btn-row">
       <button class="btn-outline" onclick="cancelComment()">キャンセル</button>
@@ -444,8 +450,14 @@ input,textarea{font-family:inherit;font-size:inherit;}
     <div class="sheet-title">写真を編集</div>
     <img id="photo-edit-thumb" style="width:100%;border-radius:10px;margin-bottom:14px;max-height:160px;object-fit:cover;" src="" alt="">
     <div class="field-label">調査項目</div>
+    <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;">
+      ${['外壁塗装面','外壁タイル面','ウレタン防水面','内壁','床','天井','屋上','階段','共用廊下','バルコニー','駐車場','機械室','電気室','受水槽','エレベーター','消防設備','給排水設備'].map(v=>`<button type="button" onclick="document.getElementById('photo-edit-inspection').value='${v}'" style="padding:4px 10px;border-radius:14px;background:#EFF4FF;color:#1C4ED8;font-size:12px;font-weight:600;border:1.5px solid #C7D7FD;cursor:pointer;">${v}</button>`).join('')}
+    </div>
     <input class="field-input" id="photo-edit-inspection" placeholder="例：外壁、防火設備">
     <div class="field-label">特記事項・コメント</div>
+    <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;">
+      ${['異常なし','ひび割れあり','雨漏り痕あり','剥離あり','錆び発生','変形あり','要経過観察','要補修','緊急対応要','撮影困難'].map(v=>`<button type="button" onclick="document.getElementById('photo-edit-comment').value='${v}'" style="padding:4px 10px;border-radius:14px;background:#F0FDF4;color:#059669;font-size:12px;font-weight:600;border:1.5px solid #A7F3D0;cursor:pointer;">${v}</button>`).join('')}
+    </div>
     <textarea class="field-textarea" id="photo-edit-comment" placeholder="例：外壁ひび割れ確認、補修必要"></textarea>
     <div class="btn-row">
       <button class="btn-outline" onclick="closePhotoEdit()">キャンセル</button>
