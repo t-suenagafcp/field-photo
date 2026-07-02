@@ -755,7 +755,7 @@ const QUICK_PATTERNS = {
   b1_to:       { label: 'B1階から',      base: ['B1階','1階','2階','3階','4階','5階','6階','7階','8階','9階','10階'] },
   floor1_to:   { label: '1階から',       base: ['1階','2階','3階','4階','5階','6階','7階','8階','9階','10階','11階','12階','13階','14階','15階'] },
   roof_only:   { label: '屋上のみ',      base: ['屋上'] },
-  pit_plan:    { label: 'PIT階平面図から', base: ['PIT階平面図','B1階平面図','1階平面図','2階平面図','3階平面図','4階平面図','5階平面図','6階平面図'] },
+  pit_plan:    { label: 'PIT階平面図から', base: ['PIT階平面図','1階平面図','2階平面図','3階平面図','4階平面図','5階平面図','6階平面図','7階平面図'] },
   b1_plan:     { label: 'B1階平面図から', base: ['B1階平面図','1階平面図','2階平面図','3階平面図','4階平面図','5階平面図','6階平面図'] },
   floor1_plan: { label: '1階平面図から',  base: ['1階平面図','2階平面図','3階平面図','4階平面図','5階平面図','6階平面図','7階平面図','8階平面図'] },
 };
@@ -1595,15 +1595,24 @@ ${pages.map((pair, pi) => `
   <div class="pdf-footer">${pi+1} / ${pages.length}</div>
 </div>`).join('')}`;
     document.body.appendChild(stage);
-    // isPortraitの写真をcanvasで回転して差し替え
+    // 画素サイズで縦横判定して回転（isPortraitフラグがなくても動く）
     const allPhotosFlat = pages.flat().filter(Boolean);
     const imgEls = Array.from(stage.querySelectorAll('img[data-ph-id]'));
     await Promise.all(imgEls.map(async imgEl => {
       const phId = imgEl.dataset.phId;
       const ph = allPhotosFlat.find(p => p.id === phId);
-      if (ph && ph.isPortrait && ph.photo) {
-        const rotated = await rotateImageIfPortrait(ph.photo, true);
-        imgEl.src = rotated;
+      if (ph && ph.photo) {
+        // 画像の実際のサイズで縦横判定
+        const needsRotation = await new Promise(resolve => {
+          const img = new Image();
+          img.onload = () => resolve(img.height < img.width && (ph.isPortrait === true));
+          img.onerror = () => resolve(false);
+          img.src = ph.photo;
+        });
+        if (needsRotation) {
+          const rotated = await rotateImageIfPortrait(ph.photo, true);
+          imgEl.src = rotated;
+        }
       }
     }));
     const imgs = stage.querySelectorAll('img');
