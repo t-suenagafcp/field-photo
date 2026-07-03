@@ -622,6 +622,10 @@ async function createProject() {
   await dbSave(p);
   document.getElementById('overlay-new-project').classList.remove('open');
   renderProjectList();
+  // 新規プロジェクト作成時にケンタくんの案内フラグをリセット（図面以降の説明を再表示）
+  ['drawingUpload','floorName','floorNameDone','drawingReady','camera','comment','preview','export'].forEach(k => {
+    localStorage.removeItem('kenta_seen_' + k);
+  });
   openProject(p.id);
   tourAdvanceIfWaiting('create-btn');
 }
