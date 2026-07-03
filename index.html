@@ -685,7 +685,7 @@ function renderDrawing() {
   document.getElementById('drawing-container').style.display = hasDrawing ? 'block' : 'none';
   document.getElementById('drawing-change-btn').style.display= hasDrawing ? 'block' : 'none';
   if (!hasDrawing) {
-    setTimeout(() => kentaShow('drawingUpload'), 400);
+    setTimeout(() => kentaShow('drawingUpload'), 1000);
     document.getElementById('floor-tabs').innerHTML = '';
     return;
   }
@@ -1617,7 +1617,7 @@ ${pages.map((pair, pi) => `
         // 画像の実際のサイズで縦横判定
         const needsRotation = await new Promise(resolve => {
           const img = new Image();
-          img.onload = () => resolve(img.height < img.width && (ph.isPortrait === true));
+          img.onload = () => resolve(ph.isPortrait === true);
           img.onerror = () => resolve(false);
           img.src = ph.photo;
         });
@@ -2067,7 +2067,7 @@ const KENTA_SCRIPTS = {
 let kentaQueue = [], kentaIndex = 0;
 function kentaShow(scriptKey) {
   const msgs = KENTA_SCRIPTS[scriptKey]; if (!msgs) return;
-  // ツアー中はケンタくんを出さない（被って邪魔になるため）
+  // ツアー中（初回のみ）はケンタくんを出さない
   if (tourActive) return;
   // 各シーンは初回だけ案内（くどくならないように）
   const seenKey = 'kenta_seen_' + scriptKey;
