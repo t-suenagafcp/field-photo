@@ -1295,6 +1295,10 @@ async function dragEnd() {
   dragState = null;
   await dbSave(activeProject);
   renderPhotoList(); renderPins();
+  if (!localStorage.getItem('sort_notice_shown')) {
+    localStorage.setItem('sort_notice_shown', '1');
+    setTimeout(() => alert('📌 写真の順序を変更しました。\n\nピンの位置・角度は図面上の撮影場所に紐づいたまま変わりません。'), 300);
+  }
 }
 
 async function deletePhotoById(id) {
@@ -1898,7 +1902,7 @@ const TOUR_STEPS = [
 // 撮影後ナビ用ツアー（floorNameDone後に startAfterTour() で起動）
 const AFTER_TOUR_STEPS = [
   { id:'tab-btn-photos', target:()=>document.getElementById('tab-btn-photos'),
-    title:'📸 写真一覧', text:'撮った写真をここで確認できるよ', type:'tap' },
+    title:'📸 写真一覧', text:'撮った写真をここで確認できるよ。☰を長押しして順序も変更できるよ！', type:'tap' },
   { id:'tab-btn-pdf', target:()=>document.getElementById('tab-btn-pdf'),
     title:'🖨️ PDF出力', text:'タップすると報告書PDFを作れるよ', type:'tap' },
   { id:'tab-btn-excel', target:()=>document.getElementById('tab-btn-excel'),
