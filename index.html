@@ -1119,13 +1119,28 @@ function takePicture() {
   const video = document.getElementById('camera-video');
   const canvas = document.getElementById('snapshot-canvas');
   const vw = video.videoWidth, vh = video.videoHeight;
-  const isPortrait = vh > vw;
+  // iPhoneは縦撮りでもvideoが横長で返るため、window.orientationで判定
+  const orientAngle = (screen.orientation && screen.orientation.angle !== undefined)
+    ? screen.orientation.angle
+    : (typeof window.orientation !== 'undefined' ? Math.abs(window.orientation) : -1);
+  const isPortrait = (orientAngle === 0 || orientAngle === 180) ? true : (vh > vw);
   capturedIsPortrait = isPortrait;
   const MAX_DIM = 1600;
-  // 縦横どちらで撮っても回転せずそのまま保存
-  const scale = Math.min(1, MAX_DIM / Math.max(vw, vh));
-  canvas.width = Math.round(vw*scale); canvas.height = Math.round(vh*scale);
-  canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+  if (isPortrait && vw > vh) {
+    // iPhoneの縦撮り：videoは横長だが縦に回転して保存
+    const scale = Math.min(1, MAX_DIM / vw);
+    canvas.width = Math.round(vh * scale);
+    canvas.height = Math.round(vw * scale);
+    const ctx = canvas.getContext('2d');
+    ctx.translate(canvas.width / 2, canvas.height / 2);
+    ctx.rotate(Math.PI / 2);
+    ctx.drawImage(video, -vw * scale / 2, -vh * scale / 2, vw * scale, vh * scale);
+  } else {
+    const scale = Math.min(1, MAX_DIM / Math.max(vw, vh));
+    canvas.width = Math.round(vw * scale);
+    canvas.height = Math.round(vh * scale);
+    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+  }
   capturedPhoto = canvas.toDataURL('image/jpeg', 0.85);
   stopCamera();
   document.getElementById('preview-img').src = capturedPhoto;
