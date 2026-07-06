@@ -290,6 +290,7 @@ input,textarea{font-family:inherit;font-size:inherit;}
     📥 写真を長押し →「写真に保存」でカメラロールにも保存できます
   </div>
   <div class="preview-controls">
+    <button class="btn-outline" style="color:#fff;border-color:rgba(255,255,255,.3);" onclick="rotatePreviewPhoto()">🔄 回転</button>
     <button class="btn-outline" style="color:#fff;border-color:rgba(255,255,255,.3);" onclick="retakePhoto()">撮り直す</button>
     <button class="btn-primary" onclick="acceptPhoto()">この写真を使う</button>
   </div>
@@ -444,7 +445,10 @@ input,textarea{font-family:inherit;font-size:inherit;}
 <div class="overlay" id="overlay-photo-edit" onclick="closePhotoEdit(event)">
   <div class="sheet" onclick="event.stopPropagation()">
     <div class="sheet-title">写真を編集</div>
-    <img id="photo-edit-thumb" style="width:100%;border-radius:10px;margin-bottom:14px;max-height:160px;object-fit:cover;" src="" alt="">
+    <img id="photo-edit-thumb" style="width:100%;border-radius:10px;margin-bottom:6px;max-height:160px;object-fit:cover;" src="" alt="">
+    <div style="display:flex;justify-content:flex-end;margin-bottom:14px;">
+      <button type="button" class="btn-outline" style="padding:4px 12px;font-size:12px;" onclick="rotateEditingPhoto()">🔄 写真を回転</button>
+    </div>
     <div class="field-label">調査項目</div>
     <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;"><button type="button" onclick="document.getElementById('photo-edit-inspection').value='外壁塗装面'" style="padding:4px 10px;border-radius:14px;background:#EFF4FF;color:#1C4ED8;font-size:12px;font-weight:600;border:1.5px solid #C7D7FD;cursor:pointer;">外壁塗装面</button><button type="button" onclick="document.getElementById('photo-edit-inspection').value='外壁タイル面'" style="padding:4px 10px;border-radius:14px;background:#EFF4FF;color:#1C4ED8;font-size:12px;font-weight:600;border:1.5px solid #C7D7FD;cursor:pointer;">外壁タイル面</button><button type="button" onclick="document.getElementById('photo-edit-inspection').value='ウレタン防水面'" style="padding:4px 10px;border-radius:14px;background:#EFF4FF;color:#1C4ED8;font-size:12px;font-weight:600;border:1.5px solid #C7D7FD;cursor:pointer;">ウレタン防水面</button><button type="button" onclick="document.getElementById('photo-edit-inspection').value='内壁'" style="padding:4px 10px;border-radius:14px;background:#EFF4FF;color:#1C4ED8;font-size:12px;font-weight:600;border:1.5px solid #C7D7FD;cursor:pointer;">内壁</button><button type="button" onclick="document.getElementById('photo-edit-inspection').value='床'" style="padding:4px 10px;border-radius:14px;background:#EFF4FF;color:#1C4ED8;font-size:12px;font-weight:600;border:1.5px solid #C7D7FD;cursor:pointer;">床</button><button type="button" onclick="document.getElementById('photo-edit-inspection').value='天井'" style="padding:4px 10px;border-radius:14px;background:#EFF4FF;color:#1C4ED8;font-size:12px;font-weight:600;border:1.5px solid #C7D7FD;cursor:pointer;">天井</button><button type="button" onclick="document.getElementById('photo-edit-inspection').value='屋上'" style="padding:4px 10px;border-radius:14px;background:#EFF4FF;color:#1C4ED8;font-size:12px;font-weight:600;border:1.5px solid #C7D7FD;cursor:pointer;">屋上</button><button type="button" onclick="document.getElementById('photo-edit-inspection').value='階段'" style="padding:4px 10px;border-radius:14px;background:#EFF4FF;color:#1C4ED8;font-size:12px;font-weight:600;border:1.5px solid #C7D7FD;cursor:pointer;">階段</button><button type="button" onclick="document.getElementById('photo-edit-inspection').value='共用廊下'" style="padding:4px 10px;border-radius:14px;background:#EFF4FF;color:#1C4ED8;font-size:12px;font-weight:600;border:1.5px solid #C7D7FD;cursor:pointer;">共用廊下</button><button type="button" onclick="document.getElementById('photo-edit-inspection').value='バルコニー'" style="padding:4px 10px;border-radius:14px;background:#EFF4FF;color:#1C4ED8;font-size:12px;font-weight:600;border:1.5px solid #C7D7FD;cursor:pointer;">バルコニー</button><button type="button" onclick="document.getElementById('photo-edit-inspection').value='駐車場'" style="padding:4px 10px;border-radius:14px;background:#EFF4FF;color:#1C4ED8;font-size:12px;font-weight:600;border:1.5px solid #C7D7FD;cursor:pointer;">駐車場</button><button type="button" onclick="document.getElementById('photo-edit-inspection').value='機械室'" style="padding:4px 10px;border-radius:14px;background:#EFF4FF;color:#1C4ED8;font-size:12px;font-weight:600;border:1.5px solid #C7D7FD;cursor:pointer;">機械室</button><button type="button" onclick="document.getElementById('photo-edit-inspection').value='電気室'" style="padding:4px 10px;border-radius:14px;background:#EFF4FF;color:#1C4ED8;font-size:12px;font-weight:600;border:1.5px solid #C7D7FD;cursor:pointer;">電気室</button><button type="button" onclick="document.getElementById('photo-edit-inspection').value='受水槽'" style="padding:4px 10px;border-radius:14px;background:#EFF4FF;color:#1C4ED8;font-size:12px;font-weight:600;border:1.5px solid #C7D7FD;cursor:pointer;">受水槽</button><button type="button" onclick="document.getElementById('photo-edit-inspection').value='エレベーター'" style="padding:4px 10px;border-radius:14px;background:#EFF4FF;color:#1C4ED8;font-size:12px;font-weight:600;border:1.5px solid #C7D7FD;cursor:pointer;">エレベーター</button><button type="button" onclick="document.getElementById('photo-edit-inspection').value='消防設備'" style="padding:4px 10px;border-radius:14px;background:#EFF4FF;color:#1C4ED8;font-size:12px;font-weight:600;border:1.5px solid #C7D7FD;cursor:pointer;">消防設備</button><button type="button" onclick="document.getElementById('photo-edit-inspection').value='給排水設備'" style="padding:4px 10px;border-radius:14px;background:#EFF4FF;color:#1C4ED8;font-size:12px;font-weight:600;border:1.5px solid #C7D7FD;cursor:pointer;">給排水設備</button></div>
     <input class="field-input" id="photo-edit-inspection" placeholder="例：外壁、防火設備">
@@ -1147,6 +1151,22 @@ function takePicture() {
   setTimeout(() => kentaShow('preview'), 400);
 }
 function retakePhoto() { capturedPhoto = null; pendingPin = null; showScreen('screen-project'); }
+function rotatePreviewPhoto() {
+  if (!capturedPhoto) return;
+  const img = new Image();
+  img.onload = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = img.height;
+    canvas.height = img.width;
+    const ctx = canvas.getContext('2d');
+    ctx.translate(canvas.width / 2, canvas.height / 2);
+    ctx.rotate(Math.PI / 2);
+    ctx.drawImage(img, -img.width / 2, -img.height / 2);
+    capturedPhoto = canvas.toDataURL('image/jpeg', 0.9);
+    document.getElementById('preview-img').src = capturedPhoto;
+  };
+  img.src = capturedPhoto;
+}
 function acceptPhoto() {
   document.getElementById('comment-preview-img').src = capturedPhoto;
   document.getElementById('input-inspection').value = '';
@@ -1341,6 +1361,24 @@ function closePhotoEdit(e) {
   if (e && !e.target.classList.contains('overlay')) return;
   document.getElementById('overlay-photo-edit').classList.remove('open');
   editingPhotoId = null;
+}
+function rotateEditingPhoto() {
+  const ph = activeProject.photos.find(p => p.id === editingPhotoId);
+  if (!ph || !ph.photo) return;
+  const img = new Image();
+  img.onload = async () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = img.height;
+    canvas.height = img.width;
+    const ctx = canvas.getContext('2d');
+    ctx.translate(canvas.width / 2, canvas.height / 2);
+    ctx.rotate(Math.PI / 2);
+    ctx.drawImage(img, -img.width / 2, -img.height / 2);
+    ph.photo = canvas.toDataURL('image/jpeg', 0.9);
+    document.getElementById('photo-edit-thumb').src = ph.photo;
+    await dbSave(activeProject);
+  };
+  img.src = ph.photo;
 }
 async function savePhotoEdit() {
   const ph = activeProject.photos.find(p => p.id === editingPhotoId);
