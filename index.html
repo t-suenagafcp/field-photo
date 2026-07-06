@@ -1119,11 +1119,10 @@ function takePicture() {
   const video = document.getElementById('camera-video');
   const canvas = document.getElementById('snapshot-canvas');
   const vw = video.videoWidth, vh = video.videoHeight;
-  // iPhoneは縦撮りでもvideoが横長で返るため、window.orientationで判定
-  const orientAngle = (screen.orientation && screen.orientation.angle !== undefined)
-    ? screen.orientation.angle
-    : (typeof window.orientation !== 'undefined' ? Math.abs(window.orientation) : -1);
-  const isPortrait = (orientAngle === 0 || orientAngle === 180) ? true : (vh > vw);
+  // iPhoneは縦撮りでもvideoが横長で返るため、実際の画面サイズ(innerWidth/innerHeight)で判定する
+  // screen.orientation.angle / window.orientation はPWA(ホーム画面追加)環境で
+  // 正しく取得できないことがあるため使用しない
+  const isPortrait = window.innerHeight >= window.innerWidth;
   capturedIsPortrait = isPortrait;
   const MAX_DIM = 1600;
   if (isPortrait && vw > vh) {
