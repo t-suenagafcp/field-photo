@@ -1468,23 +1468,6 @@ async function exportPDF() {
   const pages = [];
   for (let i = 0; i < photos.length; i += 2) pages.push([photos[i], photos[i+1]||null]);
 
-  function rotateImageIfPortrait(dataUrl, isPortrait) {
-    return new Promise(resolve => {
-      if (!isPortrait || !dataUrl) { resolve(dataUrl); return; }
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = img.height; canvas.height = img.width;
-        const ctx = canvas.getContext('2d');
-        ctx.translate(canvas.width/2, canvas.height/2);
-        ctx.rotate(-Math.PI/2);
-        ctx.drawImage(img, -img.width/2, -img.height/2);
-        resolve(canvas.toDataURL('image/jpeg', 0.92));
-      };
-      img.onerror = () => resolve(dataUrl);
-      img.src = dataUrl;
-    });
-  }
   const slot = (ph) => {
     if (!ph) return `<div style="border:1px dashed #ccc;height:95mm;margin-bottom:2mm;"></div>`;
     return `<div style="border:1px solid #000;margin-bottom:2mm;">
@@ -1622,30 +1605,18 @@ ${pages.map((pair, pi) => `
   <div class="pdf-footer">${pi+1} / ${pages.length}</div>
 </div>`).join('')}`;
     document.body.appendChild(stage);
-    // 画素サイズで縦横判定して回転（isPortraitフラグがなくても動く）
+    // EXIFのOrientationで縦横判定して回転（iPhoneの縦撮り対応）
     const allPhotosFlat = pages.flat().filter(Boolean);
     const imgEls = Array.from(stage.querySelectorAll('img[data-ph-id]'));
     await Promise.all(imgEls.map(async imgEl => {
       const phId = imgEl.dataset.phId;
       const ph = allPhotosFlat.find(p => p.id === phId);
       if (ph && ph.photo) {
-        // 画像の実際のサイズで縦横判定
-        // 画像の実際のサイズで縦横判定（isPortraitフラグに依存しない）
-        const needsRotation = await new Promise(resolve => {
-          const img = new Image();
-          img.onload = () => {
-            // 縦長画像（height > width）かつisPortraitがtrueの場合、
-            // またはisPortraitがtrueで横長の場合（iPhoneの縦撮り）は回転
-            const isActuallyPortrait = ph.isPortrait === true || img.height > img.width;
-            const needsRot = isActuallyPortrait && img.width > img.height;
-            resolve(needsRot);
-          };
-          img.onerror = () => resolve(false);
-          img.src = ph.photo;
-        });
-        if (needsRotation) {
-          const rotated = await rotateImageIfPortrait(ph.photo, true);
-          imgEl.src = rotated;
+        const exifOri = getExifOrientation(ph.photo);
+        // Orientation値ごとに正しい向き・鏡像を反映(6=90度CW, 8=90度CCW等)
+        if (exifOri > 1) {
+          const fixedImg = await loadImageWithExifFix(ph.photo);
+          imgEl.src = fixedImg.src;
         }
       }
     }));
