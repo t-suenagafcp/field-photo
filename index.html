@@ -1732,6 +1732,7 @@ async function handleJSONImportNew(input) {
             id: ph.id||Date.now().toString()+Math.random().toString(36).slice(2), num: ph.num||i+1,
             x: ph.pinX||ph.x||0, y: ph.pinY||ph.y||0,
             floorIndex: resolvedFloorIndex, photo: ph.photo||null,
+            isPortrait: ph.isPortrait || false,
             inspectionItem: ph.inspectionItem||'', comment: ph.comment||'', date: ph.date||''
           });
         });
