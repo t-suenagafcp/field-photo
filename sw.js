@@ -1,5 +1,5 @@
 // ══ Service Worker - 施工フォト オフライン対応 ══
-const CACHE_NAME = 'seiko-photo-v2'; // ← index.html等を更新するたびに必ずこの番号を上げること
+const CACHE_NAME = 'seiko-photo-v3'; // ← index.html等を更新するたびに必ずこの番号を上げること
 
 // キャッシュするファイル一覧（CDNライブラリ含む）
 const STATIC_ASSETS = [
@@ -12,12 +12,8 @@ const STATIC_ASSETS = [
   'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js',
 ];
 
-// HTML(ページ本体)だけは「ネットワーク優先」にする。
-// これによりindex.htmlを更新すれば次回アクセス時に必ず最新版が反映される。
-// CDNライブラリ等は変化が少ないので従来通り「キャッシュ優先」のままにする。
 const NETWORK_FIRST_DESTINATIONS = ['document'];
 
-// ── インストール時：静的ファイルをキャッシュ ──
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
@@ -30,7 +26,6 @@ self.addEventListener('install', event => {
   );
 });
 
-// ── アクティベート時：古いキャッシュを削除 ──
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys =>
@@ -41,12 +36,9 @@ self.addEventListener('activate', event => {
   );
 });
 
-// ── フェッチ ──
 self.addEventListener('fetch', event => {
-  // POST等はスキップ
   if (event.request.method !== 'GET') return;
 
-  // HTML本体はネットワーク優先(オンラインなら常に最新版を取得)
   if (NETWORK_FIRST_DESTINATIONS.includes(event.request.destination)) {
     event.respondWith(
       fetch(event.request).then(response => {
@@ -60,11 +52,9 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // それ以外(CDNライブラリ等)は従来通りキャッシュ優先
   event.respondWith(
     caches.match(event.request).then(cached => {
       if (cached) return cached;
-
       return fetch(event.request).then(response => {
         if (response && response.status === 200 && response.type !== 'opaque') {
           const clone = response.clone();
