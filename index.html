@@ -1095,6 +1095,19 @@ function handleDrawingTap(src) {
 }
 
 // ══ カメラ ══
+let lastGamma = null; // 傾きセンサーによる左右の傾き(度)。null=未取得
+function handleDeviceOrientation(e) {
+  if (e.gamma !== null && e.gamma !== undefined) lastGamma = e.gamma;
+}
+async function enableTiltSensor() {
+  try {
+    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+      const res = await DeviceOrientationEvent.requestPermission();
+      if (res !== 'granted') return;
+    }
+    window.addEventListener('deviceorientation', handleDeviceOrientation);
+  } catch { /* 取得できない場合は既存のフォールバックに任せる */ }
+}
 function isTouchDevice() {
   return ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 }
@@ -1106,6 +1119,8 @@ async function startCamera() {
   }
   showScreen('screen-camera');
   setTimeout(() => kentaShow('camera'), 400);
+  lastGamma = null;
+  await enableTiltSensor();
   try {
     mediaStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});
     document.getElementById('camera-video').srcObject = mediaStream;
@@ -1117,17 +1132,21 @@ async function startCamera() {
 function stopCamera() {
   if (mediaStream) { mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null; }
   document.getElementById('camera-video').srcObject = null;
+  window.removeEventListener('deviceorientation', handleDeviceOrientation);
 }
 function cancelCamera() { stopCamera(); pendingPin = null; showScreen('screen-project'); }
 function takePicture() {
   const video = document.getElementById('camera-video');
   const canvas = document.getElementById('snapshot-canvas');
   const vw = video.videoWidth, vh = video.videoHeight;
-  // iPhoneは縦撮りでもvideoが横長で返るため、window.orientationで判定
+  // 画面の向きAPI(screen.orientation.angle等)が実機で信用できないことが確認できたため、
+  // 傾きセンサーの値を優先して使う。取得できない端末ではvideoの縦横比で代用する。
   const orientAngle = (screen.orientation && screen.orientation.angle !== undefined)
     ? screen.orientation.angle
     : (typeof window.orientation !== 'undefined' ? Math.abs(window.orientation) : -1);
-  const isPortrait = (orientAngle === 0 || orientAngle === 180) ? true : (vh > vw);
+  const isPortrait = (lastGamma !== null)
+    ? (Math.abs(lastGamma) < 45)
+    : ((orientAngle === 0 || orientAngle === 180) ? true : (vh > vw));
   capturedIsPortrait = isPortrait;
   const MAX_DIM = 1600;
   if (isPortrait && vw > vh) {
