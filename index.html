@@ -1119,7 +1119,9 @@ function takePicture() {
   const video = document.getElementById('camera-video');
   const canvas = document.getElementById('snapshot-canvas');
   const vw = video.videoWidth, vh = video.videoHeight;
-  const isPortrait = vh > vw;
+  // iPhoneはvideoが横長で返るためscreen.orientationで判定
+  const _angle = screen.orientation ? screen.orientation.angle : (window.orientation || 0);
+  const isPortrait = (_angle === 0 || _angle === 180) || (vh > vw);
   capturedIsPortrait = isPortrait;
   const MAX_DIM = 1600;
   // 縦横どちらで撮っても回転せずそのまま保存
