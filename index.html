@@ -1127,8 +1127,13 @@ function takePicture() {
   canvas.width = Math.round(vw*scale); canvas.height = Math.round(vh*scale);
   canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
   capturedPhoto = canvas.toDataURL('image/jpeg', 0.85);
-  const _exifOri = getExifOrientation(capturedPhoto);
-  capturedIsPortrait = (_exifOri === 6 || _exifOri === 8);
+  // デバッグ：向き情報を表示
+  const _wo = typeof window.orientation !== 'undefined' ? window.orientation : 'undefined';
+  const _so = (screen.orientation && screen.orientation.angle !== undefined) ? screen.orientation.angle : 'undefined';
+  alert('window.orientation=' + _wo + '
+screen.orientation.angle=' + _so + '
+vw=' + vw + ' vh=' + vh);
+  capturedIsPortrait = (_wo === 0 || _wo === 180 || _wo === -180 || _so === 0 || _so === 180);
   stopCamera();
   document.getElementById('preview-img').src = capturedPhoto;
   showScreen('screen-preview');
