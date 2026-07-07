@@ -1618,26 +1618,7 @@ ${pages.map((pair, pi) => `
   <div class="pdf-footer">${pi+1} / ${pages.length}</div>
 </div>`).join('')}`;
     document.body.appendChild(stage);
-    // 画素サイズで縦横判定して回転（isPortraitフラグがなくても動く）
-    const allPhotosFlat = pages.flat().filter(Boolean);
-    const imgEls = Array.from(stage.querySelectorAll('img[data-ph-id]'));
-    await Promise.all(imgEls.map(async imgEl => {
-      const phId = imgEl.dataset.phId;
-      const ph = allPhotosFlat.find(p => p.id === phId);
-      if (ph && ph.photo) {
-        // 画像の実際のサイズで縦横判定
-        const needsRotation = await new Promise(resolve => {
-          const img = new Image();
-          img.onload = () => resolve(ph.isPortrait === true);
-          img.onerror = () => resolve(false);
-          img.src = ph.photo;
-        });
-        if (needsRotation) {
-          const rotated = await rotateImageIfPortrait(ph.photo, true);
-          imgEl.src = rotated;
-        }
-      }
-    }));
+    // 撮影時点でpixelデータは既に正しい向きになっているため、ここでの追加回転は行わない
     const imgs = stage.querySelectorAll('img');
     await Promise.all(Array.from(imgs).map(img => img.complete ? Promise.resolve() :
       new Promise(res => { img.onload = res; img.onerror = res; })));
