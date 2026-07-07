@@ -1835,6 +1835,7 @@ async function exportJSON() {
         floor: (activeProject.drawings&&activeProject.drawings[ph.floorIndex||0])?activeProject.drawings[ph.floorIndex||0].name:'',
         inspectionItem: ph.inspectionItem||'', comment: ph.comment||'', date: ph.date,
         pinX: Math.round(ph.x*10)/10, pinY: Math.round(ph.y*10)/10,
+        isPortrait: ph.isPortrait || false,
         photo: await compressImageForExport(ph.photo, 900, 0.6),
       });
     }
