@@ -1095,20 +1095,6 @@ function handleDrawingTap(src) {
 }
 
 // ══ カメラ ══
-let lastGamma = null; // 傾きセンサーによる左右の傾き(度)。null=未取得
-function handleDeviceOrientation(e) {
-  if (e.gamma !== null && e.gamma !== undefined) lastGamma = e.gamma;
-}
-async function enableTiltSensor() {
-  try {
-    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-      // iOS 13+はユーザー操作直後の明示的な許可が必要
-      const res = await DeviceOrientationEvent.requestPermission();
-      if (res !== 'granted') return;
-    }
-    window.addEventListener('deviceorientation', handleDeviceOrientation);
-  } catch { /* 取得できない場合は後段のフォールバックに任せる */ }
-}
 function isTouchDevice() {
   return ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 }
@@ -1120,8 +1106,6 @@ async function startCamera() {
   }
   showScreen('screen-camera');
   setTimeout(() => kentaShow('camera'), 400);
-  lastGamma = null;
-  await enableTiltSensor();
   try {
     mediaStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});
     document.getElementById('camera-video').srcObject = mediaStream;
@@ -1133,21 +1117,21 @@ async function startCamera() {
 function stopCamera() {
   if (mediaStream) { mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null; }
   document.getElementById('camera-video').srcObject = null;
-  window.removeEventListener('deviceorientation', handleDeviceOrientation);
 }
 function cancelCamera() { stopCamera(); pendingPin = null; showScreen('screen-project'); }
 function takePicture() {
   const video = document.getElementById('camera-video');
   const canvas = document.getElementById('snapshot-canvas');
   const vw = video.videoWidth, vh = video.videoHeight;
-  const MAX_DIM = 1600;
-  // 傾きセンサーで実際の持ち方を判定。縦持ち(ポートレート)ならgammaは0付近、
-  // 横持ち(ランドスケープ)なら±90付近になる。センサーが使えない端末では
-  // 「videoが横長=縦撮り」を仮定するフォールバックにする。
-  const isPortrait = (lastGamma !== null) ? (Math.abs(lastGamma) < 45) : (vw > vh);
+  // iPhoneは縦撮りでもvideoが横長で返るため、window.orientationで判定
+  const orientAngle = (screen.orientation && screen.orientation.angle !== undefined)
+    ? screen.orientation.angle
+    : (typeof window.orientation !== 'undefined' ? Math.abs(window.orientation) : -1);
+  const isPortrait = (orientAngle === 0 || orientAngle === 180) ? true : (vh > vw);
   capturedIsPortrait = isPortrait;
+  const MAX_DIM = 1600;
   if (isPortrait && vw > vh) {
-    // 縦持ちなのにvideoは横長 → 縦に回転して保存
+    // iPhoneの縦撮り：videoは横長だが縦に回転して保存
     const scale = Math.min(1, MAX_DIM / vw);
     canvas.width = Math.round(vh * scale);
     canvas.height = Math.round(vw * scale);
