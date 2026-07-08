@@ -1507,7 +1507,7 @@ async function exportPDF() {
         </div>
       </div>
       <div style="display:flex;height:95mm;">
-        <div style="flex:1;border-right:1px solid #000;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#fafafa;max-width:120mm;">
+        <div style="flex:1;border-right:1px solid #000;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#fafafa;max-width:120mm;" data-photo-box="${ph.id}">
           ${ph.photo ? `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;"><img src="${ph.photo}" data-ph-id="${ph.id}" style="width:100%;height:100%;object-fit:contain;display:block;"></div>` : `<div style="color:#aaa;">写真なし</div>`}
         </div>
         <div style="width:40mm;padding:2mm;display:flex;flex-direction:column;">
@@ -1622,6 +1622,29 @@ ${pages.map((pair, pi) => `
     const imgs = stage.querySelectorAll('img');
     await Promise.all(Array.from(imgs).map(img => img.complete ? Promise.resolve() :
       new Promise(res => { img.onload = res; img.onerror = res; })));
+    // html2canvasはCSSのobject-fitを解釈できず引き伸ばして描画してしまうため、
+    // 枠の実ピクセルサイズに合わせて事前にレターボックス化した画像に差し替える
+    const photoImgs = Array.from(stage.querySelectorAll('img[data-ph-id]'));
+    await Promise.all(photoImgs.map(imgEl => new Promise(resolve => {
+      const box = stage.querySelector(`[data-photo-box="${imgEl.dataset.phId}"]`);
+      if (!box) { resolve(); return; }
+      const boxW = box.clientWidth, boxH = box.clientHeight;
+      if (!boxW || !boxH) { resolve(); return; }
+      const src = new Image();
+      src.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = boxW; canvas.height = boxH;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#fafafa'; ctx.fillRect(0, 0, boxW, boxH);
+        const scale = Math.min(boxW / src.width, boxH / src.height);
+        const dw = src.width * scale, dh = src.height * scale;
+        ctx.drawImage(src, (boxW - dw) / 2, (boxH - dh) / 2, dw, dh);
+        imgEl.src = canvas.toDataURL('image/jpeg', 0.92);
+        imgEl.onload = resolve;
+      };
+      src.onerror = resolve;
+      src.src = imgEl.src;
+    })));
     const pageEls = stage.querySelectorAll('.pdf-page');
     for (let i = 0; i < pageEls.length; i++) {
       const canvas2 = await html2canvas(pageEls[i], { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
