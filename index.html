@@ -597,6 +597,7 @@ let lastImportedProjectId = null; // 「前回データ取込」で報告書→�
 let pendingPin = null;
 let retakeInsertAfterNum = null; // 「撮り直す」で指定された、挿入先の直前の番号
 let retakePrefillItem = '';      // 撮り直し元の調査項目(初期値として引き継ぐ)
+let retakePrefillComment = '';   // 撮り直し元のコメント(初期値として引き継ぐ)
 let capturedPhoto = null;
 let capturedIsPortrait = false;
 let selectedPhotoId = null;
@@ -749,6 +750,25 @@ function switchTab(t) {
 }
 
 // ══ 図面 ══
+let drawingZoom = 1;
+const DRAWING_ZOOM_MIN = 1, DRAWING_ZOOM_MAX = 4;
+function pinchDistance(touches) {
+  return Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY);
+}
+function applyDrawingZoom(zoom) {
+  drawingZoom = Math.max(DRAWING_ZOOM_MIN, Math.min(DRAWING_ZOOM_MAX, zoom));
+  const img = document.getElementById('drawing-img');
+  if (!img) return;
+  img.style.maxWidth = drawingZoom > 1 ? 'none' : '';
+  img.style.width = (drawingZoom * 100) + '%';
+  syncPinsLayerSize();
+}
+function resetDrawingZoom() {
+  drawingZoom = 1;
+  const img = document.getElementById('drawing-img');
+  if (img) { img.style.maxWidth = ''; img.style.width = ''; }
+  syncPinsLayerSize();
+}
 function syncPinsLayerSize() {
   const img = document.getElementById('drawing-img');
   const layer = document.getElementById('pins-layer');
@@ -787,16 +807,31 @@ function renderDrawing() {
   const wrapper   = document.getElementById('drawing-wrapper');
 
   let touchStartX = null, touchStartY = null, touchStartTime = 0, multiTouch = false;
+  let pinchStartDist = null, pinchStartZoom = 1;
   container.ontouchstart = e => {
-    if (e.touches.length > 1) { multiTouch = true; touchStartX = null; return; }
+    if (e.touches.length > 1) {
+      multiTouch = true; touchStartX = null;
+      pinchStartDist = pinchDistance(e.touches);
+      pinchStartZoom = drawingZoom;
+      return;
+    }
     multiTouch = false;
     touchStartX = e.touches[0].clientX;
     touchStartY = e.touches[0].clientY;
     touchStartTime = Date.now();
   };
-  container.ontouchmove = e => { if (e.touches.length > 1) multiTouch = true; };
+  container.ontouchmove = e => {
+    if (e.touches.length > 1) {
+      multiTouch = true;
+      e.preventDefault();
+      const dist = pinchDistance(e.touches);
+      if (pinchStartDist) {
+        applyDrawingZoom(pinchStartZoom * (dist / pinchStartDist));
+      }
+    }
+  };
   container.ontouchend = e => {
-    if (multiTouch || touchStartX === null) { touchStartX = null; multiTouch = false; return; }
+    if (multiTouch || touchStartX === null) { touchStartX = null; multiTouch = false; pinchStartDist = null; return; }
     const dx = e.changedTouches[0].clientX - touchStartX;
     const dy = e.changedTouches[0].clientY - touchStartY;
     const dist = Math.hypot(dx, dy);
@@ -829,6 +864,7 @@ async function changeFloor(idx) {
   const drawings = activeProject.drawings || [];
   if (idx < 0 || idx >= drawings.length) return;
   activeProject.currentFloor = idx;
+  resetDrawingZoom();
   await dbSave(activeProject);
   renderDrawing();
 }
@@ -886,6 +922,7 @@ function openFloorNameModalStep(idx) {
   // 入力対象のページに合わせて、背後の図面表示も切り替える(見比べながら入力できるように)
   if (activeProject.currentFloor !== idx) {
     activeProject.currentFloor = idx;
+    resetDrawingZoom();
     renderDrawing();
   }
   const saveBtn = document.querySelector('#overlay-floor-name .btn-primary');
@@ -1212,6 +1249,7 @@ function retakeOldPhoto(sourceId) {
   pendingPin = { x: src.x, y: src.y, floorIndex: src.floorIndex || 0 };
   retakeInsertAfterNum = src.num;
   retakePrefillItem = src.inspectionItem || '';
+  retakePrefillComment = src.comment || '';
   if (activeProject.currentFloor !== (src.floorIndex || 0)) {
     activeProject.currentFloor = src.floorIndex || 0;
     switchTab('drawing');
@@ -1290,7 +1328,7 @@ function retakePhoto() { capturedPhoto = null; pendingPin = null; showScreen('sc
 function acceptPhoto() {
   document.getElementById('comment-preview-img').src = capturedPhoto;
   document.getElementById('input-inspection').value = retakePrefillItem || '';
-  document.getElementById('input-comment').value = '';
+  document.getElementById('input-comment').value = retakePrefillComment || '';
   selectStatusStamp('');
   document.getElementById('overlay-comment').classList.add('open');
   showScreen('screen-project');
@@ -1304,7 +1342,7 @@ function handleFilePhoto(input) {
     capturedPhoto = e.target.result;
     document.getElementById('comment-preview-img').src = capturedPhoto;
     document.getElementById('input-inspection').value = retakePrefillItem || '';
-    document.getElementById('input-comment').value = '';
+    document.getElementById('input-comment').value = retakePrefillComment || '';
     selectStatusStamp('');
     document.getElementById('overlay-comment').classList.add('open');
   };
@@ -1315,7 +1353,7 @@ function cancelComment(e) {
   if (e && !e.target.classList.contains('overlay')) return;
   document.getElementById('overlay-comment').classList.remove('open');
   capturedPhoto = null; pendingPin = null;
-  retakeInsertAfterNum = null; retakePrefillItem = '';
+  retakeInsertAfterNum = null; retakePrefillItem = ''; retakePrefillComment = '';
 }
 async function selectStatusStamp(status) {
   document.getElementById('input-status').value = status;
@@ -1355,7 +1393,7 @@ async function savePhoto() {
   }
   document.getElementById('overlay-comment').classList.remove('open');
   capturedPhoto = null; pendingPin = null;
-  retakeInsertAfterNum = null; retakePrefillItem = '';
+  retakeInsertAfterNum = null; retakePrefillItem = ''; retakePrefillComment = '';
   showScreen('screen-project');
   renderPins();
 }
