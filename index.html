@@ -105,8 +105,9 @@ input,textarea{font-family:inherit;font-size:inherit;}
 .overlay.open{visibility:visible;pointer-events:auto;opacity:1;}
 .sheet{background:#fff;border-radius:22px 22px 0 0;padding:22px 20px 40px;width:100%;max-height:90dvh;overflow-y:auto;box-shadow:0 -8px 30px rgba(15,23,42,.18);}
 .sheet-title{font-size:18px;font-weight:700;margin-bottom:16px;}
-#overlay-floor-name{align-items:flex-start;}
-#overlay-floor-name .sheet{border-radius:0 0 22px 22px;padding-top:calc(22px + env(safe-area-inset-top,0px));box-shadow:0 8px 30px rgba(15,23,42,.18);}
+#overlay-floor-name{background:transparent;pointer-events:none;align-items:flex-end;justify-content:flex-end;padding:0;}
+#overlay-floor-name .sheet{pointer-events:auto;width:min(320px, calc(100vw - 24px));max-width:320px;max-height:60dvh;margin:0 12px calc(12px + env(safe-area-inset-bottom,0px)) 0;border-radius:16px;box-shadow:0 8px 30px rgba(15,23,42,.28);border:1px solid #E2E5EA;padding:16px 16px 16px;}
+#overlay-floor-name .sheet-title{font-size:15px;margin-bottom:8px;}
 .field-label{font-size:12px;font-weight:600;color:#6B7280;margin-bottom:6px;}
 .field-input{width:100%;border:1.5px solid #E2E5EA;border-radius:11px;padding:11px 13px;font-size:15px;outline:none;margin-bottom:14px;transition:border-color .12s,box-shadow .12s;}
 .field-input:focus{border-color:#1C4ED8;box-shadow:0 0 0 3px rgba(28,78,216,.12);}
