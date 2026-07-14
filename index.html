@@ -105,8 +105,8 @@ input,textarea{font-family:inherit;font-size:inherit;}
 .overlay.open{visibility:visible;pointer-events:auto;opacity:1;}
 .sheet{background:#fff;border-radius:22px 22px 0 0;padding:22px 20px 40px;width:100%;max-height:90dvh;overflow-y:auto;box-shadow:0 -8px 30px rgba(15,23,42,.18);}
 .sheet-title{font-size:18px;font-weight:700;margin-bottom:16px;}
-#overlay-floor-name{background:transparent;pointer-events:none;align-items:flex-end;justify-content:flex-end;padding:0;}
-#overlay-floor-name .sheet{pointer-events:auto;width:min(320px, calc(100vw - 24px));max-width:320px;max-height:60dvh;margin:0 12px calc(12px + env(safe-area-inset-bottom,0px)) 0;border-radius:16px;box-shadow:0 8px 30px rgba(15,23,42,.28);border:1px solid #E2E5EA;padding:16px 16px 16px;}
+#overlay-floor-name{background:transparent;pointer-events:none;align-items:flex-start;justify-content:flex-end;padding:0;}
+#overlay-floor-name .sheet{pointer-events:auto;width:min(320px, calc(100vw - 24px));max-width:320px;max-height:55dvh;margin:calc(12px + env(safe-area-inset-top,0px)) 12px 0 0;border-radius:16px;box-shadow:0 8px 30px rgba(15,23,42,.28);border:1px solid #E2E5EA;padding:16px 16px 16px;}
 #overlay-floor-name .sheet-title{font-size:15px;margin-bottom:8px;}
 .field-label{font-size:12px;font-weight:600;color:#6B7280;margin-bottom:6px;}
 .field-input{width:100%;border:1.5px solid #E2E5EA;border-radius:11px;padding:11px 13px;font-size:15px;outline:none;margin-bottom:14px;transition:border-color .12s,box-shadow .12s;}
@@ -503,8 +503,12 @@ input,textarea{font-family:inherit;font-size:inherit;}
 
 <!-- ══ 図面名編集モーダル ══ -->
 <div class="overlay" id="overlay-floor-name" onclick="closeFloorNameModal(event)">
+  <button id="floor-name-restore-btn" onclick="toggleFloorNameSheetVisibility()" style="display:none;position:fixed;top:calc(12px + env(safe-area-inset-top,0px));right:12px;z-index:2001;background:#1C4ED8;color:#fff;border:none;border-radius:20px;padding:10px 16px;font-size:13px;font-weight:700;box-shadow:0 4px 12px rgba(0,0,0,.25);pointer-events:auto;">✏️ 入力に戻る</button>
   <div class="sheet" onclick="event.stopPropagation()" style="padding-bottom:30px;">
-    <div class="sheet-title">図面名を入力</div>
+    <div class="sheet-title" style="display:flex;align-items:center;justify-content:space-between;">
+      <span>図面名を入力</span>
+      <button onclick="toggleFloorNameSheetVisibility()" style="font-size:11px;font-weight:700;color:#1C4ED8;background:#EFF4FF;border:none;border-radius:8px;padding:6px 10px;white-space:nowrap;">🔍 図面を確認</button>
+    </div>
     <div id="floor-name-inputs"></div>
     <div class="btn-row" style="margin-top:8px;">
       <button class="btn-outline" onclick="closeFloorNameModal()">キャンセル</button>
@@ -873,6 +877,7 @@ async function changeFloor(idx) {
 // ── 図面名モーダル（ステップ式 + クイック選択） ──
 let floorNameStep = 0;
 let suppressFloorQuickSelect = false; // 前回データ取込直後は、紛らわしいクイック選択(連番一括入力)を出さない
+let floorNameModalOpen = false; // 図面名入力中は図面タップでの撮影を無効化するためのフラグ
 
 // クイック選択パターン（ベース配列。足りない分は連番で自動延長）
 const QUICK_PATTERNS = {
@@ -911,6 +916,8 @@ function openFloorNameModalStep(idx) {
     renderDrawing();
     renderPhotoList();
     document.getElementById('overlay-floor-name').classList.remove('open');
+    floorNameModalOpen = false;
+    document.getElementById('floor-name-restore-btn').style.display='none';
     suppressFloorQuickSelect = false;
     // ツアーが残っていれば終了、ケンタくんを出す
     if (tourActive) endTour();
@@ -999,6 +1006,7 @@ function openFloorNameModalStep(idx) {
   }
 
   document.getElementById('overlay-floor-name').classList.add('open');
+  floorNameModalOpen = true;
   // 1枚目のときだけケンタくんが案内
   if (idx === 0) setTimeout(() => kentaShow('floorName'), 600);
   setTimeout(() => {
@@ -1011,12 +1019,25 @@ async function applyQuickPattern(names) {
   const drawings = activeProject.drawings || [];
   names.forEach((name, i) => { if (drawings[i]) drawings[i].name = name; });
   await dbSave(activeProject);
+  floorNameModalOpen = false;
+  document.getElementById('floor-name-restore-btn').style.display='none';
   document.getElementById('overlay-floor-name').classList.remove('open');
   renderDrawing();
   setTimeout(() => kentaShow('floorNameDone'), 400);
 }
 
+// 入力カードを一時的に隠して図面全体を確認できるようにする(タップでの撮影は入力中は無効のまま)
+function toggleFloorNameSheetVisibility() {
+  const sheet = document.querySelector('#overlay-floor-name .sheet');
+  const restoreBtn = document.getElementById('floor-name-restore-btn');
+  if (!sheet || !restoreBtn) return;
+  const hidden = sheet.style.display === 'none';
+  sheet.style.display = hidden ? '' : 'none';
+  restoreBtn.style.display = hidden ? 'none' : 'block';
+}
 function closeFloorNameModal(e) {
+  floorNameModalOpen = false;
+  document.getElementById('floor-name-restore-btn').style.display='none';
   if (e && !e.target.classList.contains('overlay')) return;
   document.getElementById('overlay-floor-name').classList.remove('open');
   suppressFloorQuickSelect = false;
@@ -1262,6 +1283,7 @@ function retakeOldPhoto(sourceId) {
 }
 
 function handleDrawingTap(src) {
+  if (floorNameModalOpen) return; // 図面名入力中は「図面確認」用のタップ扱いにし、撮影は起動しない
   if (src.target && src.target.closest && src.target.closest('.pin')) return;
   const rect = document.getElementById('drawing-img').getBoundingClientRect();
   pendingPin = {
