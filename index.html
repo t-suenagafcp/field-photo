@@ -116,8 +116,8 @@ input,textarea{font-family:inherit;font-size:inherit;}
 .overlay.open{visibility:visible;pointer-events:auto;opacity:1;}
 .sheet{background:#fff;border-radius:22px 22px 0 0;padding:22px 20px 40px;width:100%;max-height:90dvh;overflow-y:auto;box-shadow:0 -8px 30px rgba(15,23,42,.18);}
 .sheet-title{font-size:18px;font-weight:700;margin-bottom:16px;}
-#overlay-floor-name{background:transparent;pointer-events:none;align-items:flex-start;justify-content:flex-end;padding:0;}
-#overlay-floor-name .sheet{pointer-events:auto;width:min(320px, calc(100vw - 24px));max-width:320px;max-height:55dvh;margin:calc(12px + env(safe-area-inset-top,0px)) 12px 0 0;border-radius:16px;box-shadow:0 8px 30px rgba(15,23,42,.28);border:1px solid #E2E5EA;padding:16px 16px 16px;}
+#overlay-floor-name{background:transparent;pointer-events:none;align-items:flex-end;justify-content:flex-end;padding:0;}
+#overlay-floor-name .sheet{pointer-events:auto;width:min(320px, calc(100vw - 24px));max-width:320px;max-height:55dvh;margin:0 12px calc(12px + env(safe-area-inset-bottom,0px)) 0;border-radius:16px;box-shadow:0 8px 30px rgba(15,23,42,.28);border:1px solid #E2E5EA;padding:16px 16px 16px;}
 #overlay-floor-name .sheet-title{font-size:15px;margin-bottom:8px;}
 .field-label{font-size:12px;font-weight:600;color:#6B7280;margin-bottom:6px;}
 .field-input{width:100%;border:1.5px solid #E2E5EA;border-radius:11px;padding:11px 13px;font-size:15px;outline:none;margin-bottom:14px;transition:border-color .12s,box-shadow .12s;}
@@ -534,7 +534,7 @@ input,textarea{font-family:inherit;font-size:inherit;}
 
 <!-- ══ 図面名編集モーダル ══ -->
 <div class="overlay" id="overlay-floor-name" onclick="closeFloorNameModal(event)">
-  <button id="floor-name-restore-btn" onclick="toggleFloorNameSheetVisibility()" style="display:none;position:fixed;top:calc(12px + env(safe-area-inset-top,0px));right:12px;z-index:2001;background:#1C4ED8;color:#fff;border:none;border-radius:20px;padding:10px 16px;font-size:13px;font-weight:700;box-shadow:0 4px 12px rgba(0,0,0,.25);pointer-events:auto;">✏️ 入力に戻る</button>
+  <button id="floor-name-restore-btn" onclick="toggleFloorNameSheetVisibility()" style="display:none;position:fixed;bottom:calc(12px + env(safe-area-inset-bottom,0px));right:12px;z-index:2001;background:#1C4ED8;color:#fff;border:none;border-radius:20px;padding:10px 16px;font-size:13px;font-weight:700;box-shadow:0 4px 12px rgba(0,0,0,.25);pointer-events:auto;">✏️ 入力に戻る</button>
   <div class="sheet" onclick="event.stopPropagation()" style="padding-bottom:30px;">
     <div class="sheet-title" style="display:flex;align-items:center;justify-content:space-between;">
       <span>図面名を入力</span>
@@ -695,10 +695,11 @@ window.addEventListener('load', async () => {
   const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
   const isStandalone = window.navigator.standalone === true;
   const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isFileProtocol = location.protocol === 'file:'; // オフライン版(ファイルを直接開いた場合)かどうか
 
   if (isIOS && !isSafari) {
     document.getElementById('overlay-safari').style.display = 'flex';
-  } else if (isIOS && isSafari && !isStandalone && !localStorage.getItem('homescreen_guided')) {
+  } else if (isIOS && isSafari && !isStandalone && !isFileProtocol && !localStorage.getItem('homescreen_guided')) {
     setTimeout(() => {
       document.getElementById('overlay-homescreen').style.display = 'flex';
       localStorage.setItem('homescreen_guided', '1');
@@ -1079,8 +1080,8 @@ function openFloorNameModalStep(idx) {
 
   document.getElementById('overlay-floor-name').classList.add('open');
   floorNameModalOpen = true;
-  // 1枚目のときだけケンタくんが案内
-  if (idx === 0) setTimeout(() => kentaShow('floorName'), 600);
+  // 1枚目のときだけケンタくんが案内(報告書から階数が分かっている場合は専用の案内にする)
+  if (idx === 0) setTimeout(() => kentaShow(suppressFloorQuickSelect ? 'floorNameKnown' : 'floorName'), 600);
   setTimeout(() => {
     const input = document.getElementById('floor-name-single-input');
     if (input) { input.focus(); input.select(); }
@@ -2361,7 +2362,10 @@ async function runExportPDF() {
         </div>
         <div style="width:40mm;padding:2mm;display:flex;flex-direction:column;">
           <div style="font-size:7pt;color:#333;border-bottom:1px solid #ccc;padding-bottom:1mm;margin-bottom:2mm;">特記事項</div>
-          <div style="font-size:8.5pt;line-height:1.5;flex:1;word-break:break-all;">${esc(ph.comment||'').replace(/\n/g,'<br>')}</div>
+          <div style="position:relative;flex:1;">
+            <div style="position:absolute;inset:0;">${Array.from({length:17}).map(()=>`<div style="height:5mm;border-bottom:1px solid #999;"></div>`).join('')}</div>
+            <div style="position:absolute;inset:0;font-size:8.5pt;line-height:5mm;word-break:break-all;">${splitCommentIntoSentences(ph.comment||'').map(l=>esc(l)).join('<br><br>')}</div>
+          </div>
           <div style="font-size:6.5pt;color:#555;margin-top:2mm;text-align:right;">${ph.date || ''}</div>
         </div>
       </div>
@@ -4420,6 +4424,7 @@ const KENTA_SCRIPTS = {
   newProject:    ['物件名と所在地を入力して「作成」をタップしてね！'],
   drawingUpload: ['ここに図面をアップロードするよ！タップして画像を選んでね📄','JPGやPNGの画像ファイルがオススメだよ！'],
   floorName:     ['図面名をつけよう！クイック選択ボタンを使うと一括で入力できるよ✨','「PIT階から」「1階から」など当てはまるボタンをタップしてね！','手動で入力する場合は入力欄に直接入力して「次へ」をタップしてね'],
+  floorNameKnown: ['図面名をつけよう！報告書からいくつかの階数がもう分かっているよ📋','その階数のボタンをタップするだけでOK！','分からない図面だけ、入力欄に直接入力してね'],
   floorNameDone: ['図面名の設定完了！📐','調査したい場所を図面上でタップするとカメラが起動するよ📷','撮影が終わったら下のメニューで報告書を出力できるよ。使い方を案内するね！'],
   drawingReady:  ['図面のアップロード完了！📐','調査したい場所を図面上でタップするとカメラが起動するよ📷'],
   camera:        ['白いボタンを押して撮影してね📷','撮り直したい場合は「撮り直す」をタップしてね！'],
