@@ -84,6 +84,17 @@ input,textarea{font-family:inherit;font-size:inherit;}
 .photo-filter-tabs{display:flex;gap:6px;margin-bottom:10px;}
 .photo-filter-tab{flex:1;padding:8px 0;border-radius:10px;border:1.5px solid #E2E5EA;background:#fff;color:#6B7280;font-size:13px;font-weight:700;cursor:pointer;}
 .photo-filter-tab.active{background:#1C4ED8;border-color:#1C4ED8;color:#fff;}
+.compare-header{display:flex;gap:6px;margin-bottom:6px;}
+.compare-header div{flex:1;text-align:center;font-size:11px;font-weight:700;color:#9CA3AF;}
+.compare-row{display:flex;gap:6px;margin-bottom:8px;}
+.compare-cell{flex:1;background:#fff;border:1px solid #ECEEF3;border-radius:10px;padding:8px;display:flex;gap:8px;align-items:center;min-width:0;cursor:pointer;}
+.compare-thumb{width:40px;height:40px;border-radius:6px;object-fit:cover;flex-shrink:0;}
+.compare-thumb-ph{width:40px;height:40px;border-radius:6px;background:#F4F6FB;color:#B8BFCC;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+.compare-info{min-width:0;}
+.compare-num{font-size:12px;font-weight:700;color:#111827;}
+.compare-item{font-size:11px;color:#9CA3AF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.compare-cell-empty{background:#FFF7E6;border:1.5px dashed #FDBA74;justify-content:center;}
+.compare-empty-label{font-size:12px;font-weight:700;color:#B45309;}
 .photo-item.dragging{opacity:.4;}
 .photo-item.drag-ghost{position:fixed;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.25);pointer-events:none;width:calc(100% - 28px);}
 .photo-drag-handle{flex-shrink:0;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:18px;color:#9CA3AF;touch-action:none;cursor:grab;align-self:center;}
@@ -291,11 +302,21 @@ input,textarea{font-family:inherit;font-size:inherit;}
     <button class="tab" id="tab-btn-pdf" onclick="exportPDF()">
       <span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></span>PDF出力
     </button>
-    <button class="tab" id="tab-btn-excel" onclick="exportJSON()">
-      <span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h8"/></svg></span>Excel連携
+    <button class="tab" id="tab-btn-word" onclick="startWordReportFlow()">
+      <span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/><path d="M9 13l1 4 1.5-3L13 17l1-4"/></svg></span>Word出力
     </button>
+    <div class="tab" id="tab-btn-excel" style="position:relative;padding:0;">
+      <button class="tab" style="width:100%;height:100%;" onclick="toggleExcelMenu()">
+        <span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h8"/></svg></span>Excel連携
+      </button>
+      <div id="excel-menu" style="display:none;position:absolute;bottom:100%;left:0;right:0;background:#fff;border:1px solid #E2E5EA;border-radius:10px;box-shadow:0 -6px 16px rgba(15,23,42,.14);z-index:30;overflow:hidden;margin-bottom:4px;">
+        <button onclick="startExcelReportFlow();toggleExcelMenu()" style="width:100%;padding:11px 14px;text-align:left;font-size:13px;font-weight:600;color:#111827;display:flex;align-items:center;gap:8px;border-bottom:1px solid #F0F1F5;">📊 Excelレポート作成(ひな形に直接転記)</button>
+        <button onclick="exportJSON();toggleExcelMenu()" style="width:100%;padding:11px 14px;text-align:left;font-size:13px;font-weight:600;color:#111827;display:flex;align-items:center;gap:8px;">📤 データ書き出し(他端末へ転送用)</button>
+      </div>
+    </div>
   </div>
 </div>
+<input type="file" id="excel-template-input" accept=".xlsm,.xltm" style="display:none" onchange="handleExcelTemplateSelected(this)">
 <!-- ══ 画面3: カメラ ══ -->
 <div id="screen-camera" class="screen">
   <video id="camera-video" autoplay playsinline muted style="flex:1;object-fit:cover;width:100%;"></video>
@@ -400,7 +421,7 @@ input,textarea{font-family:inherit;font-size:inherit;}
 <div id="rotate-ui">
   <div class="rotate-ui-header">
     <span class="rotate-ui-title" style="display:flex;align-items:center;gap:6px;"><span style="width:15px;height:15px;display:inline-flex;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg></span>ピンの向き調整</span>
-    <button class="rotate-ui-close" onclick="closeRotateUI()">✕</button>
+    <button onclick="closeRotateUI()" style="background:#10B981;color:#fff;border:none;border-radius:10px;padding:6px 20px;font-size:13px;font-weight:700;cursor:pointer;">完了</button>
   </div>
   <div style="display:flex;align-items:center;gap:14px;">
     <div id="rotate-mini-preview" style="flex-shrink:0;width:56px;height:56px;border-radius:50%;background:#F3F4F6;border:1.5px solid #E0E7FF;position:relative;">
@@ -477,7 +498,10 @@ input,textarea{font-family:inherit;font-size:inherit;}
 <div class="overlay" id="overlay-photo-edit" onclick="closePhotoEdit(event)">
   <div class="sheet" onclick="event.stopPropagation()">
     <div class="sheet-title">写真を編集</div>
-    <img id="photo-edit-thumb" style="width:100%;border-radius:10px;margin-bottom:14px;max-height:160px;object-fit:cover;" src="" alt="">
+    <div id="photo-edit-thumb-wrap" style="position:relative;width:100%;border-radius:10px;margin-bottom:14px;max-height:220px;overflow:hidden;display:none;background:#F4F6FB;">
+      <img id="photo-edit-thumb" style="width:100%;max-height:220px;object-fit:contain;display:block;" src="" alt="">
+      <svg id="photo-edit-annotations" viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;"></svg>
+    </div>
     <div class="field-label">番号 <span id="photo-edit-orig-num" style="font-weight:400;color:#9CA3AF;font-size:12px;"></span></div>
     <input class="field-input" id="photo-edit-num" type="number" min="1" step="1" style="margin-bottom:12px;max-width:120px;" placeholder="例：5">
     <div style="font-size:11px;color:#9CA3AF;margin:-8px 0 12px;">既存の番号を入力すると、そこに挿し込まれて以降が1つずつ繰り下がります</div>
@@ -499,6 +523,8 @@ input,textarea{font-family:inherit;font-size:inherit;}
       <button type="button" data-status="要検討" onclick="selectStatusStampEdit('要検討')" style="flex:1;padding:8px;border-radius:10px;background:#fff;color:#E02424;font-size:13px;font-weight:700;border:1.5px solid #E02424;cursor:pointer;">要検討</button>
     </div>
     <input type="hidden" id="photo-edit-status" value="">
+    <div class="field-label">図面PDF表示ラベル <span style="font-weight:400;color:#9CA3AF;font-size:12px;">(空欄なら特記事項から自動生成)</span></div>
+    <input class="field-input" id="photo-edit-pdflabel" placeholder="例：外壁タイル面　白華" style="margin-bottom:12px;">
     <div class="btn-row">
       <button class="btn-outline" onclick="closePhotoEdit()">キャンセル</button>
       <button class="btn-primary" onclick="savePhotoEdit()">保存</button>
@@ -519,6 +545,46 @@ input,textarea{font-family:inherit;font-size:inherit;}
       <button class="btn-outline" onclick="closeFloorNameModal()">キャンセル</button>
       <button class="btn-primary" onclick="saveFloorNames()">次へ / 完了</button>
     </div>
+  </div>
+</div>
+
+<!-- ══ PDF一覧配置プレビュー(ドラッグで自由配置) ══ -->
+<div class="overlay" id="overlay-pdf-placement" onclick="closePdfPlacementSettings(event)">
+  <div class="sheet" onclick="event.stopPropagation()" style="max-height:92dvh;">
+    <div class="sheet-title">コメント一覧の配置</div>
+    <div style="font-size:12px;color:#9CA3AF;margin-bottom:10px;">枠をドラッグして、会社名・図面名などと重ならない位置に動かしてください</div>
+    <div id="pdf-placement-preview" style="position:relative;width:100%;background:#eee;border-radius:8px;overflow:hidden;touch-action:none;">
+      <img id="pdf-placement-img" style="width:100%;display:block;pointer-events:none;" src="" alt="">
+      <div id="pdf-placement-box" style="position:absolute;width:15%;background:rgba(255,255,255,0.92);border:1.5px solid #1C4ED8;border-radius:4px;padding:4px 5px;font-size:8px;color:#333;cursor:grab;line-height:1.4;">
+        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:2px;"><span style="white-space:nowrap;"><span style="color:#DC2626;">●</span> 要検討</span><span style="white-space:nowrap;"><span style="color:#059669;">●</span> 経過観察</span></div>
+        <div>No.1　サンプル</div>
+        <div>No.2　サンプル</div>
+      </div>
+    </div>
+    <button class="btn-primary" style="width:100%;margin-top:12px;" onclick="confirmPdfListPosition()">この位置でPDF作成</button>
+  </div>
+</div>
+
+<!-- ══ Word/Excel出力: 対象写真の選択 ══ -->
+<div class="overlay" id="overlay-export-select" onclick="closeExportSelect(event)">
+  <div class="sheet" onclick="event.stopPropagation()" style="max-height:85dvh;">
+    <div class="sheet-title" id="export-select-title">出力する写真を選択</div>
+    <div style="display:flex;gap:8px;margin-bottom:10px;">
+      <button class="btn-outline" style="flex:1;font-size:12px;padding:8px;" onclick="setAllExportSelect(true)">全て選択</button>
+      <button class="btn-outline" style="flex:1;font-size:12px;padding:8px;" onclick="setAllExportSelect(false)">全て解除</button>
+    </div>
+    <div id="export-select-list" style="max-height:50dvh;overflow-y:auto;"></div>
+    <button class="btn-primary" style="width:100%;margin-top:12px;" onclick="confirmExportSelect()">この内容で作成</button>
+  </div>
+</div>
+
+<!-- ══ PDF内容確認・編集画面(全ページ) ══ -->
+<div class="overlay" id="overlay-pdf-review" onclick="closePdfReview(event)">
+  <div class="sheet" onclick="event.stopPropagation()" style="max-height:92dvh;">
+    <div class="sheet-title">内容の確認・修正</div>
+    <div style="font-size:12px;color:#9CA3AF;margin-bottom:10px;">文字が違う場合はここで直せます。全ページ確認したら「PDF作成」を押してください。</div>
+    <div id="pdf-review-body" style="max-height:60dvh;overflow-y:auto;"></div>
+    <button class="btn-primary" style="width:100%;margin-top:12px;" onclick="finalizePdfExport()">この内容でPDF作成</button>
   </div>
 </div>
 
@@ -608,6 +674,7 @@ let pendingPin = null;
 let retakeInsertAfterNum = null; // 「撮り直す」で指定された、挿入先の直前の番号
 let retakePrefillItem = '';      // 撮り直し元の調査項目(初期値として引き継ぐ)
 let retakePrefillComment = '';   // 撮り直し元のコメント(初期値として引き継ぐ)
+let retakeOfId = null;           // 撮り直し元の写真id(番号が動いても崩れない恒久的な紐付け、比較表示で使う)
 let capturedPhoto = null;
 let capturedIsPortrait = false;
 let selectedPhotoId = null;
@@ -619,6 +686,8 @@ const photoFileRef   = document.getElementById('photo-file-input');
 window.addEventListener('load', async () => {
   projects = await dbAll() || [];
   renderProjectList();
+  setupPdfBoxDrag();
+  setupPdfReviewHandlers();
   const lastId = localStorage.getItem('last_open_project');
   let autoOpenedProject = false;
   if (lastId && projects.some(p => p.id === lastId)) { openProject(lastId); autoOpenedProject = true; }
@@ -634,9 +703,7 @@ window.addEventListener('load', async () => {
       document.getElementById('overlay-homescreen').style.display = 'flex';
       localStorage.setItem('homescreen_guided', '1');
     }, 1500);
-  } else if (!autoOpenedProject) {
-    // ▼開発中は毎回ツアーが始まるようにしている。本番公開時は下記コメントの条件に戻すこと▼
-    // } else if (!autoOpenedProject && !localStorage.getItem('kenta_welcomed')) {
+  } else if (!autoOpenedProject && !localStorage.getItem('kenta_welcomed')) {
     setTimeout(() => kentaShow('welcome'), 600);
     localStorage.setItem('kenta_welcomed', '1');
     setTimeout(() => startTour(), 1200);
@@ -756,7 +823,7 @@ function switchTab(t) {
   document.getElementById('tab-photos').style.display   = t==='photos'  ? 'flex' : 'none';
   document.getElementById('tab-btn-drawing').className  = 'tab' + (t==='drawing' ? ' active' : '');
   document.getElementById('tab-btn-photos').className   = 'tab' + (t==='photos'  ? ' active' : '');
-  if (t==='photos') renderPhotoList();
+  if (t==='photos') { renderPhotoList(); maybeStartPhotoListTour(); }
 }
 
 // ══ 図面 ══
@@ -1078,20 +1145,28 @@ async function handleDrawingFile(input) {
         // file://環境でWorkerのCORSエラーを回避するためBlob URL方式で読み込む
         pdfjsLib.GlobalWorkerOptions.workerSrc = getPdfWorkerBlobUrl();
         const pdf = await pdfjsLib.getDocument({data: e.target.result}).promise;
-        const newDrawings = [];
-        for (let i = 1; i <= pdf.numPages; i++) {
-          const page = await pdf.getPage(i);
-          const viewport = page.getViewport({scale: 2.0});
-          const canvas = document.createElement('canvas');
-          canvas.width = viewport.width; canvas.height = viewport.height;
-          await page.render({canvasContext: canvas.getContext('2d'), viewport, annotationMode: pdfjsLib.AnnotationMode.ENABLE}).promise;
-          newDrawings.push({ name: `${i}階`, image: canvas.toDataURL('image/jpeg', 0.9) });
-        }
+
+        // 既存の写真が持っている階数情報(_floorLabel)があれば、番号からの階数逆算に使う
+        const numToFloorLabel = {};
+        (activeProject.photos || []).forEach(ph => { if (ph._floorLabel) numToFloorLabel[ph.num] = ph._floorLabel; });
+
+        const newDrawings = await analyzePdfPages(pdf, pdfjsLib, numToFloorLabel);
+        const allAutoDetected = newDrawings.length && newDrawings.every(d => d.floorLabels.length);
+
         activeProject.drawings = newDrawings;
         activeProject.currentFloor = 0;
+        matchPhotosToFloors(activeProject);
+        const pinCount = applyCalloutPins(activeProject);
         await dbSave(activeProject);
         renderDrawing();
-        setTimeout(() => openFloorNameModalStep(0), 400);
+        renderPhotoList();
+
+        if (!allAutoDetected) {
+          suppressFloorQuickSelect = true;
+          setTimeout(() => openFloorNameModalStep(0), 400);
+        } else {
+          alert(`図面を差し替えました(${newDrawings.length}ページ)。\n階数の自動判定・ピン位置の再配置: ${pinCount}枚。`);
+        }
       } catch(err) {
         alert('PDFの読み込みに失敗しました。画像ファイル（JPG/PNG）をお試しください。');
       }
@@ -1151,11 +1226,17 @@ function renderPins() {
     const ly = Math.sin(rad + 0.4) * R;
     const rx2 = Math.cos(rad - 0.4) * R;
     const ry2 = Math.sin(rad - 0.4) * R;
+    const isSelectedForRotate = pinRotateMode && ph.id === selectedPhotoId;
+    const pinColor = isSelectedForRotate ? '#F97316' : '#1C4ED8'; // 回転モードで選択中は橙色に
+    const highlightRing = isSelectedForRotate
+      ? `<circle cx="0" cy="0" r="${R+7}" fill="none" stroke="#F97316" stroke-width="2.5" stroke-dasharray="4,3" opacity="0.9"/>`
+      : '';
     return `
     <div class="pin pin-sm" data-pin-id="${ph.id}" style="left:${positions[i].x}%;top:${positions[i].y}%;">
       <svg width="48" height="48" viewBox="-24 -24 48 48" style="overflow:visible;display:block;filter:drop-shadow(0 2px 4px rgba(15,23,42,.35));">
-        <polygon points="${lx},${ly} ${rx2},${ry2} ${tx},${ty}" fill="#1C4ED8"/>
-        <circle cx="0" cy="0" r="${R}" fill="#1C4ED8" stroke="white" stroke-width="2"/>
+        ${highlightRing}
+        <polygon points="${lx},${ly} ${rx2},${ry2} ${tx},${ty}" fill="${pinColor}"/>
+        <circle cx="0" cy="0" r="${R}" fill="${pinColor}" stroke="white" stroke-width="2"/>
         <text x="0" y="0" text-anchor="middle" dominant-baseline="central"
           font-size="9" font-weight="bold" fill="white" style="user-select:none;">${ph.num}</text>
       </svg>
@@ -1164,13 +1245,33 @@ function renderPins() {
 
   layer.querySelectorAll('.pin').forEach(pinEl => {
     const id = pinEl.dataset.pinId;
-    pinEl.addEventListener('touchend', e => { e.stopPropagation(); openPinPopup(e, id); });
-    pinEl.addEventListener('click',    e => { e.stopPropagation(); openPinPopup(e, id); });
+    const handleTap = e => {
+      e.stopPropagation();
+      if (pinMoveMode) return; // 移動モード中はドラッグ操作のみ(ポップアップは開かない)
+      if (pinRotateMode) { selectPinForRotate(id); return; } // 回転モード中は、タップしたピンに回転対象を切り替える
+      openPinPopup(e, id);
+    };
+    pinEl.addEventListener('touchend', handleTap);
+    pinEl.addEventListener('click', handleTap);
   });
+}
+
+// ── ピン向き調整: 回転モード中に別のピンをタップした時、そのピンに回転対象を切り替える ──
+function selectPinForRotate(id) {
+  const ph = activeProject.photos.find(p => p.id === id);
+  if (!ph) return;
+  selectedPhotoId = id;
+  const rot = ph.rotation || 0;
+  document.getElementById('pin-rotate-slider').value = rot;
+  document.getElementById('pin-rotate-deg').textContent = rot;
+  const miniArrow = document.getElementById('rotate-mini-arrow');
+  if (miniArrow) miniArrow.style.transform = `rotate(${rot}deg)`;
+  renderPins();
 }
 
 // ── ピン移動 ──
 let pinMoveMode = false;
+let pinRotateMode = false;
 
 function openMoveUI() {
   document.getElementById('overlay-pin').classList.remove('open');
@@ -1187,12 +1288,20 @@ async function closeMoveUI() {
 }
 function enablePinDrag() {
   const layer = document.getElementById('pins-layer');
+  // ドラッグ中に再描画するとドラッグが途切れるため、色の変更はDOMを直接書き換えて行う
+  function highlightMovePin(selId) {
+    layer.querySelectorAll('.pin').forEach(el => {
+      const color = el.dataset.pinId === selId ? '#F97316' : '#1C4ED8';
+      el.querySelectorAll('polygon, circle').forEach(shape => shape.setAttribute('fill', color));
+    });
+  }
   layer.querySelectorAll('.pin').forEach(pinEl => {
     const id = pinEl.dataset.pinId;
     pinEl.style.cursor = 'grab';
     pinEl.ontouchstart = e => {
       e.stopPropagation();
       pinEl.style.opacity = '0.6';
+      highlightMovePin(id);
       const onMove = ev => {
         const img = document.getElementById('drawing-img');
         const rect = img.getBoundingClientRect();
@@ -1213,6 +1322,7 @@ function enablePinDrag() {
     pinEl.onmousedown = e => {
       e.stopPropagation();
       pinEl.style.opacity = '0.6';
+      highlightMovePin(id);
       const onMove = ev => {
         const img = document.getElementById('drawing-img');
         const rect = img.getBoundingClientRect();
@@ -1255,6 +1365,7 @@ function stepRotate(step) {
 function openRotateUI() {
   const ph = activeProject.photos.find(p => p.id === selectedPhotoId);
   if (!ph) return;
+  pinRotateMode = true;
   const rot = ph.rotation || 0;
   document.getElementById('pin-rotate-slider').value = rot;
   document.getElementById('pin-rotate-deg').textContent = rot;
@@ -1263,10 +1374,13 @@ function openRotateUI() {
   document.getElementById('overlay-pin').classList.remove('open');
   switchTab('drawing');
   document.getElementById('rotate-ui').classList.add('open');
+  renderPins();
 }
 function closeRotateUI() {
+  pinRotateMode = false;
   document.getElementById('rotate-ui').classList.remove('open');
   dbSave(activeProject);
+  renderPins();
 }
 
 // 指定した写真の直後に、新しい場所の写真を挿入する準備をして図面タブへ移動する
@@ -1294,6 +1408,7 @@ function retakeOldPhoto(sourceId) {
   retakeInsertAfterNum = src.num;
   retakePrefillItem = src.inspectionItem || '';
   retakePrefillComment = src.comment || '';
+  retakeOfId = src.id; // 番号がその後動いても崩れない、恒久的な「前回のどれの続きか」の紐付け
   if (activeProject.currentFloor !== (src.floorIndex || 0)) {
     activeProject.currentFloor = src.floorIndex || 0;
     switchTab('drawing');
@@ -1306,6 +1421,7 @@ function retakeOldPhoto(sourceId) {
 
 function handleDrawingTap(src) {
   if (floorNameModalOpen) return; // 図面名入力中は「図面確認」用のタップ扱いにし、撮影は起動しない
+  if (pinMoveMode || pinRotateMode) return; // 移動・回転モード中は、空いた場所のタップで新規撮影が始まらないようにする
   if (src.target && src.target.closest && src.target.closest('.pin')) return;
   const rect = document.getElementById('drawing-img').getBoundingClientRect();
   pendingPin = {
@@ -1398,7 +1514,7 @@ function cancelComment(e) {
   if (e && !e.target.classList.contains('overlay')) return;
   document.getElementById('overlay-comment').classList.remove('open');
   capturedPhoto = null; pendingPin = null;
-  retakeInsertAfterNum = null; retakePrefillItem = ''; retakePrefillComment = '';
+  retakeInsertAfterNum = null; retakePrefillItem = ''; retakePrefillComment = ''; retakeOfId = null;
 }
 async function selectStatusStamp(status) {
   document.getElementById('input-status').value = status;
@@ -1422,6 +1538,7 @@ async function savePhoto() {
     inspectionItem: document.getElementById('input-inspection').value.trim(),
     comment: document.getElementById('input-comment').value.trim(),
     status: document.getElementById('input-status').value || '',
+    retakeOf: retakeOfId || null, // 「撮り直す」の場合、前回のどの写真の続きかを恒久的に記録
     date: new Date().toLocaleString('ja-JP')
   };
   try {
@@ -1438,12 +1555,60 @@ async function savePhoto() {
   }
   document.getElementById('overlay-comment').classList.remove('open');
   capturedPhoto = null; pendingPin = null;
-  retakeInsertAfterNum = null; retakePrefillItem = ''; retakePrefillComment = '';
+  retakeInsertAfterNum = null; retakePrefillItem = ''; retakePrefillComment = ''; retakeOfId = null;
   showScreen('screen-project');
   renderPins();
 }
 
 // ══ 写真一覧 ══
+// ══ 写真一覧: 比較モード(前回項目ごとに、今回撮影済みか一目でチェック) ══
+function renderPhotoCompareList(el, tabsHTML, allPhotos) {
+  const oldPhotos = allPhotos.filter(p => typeof p.originalNum === 'number').sort((a, b) => a.originalNum - b.originalNum);
+  if (!oldPhotos.length) {
+    el.innerHTML = tabsHTML + `<div class="empty-state"><div class="empty-text">前回のデータがありません</div></div>`;
+    return;
+  }
+  const doneCount = oldPhotos.filter(op => allPhotos.some(p => p.retakeOf === op.id)).length;
+
+  el.innerHTML = tabsHTML +
+    `<div class="photo-count">前回${oldPhotos.length}件中、撮影済み ${doneCount}件</div>` +
+    `<div class="compare-header"><div>前回</div><div>今回</div></div>` +
+    `<div id="compare-list">` +
+    oldPhotos.map(op => {
+      const newPh = allPhotos.find(p => p.retakeOf === op.id);
+      return `
+      <div class="compare-row">
+        <div class="compare-cell" data-view-id="${op.id}" style="opacity:.75;">
+          ${op.photo ? `<img class="compare-thumb" style="filter:grayscale(45%);" src="${op.photo}" alt="">` : `<div class="compare-thumb-ph">${icon('camera',20)}</div>`}
+          <div class="compare-info">
+            <div class="compare-num">#${op.originalNum}</div>
+            <div class="compare-item">${esc(op.inspectionItem || '(項目未入力)')}</div>
+          </div>
+        </div>
+        ${newPh ? `
+        <div class="compare-cell" data-view-id="${newPh.id}">
+          ${newPh.photo ? `<img class="compare-thumb" src="${newPh.photo}" alt="">` : `<div class="compare-thumb-ph">${icon('camera',20)}</div>`}
+          <div class="compare-info">
+            <div class="compare-num">#${newPh.num}</div>
+            <div class="compare-item">撮影済み</div>
+          </div>
+        </div>` : `
+        <div class="compare-cell compare-cell-empty" data-retake-id="${op.id}">
+          <div style="color:#B45309;">${icon('camera', 20)}</div>
+          <div class="compare-empty-label">未撮影</div>
+        </div>`}
+      </div>`;
+    }).join('') +
+    `</div>`;
+
+  document.getElementById('compare-list').addEventListener('click', e => {
+    const emptyCell = e.target.closest('[data-retake-id]');
+    if (emptyCell) { retakeOldPhoto(emptyCell.dataset.retakeId); return; }
+    const viewCell = e.target.closest('[data-view-id]');
+    if (viewCell) { openPhotoEdit(viewCell.dataset.viewId); return; }
+  });
+}
+
 function renderPhotoList() {
   const allPhotos = activeProject.photos || [];
   const el = document.getElementById('photo-list-body');
@@ -1462,9 +1627,16 @@ function renderPhotoList() {
       <button class="photo-filter-tab${photoFilterMode==='all'?' active':''}" onclick="setPhotoFilter('all')">すべて</button>
       <button class="photo-filter-tab${photoFilterMode==='new'?' active':''}" onclick="setPhotoFilter('new')">今回</button>
       <button class="photo-filter-tab${photoFilterMode==='old'?' active':''}" onclick="setPhotoFilter('old')">前回</button>
+      <button class="photo-filter-tab${photoFilterMode==='compare'?' active':''}" onclick="setPhotoFilter('compare')">比較</button>
     </div>` : '';
 
   const mode = hasOld ? photoFilterMode : 'all';
+
+  if (mode === 'compare') {
+    renderPhotoCompareList(el, tabsHTML, allPhotos);
+    return;
+  }
+
   const photos = allPhotos.filter(p => {
     if (mode === 'new') return typeof p.originalNum !== 'number';
     if (mode === 'old') return typeof p.originalNum === 'number';
@@ -1626,8 +1798,21 @@ function openPhotoEdit(id) {
   const ph = activeProject.photos.find(p => p.id === id);
   if (!ph) return;
   editingPhotoId = id;
-  document.getElementById('photo-edit-thumb').src = ph.photo || '';
-  document.getElementById('photo-edit-thumb').style.display = ph.photo ? 'block' : 'none';
+  const thumbWrap = document.getElementById('photo-edit-thumb-wrap');
+  const thumbImg = document.getElementById('photo-edit-thumb');
+  const annoSvg = document.getElementById('photo-edit-annotations');
+  thumbImg.src = ph.photo || '';
+  thumbWrap.style.display = ph.photo ? 'block' : 'none';
+  annoSvg.innerHTML = '';
+  if (ph.photo) {
+    thumbImg.onload = () => {
+      // 画像本来の縦横比に合わせて枠の高さを調整(object-fit:containの余白が出ないようにする)
+      const w = thumbWrap.clientWidth;
+      const ratio = thumbImg.naturalHeight / thumbImg.naturalWidth;
+      thumbWrap.style.height = Math.round(Math.min(w * ratio, 320)) + 'px';
+      renderPhotoEditAnnotations(ph);
+    };
+  }
   document.getElementById('photo-edit-num').value = ph.num;
   document.getElementById('photo-edit-orig-num').textContent =
     (typeof ph.originalNum === 'number' && ph.originalNum !== ph.num) ? `(旧番号: ${ph.originalNum})` : '';
@@ -1643,8 +1828,69 @@ function openPhotoEdit(id) {
   }
   document.getElementById('photo-edit-inspection').value = ph.inspectionItem || '';
   document.getElementById('photo-edit-comment').value = ph.comment || '';
+  document.getElementById('photo-edit-pdflabel').value = ph.pdfLabel || '';
   selectStatusStampEdit(ph.status || '');
   document.getElementById('overlay-photo-edit').classList.add('open');
+}
+// 元のWord報告書にあった点線丸などの注釈を、写真編集画面のサムネイル上に描画する
+// OOXMLの破線プリセット名を、線幅の倍数によるdasharrayパターンに変換する
+// (Word/PowerPoint等が使う標準的な比率。sysDash=システム風の詰まった破線、dash/lgDashは間隔が広い)
+function ooxmlDashPattern(dashType, strokeWidth) {
+  const w = strokeWidth || 1;
+  const table = {
+    solid: null,
+    dot: [1, 3], sysDot: [1, 1],
+    dash: [4, 3], lgDash: [8, 3],
+    sysDash: [3, 1],
+    dashDot: [4, 3, 1, 3], sysDashDot: [3, 1, 1, 1],
+    lgDashDot: [8, 3, 1, 3],
+    lgDashDotDot: [8, 3, 1, 3, 1, 3], sysDashDotDot: [3, 1, 1, 1, 1, 1]
+  };
+  const pattern = table[dashType] || table.sysDash;
+  return pattern.map(v => (v * w).toFixed(2)).join(',');
+}
+function renderPhotoEditAnnotations(ph) {
+  const svg = document.getElementById('photo-edit-annotations');
+  svg.innerHTML = '';
+  if (!ph.annotations || !ph.annotations.length) return;
+  // 矢印の矢じり用マーカーを用意(1回だけ定義)
+  const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+  const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+  marker.setAttribute('id', 'anno-arrowhead'); marker.setAttribute('viewBox', '0 0 10 10');
+  marker.setAttribute('refX', '8'); marker.setAttribute('refY', '5');
+  marker.setAttribute('markerWidth', '5'); marker.setAttribute('markerHeight', '5'); marker.setAttribute('orient', 'auto-start-reverse');
+  const arrowPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  arrowPath.setAttribute('d', 'M0,0 L10,5 L0,10 Z'); arrowPath.setAttribute('fill', '#FF0000');
+  marker.appendChild(arrowPath); defs.appendChild(marker); svg.appendChild(defs);
+
+  ph.annotations.forEach(an => {
+    if (an.type === 'ellipse') {
+      const cx = an.x + an.w / 2, cy = an.y + an.h / 2;
+      const el = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
+      el.setAttribute('cx', cx); el.setAttribute('cy', cy);
+      el.setAttribute('rx', Math.abs(an.w / 2)); el.setAttribute('ry', Math.abs(an.h / 2));
+      const strokeW = 0.6;
+      el.setAttribute('stroke', '#' + (an.lineColor || 'FF0000'));
+      el.setAttribute('stroke-width', String(strokeW));
+      el.setAttribute('stroke-dasharray', ooxmlDashPattern(an.dashType || 'sysDash', strokeW));
+      el.setAttribute('fill', 'none');
+      if (an.rotation) el.setAttribute('transform', `rotate(${an.rotation} ${cx} ${cy})`);
+      svg.appendChild(el);
+    } else if (an.type === 'arrow') {
+      // 矢印のバウンディングボックス内で、flipH/flipVに応じた対角線を引く(矢じりは終点側)
+      const x1 = an.flipH ? an.x + an.w : an.x, y1 = an.flipV ? an.y + an.h : an.y;
+      const x2 = an.flipH ? an.x : an.x + an.w, y2 = an.flipV ? an.y : an.y + an.h;
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+      line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+      line.setAttribute('stroke', '#' + (an.lineColor || 'FF0000'));
+      line.setAttribute('stroke-width', '0.7');
+      line.setAttribute('marker-end', 'url(#anno-arrowhead)');
+      const cx2 = an.x + an.w / 2, cy2 = an.y + an.h / 2;
+      if (an.rotation) line.setAttribute('transform', `rotate(${an.rotation} ${cx2} ${cy2})`);
+      svg.appendChild(line);
+    }
+  });
 }
 function closePhotoEdit(e) {
   if (e && !e.target.classList.contains('overlay')) return;
@@ -1664,6 +1910,7 @@ async function savePhotoEdit() {
   ph.inspectionItem = document.getElementById('photo-edit-inspection').value.trim();
   ph.comment = document.getElementById('photo-edit-comment').value.trim();
   ph.status = document.getElementById('photo-edit-status').value || '';
+  ph.pdfLabel = document.getElementById('photo-edit-pdflabel').value.trim();
 
   const floorWrap = document.getElementById('photo-edit-floor-wrap');
   if (floorWrap.style.display !== 'none') {
@@ -1800,7 +2047,267 @@ function loadImageWithExifFix(dataUrl) {
   });
 }
 
-async function exportPDF() {
+// ══ PDF一覧配置(PDF出力ボタンを押すと最初に表示される、ドラッグで自由配置) ══
+function exportPDF() {
+  const photos = activeProject?.photos || [];
+  if (!photos.length) { alert('写真がありません'); return; }
+  const drawings = activeProject.drawings || [];
+  // プレビューには、実際に写真がある最初の図面を表示する
+  let floorIdx = drawings.findIndex((d, i) => photos.some(p => (p.floorIndex||0) === i));
+  if (floorIdx < 0) floorIdx = 0;
+  const floor = drawings[floorIdx];
+  document.getElementById('pdf-placement-img').src = floor ? floor.image : '';
+  const box = document.getElementById('pdf-placement-box');
+  const pos = activeProject.pdfListPos || { x: 54, y: 70 };
+  box.style.left = pos.x + '%';
+  box.style.top = pos.y + '%';
+  document.getElementById('overlay-pdf-placement').classList.add('open');
+}
+function closePdfPlacementSettings(e) {
+  if (e && !e.target.classList.contains('overlay')) return;
+  document.getElementById('overlay-pdf-placement').classList.remove('open');
+}
+let pdfBoxDragging = false, pdfBoxDragOffset = null;
+function setupPdfBoxDrag() {
+  const box = document.getElementById('pdf-placement-box');
+  const container = document.getElementById('pdf-placement-preview');
+  if (!box || !container) return;
+  box.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    const rect = box.getBoundingClientRect();
+    pdfBoxDragOffset = { dx: e.clientX - rect.left, dy: e.clientY - rect.top };
+    pdfBoxDragging = true;
+    box.setPointerCapture(e.pointerId);
+  });
+  box.addEventListener('pointermove', e => {
+    if (!pdfBoxDragging) return;
+    const containerRect = container.getBoundingClientRect();
+    const boxRect = box.getBoundingClientRect();
+    let x = e.clientX - containerRect.left - pdfBoxDragOffset.dx;
+    let y = e.clientY - containerRect.top - pdfBoxDragOffset.dy;
+    x = Math.max(0, Math.min(x, containerRect.width - boxRect.width));
+    y = Math.max(0, Math.min(y, containerRect.height - boxRect.height));
+    box.style.left = (x / containerRect.width * 100) + '%';
+    box.style.top = (y / containerRect.height * 100) + '%';
+  });
+  box.addEventListener('pointerup', () => { pdfBoxDragging = false; });
+}
+async function confirmPdfListPosition() {
+  const box = document.getElementById('pdf-placement-box');
+  const container = document.getElementById('pdf-placement-preview');
+  const containerRect = container.getBoundingClientRect();
+  const boxRect = box.getBoundingClientRect();
+  activeProject.pdfListPos = {
+    x: ((boxRect.left - containerRect.left) / containerRect.width) * 100,
+    y: ((boxRect.top - containerRect.top) / containerRect.height) * 100
+  };
+  await dbSave(activeProject);
+  document.getElementById('overlay-pdf-placement').classList.remove('open');
+  await showPdfReviewScreen();
+}
+
+// ══ PDF内容確認・編集画面(全ページを表示し、文字をその場で修正できる) ══
+let currentReviewPages = [];
+async function showPdfReviewScreen() {
+  const photos = activeProject?.photos || [];
+  const drawings = activeProject.drawings || [];
+  const drawingPagesData = [];
+  for (let fi = 0; fi < drawings.length; fi++) {
+    const floor = drawings[fi];
+    if (!floor.image) continue;
+    const floorPhotos = photos.filter(p => (p.floorIndex||0) === fi);
+    if (!floorPhotos.length) continue;
+    drawingPagesData.push({ floor, floorPhotos });
+  }
+  currentReviewPages = drawingPagesData;
+
+  const body = document.getElementById('pdf-review-body');
+  body.innerHTML = '<div style="text-align:center;padding:24px;color:#9CA3AF;">読み込み中...</div>';
+  document.getElementById('overlay-pdf-review').classList.add('open');
+
+  if (!drawingPagesData.length) {
+    body.innerHTML = '<div style="text-align:center;padding:24px;color:#9CA3AF;">図面と紐づく写真がありません(写真台紙のみ出力されます)</div>';
+    return;
+  }
+
+  let html = '';
+  for (let i = 0; i < drawingPagesData.length; i++) {
+    const { floor, floorPhotos } = drawingPagesData[i];
+    const canvas = await renderFloorDrawingCanvas(floor, floorPhotos);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+    html += `<div style="margin-bottom:22px;">
+      <div style="font-weight:700;font-size:13px;margin-bottom:6px;">${esc(floor.name)}</div>
+      <img id="pdf-review-img-${i}" src="${dataUrl}" style="width:100%;border-radius:6px;border:1px solid #E2E5EA;margin-bottom:8px;display:block;">
+      <div>
+        ${floorPhotos.sort((a,b)=>a.num-b.num).map(ph => `
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+            <span style="font-weight:700;font-size:12px;width:36px;flex-shrink:0;">No.${ph.num}</span>
+            <input class="field-input" data-photo-id="${ph.id}" data-review-idx="${i}" value="${esc(labelFor(ph))}" style="flex:1;font-size:13px;padding:4px 8px;height:32px;">
+          </div>`).join('')}
+      </div>
+    </div>`;
+  }
+  body.innerHTML = html;
+}
+function setupPdfReviewHandlers() {
+  const body = document.getElementById('pdf-review-body');
+  if (!body) return;
+  body.addEventListener('change', async e => {
+    const input = e.target.closest('[data-photo-id]');
+    if (!input) return;
+    const ph = activeProject.photos.find(p => p.id === input.dataset.photoId);
+    if (!ph) return;
+    ph.pdfLabel = input.value.trim();
+    await dbSave(activeProject);
+    const reviewIdx = parseInt(input.dataset.reviewIdx, 10);
+    const { floor, floorPhotos } = currentReviewPages[reviewIdx];
+    const canvas = await renderFloorDrawingCanvas(floor, floorPhotos);
+    const img = document.getElementById(`pdf-review-img-${reviewIdx}`);
+    if (img) img.src = canvas.toDataURL('image/jpeg', 0.85);
+  });
+}
+function closePdfReview(e) {
+  if (e && !e.target.classList.contains('overlay')) return;
+  document.getElementById('overlay-pdf-review').classList.remove('open');
+}
+async function finalizePdfExport() {
+  document.getElementById('overlay-pdf-review').classList.remove('open');
+  await runExportPDF();
+}
+
+// 対応区分(要検討/経過観察)に応じた色。かっこよく色分けするため、ピン・一覧の両方で共通利用する
+function statusColor(status) {
+  if (status === '要検討') return '#DC2626';   // 赤系
+  if (status === '経過観察') return '#059669'; // 緑系
+  return '#374151'; // 指定なしはニュートラルなグレー
+}
+// 特記事項コメントから「場所＋症状」だけを短く抜き出す
+// (例:「外壁タイル面に白華が見られます。計画的な修繕が…」→「外壁タイル面　白華」)
+// 手動で「図面PDF表示ラベル」が編集されていれば、そちらを優先して使う
+function summarizeComment(comment) {
+  if (!comment) return '';
+  const m = comment.match(/^(.+?)(?:に|の)(.+?)(?:が|に)(?:見られます|生じています|発生しています|あります)/);
+  if (m) return `${m[1].trim()}　${m[2].trim()}`;
+  return comment.split('。')[0].substring(0, 16);
+}
+function labelFor(ph) {
+  return (ph.pdfLabel && ph.pdfLabel.trim()) ? ph.pdfLabel.trim() : summarizeComment(ph.comment);
+}
+
+// 図面+ピン+コメント一覧を描いたcanvasを作る(PDF本番出力・プレビューの両方で共用)
+async function renderFloorDrawingCanvas(floor, floorPhotos) {
+  const img = await loadImageWithExifFix(floor.image);
+  const canvas = document.createElement('canvas');
+  const A4W = 1754, A4H = 1240; // 横向き(297mm×210mm相当)
+  canvas.width = A4W; canvas.height = A4H;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, A4W, A4H);
+  const PAD = 36;
+  ctx.fillStyle = '#000'; ctx.font = 'bold 28px sans-serif';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText(`${activeProject.name}　${floor.name}　撮影位置図`, PAD, 44);
+  ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(PAD, 56); ctx.lineTo(A4W-PAD, 56); ctx.stroke();
+
+  // 図面はほぼ全面に大きく表示する(吹き出しの引き出し線をやめたので、余白を確保する必要がない)
+  const mapX = PAD, mapY = 68, mapW = A4W - PAD*2, mapH = A4H - mapY - PAD;
+  ctx.strokeStyle = '#ccc'; ctx.lineWidth = 1; ctx.strokeRect(mapX, mapY, mapW, mapH);
+  const scale = Math.min(mapW/img.width, mapH/img.height);
+  const dw = img.width*scale, dh = img.height*scale;
+  const dx = mapX+(mapW-dw)/2, dy = mapY+(mapH-dh)/2;
+  ctx.drawImage(img, dx, dy, dw, dh);
+
+  // 位置が重なる/近い写真は、既存の図面表示と同じロジックでずらして重なりを回避する
+  const OVERLAP_THRESHOLD = 3.0;
+  const adjustedPos = new Map();
+  const placed = [];
+  floorPhotos.forEach(ph => {
+    let x = ph.x||0, y = ph.y||0;
+    let attempts = 0;
+    while (attempts < 20) {
+      const overlap = placed.find(p => Math.hypot(p.x - x, p.y - y) < OVERLAP_THRESHOLD);
+      if (!overlap) break;
+      const angle = attempts * 137.5 * Math.PI / 180;
+      const dist = OVERLAP_THRESHOLD * 0.8 * Math.ceil(attempts / 8);
+      x = (ph.x||0) + Math.cos(angle) * dist;
+      y = (ph.y||0) + Math.sin(angle) * dist;
+      attempts++;
+    }
+    placed.push({x, y});
+    adjustedPos.set(ph.id, {x, y});
+  });
+
+  // ピン(丸+番号、対応区分に応じた色)を図面上に描画
+  floorPhotos.forEach(ph => {
+    const pos = adjustedPos.get(ph.id);
+    const px = dx+(pos.x/100)*dw, py = dy+(pos.y/100)*dh;
+    const color = statusColor(ph.status);
+    const r = 15, rotRad = (((ph.rotation||0)-90)*Math.PI)/180;
+    ctx.fillStyle = color; ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.save(); ctx.translate(px, py); ctx.rotate(rotRad);
+    ctx.fillStyle = color; ctx.beginPath();
+    ctx.moveTo(r*0.4, -5); ctx.lineTo(r*0.4, 5); ctx.lineTo(r+8, 0); ctx.fill();
+    ctx.restore();
+    ctx.fillStyle = '#fff'; ctx.font = `bold ${r}px sans-serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(String(ph.num), px, py);
+  });
+  ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+
+  // 番号＋特記事項の要約を並べたシンプルな一覧を、プレビューでドラッグした位置に重ねて表示する
+  // (線でつながず、図面上のピン番号と見比べて読む方式。多少図面と重なってもよい。対応区分で色分け)
+  const pos = activeProject.pdfListPos || { x: 54, y: 70 };
+  const lineH = 26, listPad = 10, legendH = 24;
+  // 箱の幅は、実際の文字列(番号+要約、凡例)を測って一番長いものに合わせる(はみ出し・余りすぎを防ぐ)
+  ctx.font = '15px sans-serif';
+  const legendW = ctx.measureText('要検討').width + ctx.measureText('経過観察').width + 130;
+  let maxTextW = legendW;
+  floorPhotos.forEach(ph => {
+    ctx.font = 'bold 15px sans-serif';
+    const numW = ctx.measureText(`No.${ph.num}`).width;
+    ctx.font = '15px sans-serif';
+    const labelW = ctx.measureText(labelFor(ph).substring(0, 15)).width;
+    maxTextW = Math.max(maxTextW, numW + labelW + 20);
+  });
+  const listW = Math.max(180, Math.min(Math.round(maxTextW) + 20, dw * 0.7));
+  const listH = listPad*2 + legendH + floorPhotos.length * lineH;
+  let listX = dx + (pos.x/100) * dw;
+  let listY = dy + (pos.y/100) * dh;
+  listX = Math.max(dx, Math.min(listX, dx + dw - listW));
+  listY = Math.max(dy, Math.min(listY, dy + dh - listH));
+  ctx.fillStyle = 'rgba(255,255,255,0.92)';
+  ctx.fillRect(listX, listY, listW, listH);
+  ctx.strokeStyle = '#1C4ED8'; ctx.lineWidth = 1.5;
+  ctx.strokeRect(listX, listY, listW, listH);
+
+  // 凡例(ピン・番号の色が何を意味するかの説明)
+  const legendY = listY + listPad;
+  ctx.beginPath(); ctx.arc(listX+18, legendY+9, 6, 0, Math.PI*2); ctx.fillStyle = '#DC2626'; ctx.fill();
+  ctx.fillStyle = '#333'; ctx.font = '13px sans-serif'; ctx.textBaseline = 'middle';
+  ctx.fillText('要検討', listX+28, legendY+9);
+  ctx.beginPath(); ctx.arc(listX+108, legendY+9, 6, 0, Math.PI*2); ctx.fillStyle = '#059669'; ctx.fill();
+  ctx.fillStyle = '#333';
+  ctx.fillText('経過観察', listX+118, legendY+9);
+  ctx.strokeStyle = '#E2E5EA'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(listX+8, legendY+legendH-4); ctx.lineTo(listX+listW-8, legendY+legendH-4); ctx.stroke();
+  ctx.textBaseline = 'alphabetic';
+
+  floorPhotos.sort((a,b) => a.num - b.num).forEach((ph, idx) => {
+    const ty = listY + listPad + legendH + idx*lineH;
+    ctx.fillStyle = idx%2===0 ? '#F0F4FF' : '#fff';
+    ctx.fillRect(listX+1, ty-2, listW-2, lineH);
+    const color = statusColor(ph.status);
+    ctx.fillStyle = color; ctx.font = 'bold 15px sans-serif'; ctx.textBaseline = 'top';
+    ctx.fillText(`No.${ph.num}`, listX+10, ty+4);
+    ctx.fillStyle = '#333'; ctx.font = '15px sans-serif';
+    ctx.fillText(labelFor(ph).substring(0, 15), listX+62, ty+4);
+  });
+  ctx.textBaseline = 'alphabetic';
+  return canvas;
+}
+
+async function runExportPDF() {
   const photos = activeProject?.photos || [];
   if (!photos.length) { alert('写真がありません'); return; }
   const pages = [];
@@ -1855,7 +2362,7 @@ async function exportPDF() {
         <div style="width:40mm;padding:2mm;display:flex;flex-direction:column;">
           <div style="font-size:7pt;color:#333;border-bottom:1px solid #ccc;padding-bottom:1mm;margin-bottom:2mm;">特記事項</div>
           <div style="font-size:8.5pt;line-height:1.5;flex:1;word-break:break-all;">${esc(ph.comment||'').replace(/\n/g,'<br>')}</div>
-          <div style="font-size:6.5pt;color:#555;margin-top:2mm;text-align:right;">${ph.date}</div>
+          <div style="font-size:6.5pt;color:#555;margin-top:2mm;text-align:right;">${ph.date || ''}</div>
         </div>
       </div>
     </div>`;
@@ -1866,74 +2373,28 @@ async function exportPDF() {
   loadingEl.textContent = '📄 PDFを作成中...';
   document.body.appendChild(loadingEl);
   try {
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
-    let firstPage = true;
-
-    // 図面+ピン位置図ページ
+    // 図面ページが1枚でもあれば横向きから開始し、写真台紙ページは縦向きに切り替える
     const drawings = activeProject.drawings || [];
+    const drawingPagesData = [];
     for (let fi = 0; fi < drawings.length; fi++) {
       const floor = drawings[fi];
       if (!floor.image) continue;
       const floorPhotos = photos.filter(p => (p.floorIndex||0) === fi);
       if (!floorPhotos.length) continue;
-      const img = await loadImageWithExifFix(floor.image);
-      const canvas = document.createElement('canvas');
-      const A4W = 1240, A4H = 1754;
-      canvas.width = A4W; canvas.height = A4H;
-      const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, A4W, A4H);
-      const PAD = 40;
-      ctx.fillStyle = '#000'; ctx.font = 'bold 30px sans-serif';
-      ctx.fillText(`${activeProject.name}　${floor.name}　撮影位置図`, PAD, 50);
-      ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(PAD, 62); ctx.lineTo(A4W-PAD, 62); ctx.stroke();
-      const mapX = PAD, mapY = 76, mapW = A4W-PAD*2, mapH = Math.floor(A4H*0.50);
-      ctx.strokeStyle = '#ccc'; ctx.lineWidth = 1; ctx.strokeRect(mapX, mapY, mapW, mapH);
-      const scale = Math.min(mapW/img.width, mapH/img.height);
-      const dw = img.width*scale, dh = img.height*scale;
-      const dx = mapX+(mapW-dw)/2, dy = mapY+(mapH-dh)/2;
-      ctx.drawImage(img, dx, dy, dw, dh);
-      floorPhotos.forEach(ph => {
-        const px = dx+(ph.x/100)*dw, py = dy+(ph.y/100)*dh;
-        const r = 16, rotRad = (((ph.rotation||0)-90)*Math.PI)/180;
-        ctx.fillStyle = '#E53E3E'; ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI*2); ctx.fill();
-        ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
-        ctx.save(); ctx.translate(px, py); ctx.rotate(rotRad);
-        ctx.fillStyle = '#E53E3E'; ctx.beginPath();
-        ctx.moveTo(r*0.4, -5); ctx.lineTo(r*0.4, 5); ctx.lineTo(r+8, 0); ctx.fill();
-        ctx.restore();
-        ctx.fillStyle = '#fff'; ctx.font = `bold ${r}px sans-serif`;
-        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText(String(ph.num), px, py);
-      });
-      ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-      const tblY = mapY+mapH+20, tblX = PAD, tblW = A4W-PAD*2;
-      const hdrH = 40, numW = 60, itemW = 300;
-      ctx.fillStyle = '#1C4ED8'; ctx.fillRect(tblX, tblY, tblW, hdrH);
-      ctx.fillStyle = '#fff'; ctx.font = 'bold 20px sans-serif';
-      ctx.fillText('No.', tblX+10, tblY+27);
-      ctx.fillText('調査項目', tblX+numW+10, tblY+27);
-      ctx.fillText('特記事項', tblX+numW+itemW+10, tblY+27);
-      const rowH2 = Math.min(38, Math.floor((A4H-tblY-hdrH-PAD)/Math.max(floorPhotos.length,1)));
-      floorPhotos.forEach((ph, idx) => {
-        const ry = tblY+hdrH+idx*rowH2;
-        if (ry+rowH2 > A4H-PAD+10) return;
-        ctx.fillStyle = idx%2===0?'#F0F4FF':'#fff'; ctx.fillRect(tblX, ry, tblW, rowH2);
-        ctx.strokeStyle = '#E2E5EA'; ctx.lineWidth = 1; ctx.strokeRect(tblX, ry, tblW, rowH2);
-        ctx.fillStyle = '#E53E3E'; ctx.font = `bold ${Math.min(20,rowH2-8)}px sans-serif`;
-        ctx.textBaseline = 'middle';
-        ctx.fillText(String(ph.num), tblX+10, ry+rowH2/2);
-        ctx.fillStyle = '#111'; ctx.font = `${Math.min(18,rowH2-10)}px sans-serif`;
-        ctx.fillText((ph.inspectionItem||'').substring(0,16), tblX+numW+10, ry+rowH2/2);
-        ctx.fillStyle = '#444'; ctx.font = `${Math.min(17,rowH2-10)}px sans-serif`;
-        ctx.fillText((ph.comment||'').substring(0,30), tblX+numW+itemW+10, ry+rowH2/2);
-      });
-      ctx.textBaseline = 'alphabetic';
+      drawingPagesData.push({ floor, floorPhotos });
+    }
+    const firstOrientation = drawingPagesData.length ? 'landscape' : 'portrait';
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: firstOrientation });
+    let pageUsed = false; // コンストラクタが作る最初の1ページをまだ使っていない場合はfalse
+
+    // 図面+撮影位置図ページ(横向き、吹き出しは図面周りの余白に配置し引き出し線でつなぐ)
+    for (const { floor, floorPhotos } of drawingPagesData) {
+      if (pageUsed) pdf.addPage('a4', 'landscape');
+      pageUsed = true;
+      const canvas = await renderFloorDrawingCanvas(floor, floorPhotos);
       const imgData = canvas.toDataURL('image/jpeg', 0.92);
-      if (!firstPage) pdf.addPage();
-      pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
-      firstPage = false;
+      pdf.addImage(imgData, 'JPEG', 0, 0, 297, 210);
     }
 
     // 写真台紙ページ
@@ -1972,6 +2433,7 @@ ${pages.map((pair, pi) => `
       if (!box) { resolve(); return; }
       const boxW = box.clientWidth, boxH = box.clientHeight;
       if (!boxW || !boxH) { resolve(); return; }
+      const ph = photos.find(p => p.id === imgEl.dataset.phId);
       const src = new Image();
       src.onload = () => {
         const canvas = document.createElement('canvas');
@@ -1981,7 +2443,39 @@ ${pages.map((pair, pi) => `
         const MARGIN_RATIO = 0.99; // 枠の罫線に接しないよう、少し小さめに描画する
         const scale = Math.min(boxW / src.width, boxH / src.height) * MARGIN_RATIO;
         const dw = src.width * scale, dh = src.height * scale;
-        ctx.drawImage(src, (boxW - dw) / 2, (boxH - dh) / 2, dw, dh);
+        const dx = (boxW - dw) / 2, dy = (boxH - dh) / 2;
+        ctx.drawImage(src, dx, dy, dw, dh);
+        // 元のWord報告書から取り込んだ点線丸・矢印の注釈を、同じ位置・種類でPDFにも重ねて描く
+        (ph && ph.annotations || []).forEach(an => {
+          const acx = dx + ((an.x + an.w/2) / 100) * dw, acy = dy + ((an.y + an.h/2) / 100) * dh;
+          ctx.save();
+          ctx.translate(acx, acy);
+          if (an.rotation) ctx.rotate(an.rotation * Math.PI / 180);
+          ctx.strokeStyle = '#' + (an.lineColor || 'FF0000');
+          const lw = Math.max(1, ((an.lineWidthEmu || 19050) / 9525) * (dw / src.width) * 1.4);
+          ctx.lineWidth = lw;
+          if (an.type === 'ellipse') {
+            ctx.setLineDash(ooxmlDashPattern(an.dashType || 'sysDash', lw).split(',').map(Number));
+            ctx.beginPath();
+            ctx.ellipse(0, 0, Math.abs(an.w/100*dw/2), Math.abs(an.h/100*dh/2), 0, 0, Math.PI*2);
+            ctx.stroke();
+          } else if (an.type === 'arrow') {
+            const hw = (an.w/100*dw)/2, hh = (an.h/100*dh)/2;
+            const p1x = an.flipH ? hw : -hw, p1y = an.flipV ? hh : -hh;
+            const p2x = an.flipH ? -hw : hw, p2y = an.flipV ? -hh : hh;
+            ctx.setLineDash([]);
+            ctx.beginPath(); ctx.moveTo(p1x, p1y); ctx.lineTo(p2x, p2y); ctx.stroke();
+            const ang = Math.atan2(p2y - p1y, p2x - p1x), headLen = Math.max(6, lw * 4);
+            ctx.beginPath();
+            ctx.moveTo(p2x, p2y);
+            ctx.lineTo(p2x - headLen * Math.cos(ang - Math.PI/6), p2y - headLen * Math.sin(ang - Math.PI/6));
+            ctx.lineTo(p2x - headLen * Math.cos(ang + Math.PI/6), p2y - headLen * Math.sin(ang + Math.PI/6));
+            ctx.closePath();
+            ctx.fillStyle = ctx.strokeStyle;
+            ctx.fill();
+          }
+          ctx.restore();
+        });
         imgEl.src = canvas.toDataURL('image/jpeg', 0.92);
         imgEl.onload = resolve;
       };
@@ -1992,9 +2486,9 @@ ${pages.map((pair, pi) => `
     for (let i = 0; i < pageEls.length; i++) {
       const canvas2 = await html2canvas(pageEls[i], { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
       const imgData2 = canvas2.toDataURL('image/jpeg', 0.92);
-      if (!firstPage) pdf.addPage();
+      if (pageUsed) pdf.addPage('a4', 'portrait');
+      pageUsed = true;
       pdf.addImage(imgData2, 'JPEG', 0, 0, 210, 297);
-      firstPage = false;
     }
     document.body.removeChild(stage);
     pdf.save(`関係写真_${activeProject.name}.pdf`);
@@ -2051,6 +2545,32 @@ function readFileAsJSON(file) {
 
 // 分割ファイル（part 1/3 等）も含め、複数ファイルを一括でインポート・マージする
 // ══ 前回データ取込メニューの開閉 ══
+// Excel連携ボタンのドロップダウン(Excelレポート作成 / データ書き出し)
+function toggleExcelMenu() {
+  const menu = document.getElementById('excel-menu');
+  const willOpen = menu.style.display === 'none' || !menu.style.display;
+  menu.style.display = willOpen ? 'block' : 'none';
+  if (willOpen) {
+    setTimeout(() => {
+      document.addEventListener('click', closeExcelMenuOnce, { once: true });
+    }, 0);
+  }
+}
+function closeExcelMenuOnce(e) {
+  const menu = document.getElementById('excel-menu');
+  const btn = document.getElementById('tab-btn-excel');
+  if (e.target && e.target.tagName === 'INPUT' && e.target.type === 'file') {
+    // 隠しファイル入力へのclick()は実クリックとして伝播するため、外側クリックと誤認識しない
+    document.addEventListener('click', closeExcelMenuOnce, { once: true });
+    return;
+  }
+  if (menu && !menu.contains(e.target) && e.target !== btn && !btn.contains(e.target)) {
+    menu.style.display = 'none';
+  } else if (menu) {
+    document.addEventListener('click', closeExcelMenuOnce, { once: true });
+  }
+}
+
 function toggleImportMenu() {
   const menu = document.getElementById('import-menu');
   const willOpen = menu.style.display === 'none' || !menu.style.display;
@@ -2062,7 +2582,7 @@ function toggleImportMenu() {
     // メインのツアーが「前回データ取込」の説明中だった場合はそちらを終了し、
     // 実際にボタンを押したこのタイミングで取込ガイドを開始する
     if (tourActive) endTour();
-    setTimeout(() => startImportTour(), 350);
+    if (!localStorage.getItem('import_tour_done')) setTimeout(() => startImportTour(), 350);
   }
 }
 function closeImportMenuOnce(e) {
@@ -2094,6 +2614,7 @@ function blobToDataURL(blob) {
 const DOCX_NS = {
   w:   'http://schemas.openxmlformats.org/wordprocessingml/2006/main',
   a:   'http://schemas.openxmlformats.org/drawingml/2006/main',
+  wp:  'http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing',
   rel: 'http://schemas.openxmlformats.org/package/2006/relationships',
   offRel: 'http://schemas.openxmlformats.org/officeDocument/2006/relationships'
 };
@@ -2207,12 +2728,24 @@ function applyCalloutPins(project) {
   return count;
 }
 
+// 写真の行番号(ページ全体を通した連番)から、その写真がページ内のどこに描画されるかを
+// 近似計算する(ページ余白720twips・タイトル高さ約900twips・行の高さ4536twips・1ページ3行の前提)
+// 矢印などページ絶対座標で保存された注釈の位置を逆算するために使う。あくまで近似値。
+const DOCX_PAGE_MARGIN_TWIPS = 720, DOCX_TITLE_HEIGHT_TWIPS = 900, DOCX_ROW_HEIGHT_TWIPS = 4536, DOCX_ROWS_PER_PAGE = 3;
+function docxEstimatePhotoAbsolutePosition(rowIndex) {
+  const rowOnPage = rowIndex % DOCX_ROWS_PER_PAGE;
+  const absYTwips = DOCX_PAGE_MARGIN_TWIPS + DOCX_TITLE_HEIGHT_TWIPS + rowOnPage * DOCX_ROW_HEIGHT_TWIPS;
+  const absXTwips = DOCX_PAGE_MARGIN_TWIPS;
+  return { x: absXTwips * 635, y: absYTwips * 635 }; // EMU
+}
+
 async function docxExtractEntries(zip) {
   const docText = await zip.file('word/document.xml').async('string');
   const doc = xlsxParseXml(docText);
   const relsMap = await docxGetRelsMap(zip);
 
   const entries = [];
+  let photoRowIndex = 0; // 写真がある行だけを数えた連番(ページ内位置の近似計算に使う)
   for (const tr of doc.getElementsByTagNameNS(DOCX_NS.w, 'tr')) {
     // 行内の実写真(pic要素配下のblip)を探す。スタンプ図形(wps)はblipを持たないので除外される
     let embedId = null;
@@ -2257,11 +2790,114 @@ async function docxExtractEntries(zip) {
 
     const path = relsMap[embedId];
     let photo = null;
+    let photoExtentCx = null, photoExtentCy = null;
     if (path) {
       const pf = zip.file(path);
       if (pf) photo = await blobToDataURL(await pf.async('blob'));
     }
-    entries.push({ num, inspectionItem, comment, status, photo, floorLabel });
+    // 写真自体の実サイズ(wp:inline側のextent)を取得しておく(注釈の位置をこのサイズに対する%に変換するため)
+    for (const blip of tr.getElementsByTagNameNS(DOCX_NS.a, 'blip')) {
+      if (blip.getAttributeNS(DOCX_NS.offRel, 'embed') !== embedId) continue;
+      let p = blip.parentNode, depth = 0, inlineEl = null;
+      while (p && depth < 10) {
+        if (p.localName === 'inline' || p.localName === 'anchor') { inlineEl = p; break; }
+        p = p.parentNode; depth++;
+      }
+      if (inlineEl) {
+        const ext = inlineEl.getElementsByTagNameNS(DOCX_NS.wp, 'extent')[0];
+        if (ext) { photoExtentCx = parseInt(ext.getAttribute('cx'), 10); photoExtentCy = parseInt(ext.getAttribute('cy'), 10); }
+      }
+      break;
+    }
+    // 点線丸などの注釈図形(楕円)を抽出する。列・段落基準の相対位置のもののみ対応
+    // (矢印等、ページ絶対座標のものは写真の実際の描画位置を再現できないため対象外)
+    const annotations = [];
+    if (photoExtentCx && photoExtentCy) {
+      for (const geom of tr.getElementsByTagNameNS(DOCX_NS.a, 'prstGeom')) {
+        if (geom.getAttribute('prst') !== 'ellipse') continue;
+        let anchorEl = geom;
+        let depth = 0;
+        while (anchorEl && anchorEl.localName !== 'anchor' && depth < 12) { anchorEl = anchorEl.parentNode; depth++; }
+        if (!anchorEl || anchorEl.localName !== 'anchor') continue;
+        const posHEl = anchorEl.getElementsByTagNameNS(DOCX_NS.wp, 'positionH')[0];
+        const posVEl = anchorEl.getElementsByTagNameNS(DOCX_NS.wp, 'positionV')[0];
+        if (!posHEl || !posVEl) continue;
+        if (posHEl.getAttribute('relativeFrom') !== 'column' || posVEl.getAttribute('relativeFrom') !== 'paragraph') continue;
+        const offX = parseInt((posHEl.getElementsByTagNameNS(DOCX_NS.wp, 'posOffset')[0]||{}).textContent || '0', 10);
+        const offY = parseInt((posVEl.getElementsByTagNameNS(DOCX_NS.wp, 'posOffset')[0]||{}).textContent || '0', 10);
+        const extEl = anchorEl.getElementsByTagNameNS(DOCX_NS.wp, 'extent')[0];
+        const cx = extEl ? parseInt(extEl.getAttribute('cx'), 10) : 0;
+        const cy = extEl ? parseInt(extEl.getAttribute('cy'), 10) : 0;
+        const xfrm = geom.parentNode ? geom.parentNode.getElementsByTagNameNS(DOCX_NS.a, 'xfrm')[0] : null; // <a:xfrm rot="...">はprstGeomの兄弟(spPr内)
+        let rotDeg = 0;
+        if (xfrm && xfrm.getAttribute('rot')) rotDeg = parseInt(xfrm.getAttribute('rot'), 10) / 60000;
+        // 線の色・太さ・破線パターンも取得する(見た目を忠実に再現するため)
+        const spPr = geom.parentNode;
+        const lnEl = spPr ? spPr.getElementsByTagNameNS(DOCX_NS.a, 'ln')[0] : null;
+        let lineColor = 'FF0000', lineWidthEmu = 19050, dashType = 'sysDash';
+        if (lnEl) {
+          if (lnEl.getAttribute('w')) lineWidthEmu = parseInt(lnEl.getAttribute('w'), 10);
+          const clrEl = lnEl.getElementsByTagNameNS(DOCX_NS.a, 'srgbClr')[0];
+          if (clrEl && clrEl.getAttribute('val')) lineColor = clrEl.getAttribute('val');
+          const dashEl = lnEl.getElementsByTagNameNS(DOCX_NS.a, 'prstDash')[0];
+          if (dashEl && dashEl.getAttribute('val')) dashType = dashEl.getAttribute('val');
+        }
+        annotations.push({
+          type: 'ellipse',
+          x: Math.round((offX / photoExtentCx) * 1000) / 10,
+          y: Math.round((offY / photoExtentCy) * 1000) / 10,
+          w: Math.round((cx / photoExtentCx) * 1000) / 10,
+          h: Math.round((cy / photoExtentCy) * 1000) / 10,
+          rotation: Math.round(rotDeg),
+          lineColor, lineWidthEmu, dashType
+        });
+      }
+      // 矢印(直線コネクタ)。ページ絶対座標で保存されているため、写真のページ内位置を近似計算して逆算する
+      const photoAbsPos = docxEstimatePhotoAbsolutePosition(photoRowIndex);
+      for (const geom2 of tr.getElementsByTagNameNS(DOCX_NS.a, 'prstGeom')) {
+        if (geom2.getAttribute('prst') !== 'straightConnector1') continue;
+        let anchorEl2 = geom2, depth2 = 0;
+        while (anchorEl2 && anchorEl2.localName !== 'anchor' && depth2 < 12) { anchorEl2 = anchorEl2.parentNode; depth2++; }
+        if (!anchorEl2 || anchorEl2.localName !== 'anchor') continue;
+        const posHEl2 = anchorEl2.getElementsByTagNameNS(DOCX_NS.wp, 'positionH')[0];
+        const posVEl2 = anchorEl2.getElementsByTagNameNS(DOCX_NS.wp, 'positionV')[0];
+        if (!posHEl2 || !posVEl2) continue;
+        const relH = posHEl2.getAttribute('relativeFrom'), relV = posVEl2.getAttribute('relativeFrom');
+        if (relH !== 'page' && relH !== 'margin') continue; // ページ絶対座標のもののみ対象
+        let absOffX = parseInt((posHEl2.getElementsByTagNameNS(DOCX_NS.wp, 'posOffset')[0]||{}).textContent || '0', 10);
+        let absOffY = parseInt((posVEl2.getElementsByTagNameNS(DOCX_NS.wp, 'posOffset')[0]||{}).textContent || '0', 10);
+        if (relV === 'margin') absOffY += DOCX_PAGE_MARGIN_TWIPS * 635; // marginは余白基準なので、ページ上端基準に直す
+        const extEl2 = anchorEl2.getElementsByTagNameNS(DOCX_NS.wp, 'extent')[0];
+        const acx = extEl2 ? parseInt(extEl2.getAttribute('cx'), 10) : 0;
+        const acy = extEl2 ? parseInt(extEl2.getAttribute('cy'), 10) : 0;
+        const xfrm2 = geom2.parentNode ? geom2.parentNode.getElementsByTagNameNS(DOCX_NS.a, 'xfrm')[0] : null;
+        const flipH = xfrm2 && xfrm2.getAttribute('flipH') === '1';
+        const flipV = xfrm2 && xfrm2.getAttribute('flipV') === '1';
+        let rotDeg2 = 0;
+        if (xfrm2 && xfrm2.getAttribute('rot')) rotDeg2 = parseInt(xfrm2.getAttribute('rot'), 10) / 60000;
+        const spPr2 = geom2.parentNode;
+        const lnEl2 = spPr2 ? spPr2.getElementsByTagNameNS(DOCX_NS.a, 'ln')[0] : null;
+        let aColor = 'FF0000', aWidthEmu = 19050;
+        if (lnEl2) {
+          if (lnEl2.getAttribute('w')) aWidthEmu = parseInt(lnEl2.getAttribute('w'), 10);
+          const clrEl2 = lnEl2.getElementsByTagNameNS(DOCX_NS.a, 'srgbClr')[0];
+          if (clrEl2 && clrEl2.getAttribute('val')) aColor = clrEl2.getAttribute('val');
+        }
+        // 写真の左上を原点とした、この矢印の相対位置(%)に変換する(近似値)
+        const relX = ((absOffX - photoAbsPos.x) / photoExtentCx) * 100;
+        const relY = ((absOffY - photoAbsPos.y) / photoExtentCy) * 100;
+        annotations.push({
+          type: 'arrow',
+          x: Math.round(relX * 10) / 10, y: Math.round(relY * 10) / 10,
+          w: Math.round((acx / photoExtentCx) * 1000) / 10, h: Math.round((acy / photoExtentCy) * 1000) / 10,
+          flipH, flipV, rotation: Math.round(rotDeg2),
+          lineColor: aColor, lineWidthEmu: aWidthEmu,
+          approximate: true // ページ絶対座標からの近似計算のため、実際とズレる可能性がある
+        });
+      }
+    }
+    entries.push({ num, inspectionItem, comment, status, photo, floorLabel, annotations });
+    if (embedId) photoRowIndex++;
   }
   return entries;
 }
@@ -2298,6 +2934,7 @@ async function handleWordImportNew(input) {
         comment: e.comment || '',
         status: e.status || '',
         _floorLabel: e.floorLabel || null, // 図面取込後の階数マッチング用(表示には使わない内部情報)
+        annotations: e.annotations || [], // 元のWordにあった点線丸などの注釈(写真に対する%位置)
         date: ''
       });
     }
@@ -2337,6 +2974,62 @@ async function handleWordImportNew(input) {
 }
 
 // ══ 前回データ取込: 撮影位置図(PDF) ══
+// PDFの各ページを画像化し、タイトル・吹き出し番号から階数とピン位置を解析する(取込・図面変更で共用)
+async function analyzePdfPages(pdf, pdfjsLib, numToFloorLabel) {
+  const hasNumMap = Object.keys(numToFloorLabel || {}).length > 0;
+  const newDrawings = [];
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const viewport = page.getViewport({ scale: 2.0 });
+    const canvas = document.createElement('canvas');
+    canvas.width = viewport.width; canvas.height = viewport.height;
+    await page.render({ canvasContext: canvas.getContext('2d'), viewport, annotationMode: pdfjsLib.AnnotationMode.ENABLE }).promise;
+
+    let pageText = '';
+    const calloutPos = {};
+    try {
+      const textContent = await page.getTextContent();
+      pageText = textContent.items.map(it => it.str).join('');
+      for (const item of textContent.items) {
+        const m = (item.str || '').match(/^(\d{1,3})\s*[.．]/);
+        if (!m) continue;
+        const num = parseInt(m[1], 10);
+        const tr = item.transform;
+        if (!tr) continue;
+        const [vx, vy] = viewport.convertToViewportPoint(tr[4], tr[5]);
+        calloutPos[num] = { x: (vx / viewport.width) * 100, y: (vy / viewport.height) * 100 };
+      }
+    } catch (err) { /* テキスト抽出に失敗しても画像だけは登録する */ }
+
+    try {
+      const annots = await page.getAnnotations();
+      for (const a of annots) {
+        const text = (a.contents || a.fieldValue || '').toString();
+        if (!text) continue;
+        pageText += text;
+        const m = text.match(/^(\d{1,3})\s*[.．]/);
+        if (!m || !a.rect) continue;
+        const num = parseInt(m[1], 10);
+        if (calloutPos[num]) continue;
+        const [vx, vy] = viewport.convertToViewportPoint(a.rect[0], a.rect[3]);
+        calloutPos[num] = { x: (vx / viewport.width) * 100, y: (vy / viewport.height) * 100 };
+      }
+    } catch (err) { /* 注釈が無い/取得失敗でも無視 */ }
+
+    let floorLabels = parseFloorLabelsFromTitle(pageText);
+    if (!floorLabels.length && hasNumMap) {
+      const calloutNums = Object.keys(calloutPos).map(n => parseInt(n, 10));
+      const inferred = new Set();
+      calloutNums.forEach(n => { if (numToFloorLabel[n]) inferred.add(numToFloorLabel[n]); });
+      if (inferred.size) floorLabels = [...inferred];
+    }
+
+    const dispName = floorLabels.length ? floorLabels.join('・') : `${i}階`;
+    newDrawings.push({ name: dispName, image: canvas.toDataURL('image/jpeg', 0.9), floorLabels, calloutPositions: calloutPos });
+  }
+  return newDrawings;
+}
+
 async function handlePdfMapImportNew(input) {
   const file = input.files[0]; if (!file) return;
   try {
@@ -2349,71 +3042,8 @@ async function handlePdfMapImportNew(input) {
     const targetProjectPre = lastImportedProjectId ? projects.find(p => p.id === lastImportedProjectId) : null;
     const numToFloorLabel = {};
     (targetProjectPre?.photos || []).forEach(ph => { if (ph._floorLabel) numToFloorLabel[ph.num] = ph._floorLabel; });
-    const hasNumMap = Object.keys(numToFloorLabel).length > 0;
 
-    const newDrawings = [];
-    const pageCalloutPositions = []; // 各ページの{番号: {x,y}}(0-100%、吹き出し番号の文字位置)
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      const viewport = page.getViewport({ scale: 2.0 });
-      const canvas = document.createElement('canvas');
-      canvas.width = viewport.width; canvas.height = viewport.height;
-      await page.render({ canvasContext: canvas.getContext('2d'), viewport, annotationMode: pdfjsLib.AnnotationMode.ENABLE }).promise;
-
-      // ページ内テキストを取得(タイトル「7F平面図」や、吹き出しの番号「05.」等)
-      let pageText = '';
-      const calloutPos = {};
-      try {
-        const textContent = await page.getTextContent();
-        // スペースで結合すると「05.」のような短い数字列が文字単位で分断されてしまうことがあるため、
-        // 詰めて結合してから判定する(単語の区切りは失われるが、今回の判定パターンには影響しない)
-        pageText = textContent.items.map(it => it.str).join('');
-
-        // 吹き出し番号(「05.」等)の文字位置を、写真番号→ピン座標(%)として記録しておく
-        for (const item of textContent.items) {
-          const m = (item.str || '').match(/^(\d{1,3})\s*[.．]/);
-          if (!m) continue;
-          const num = parseInt(m[1], 10);
-          const tr = item.transform; // [a,b,c,d,e,f]
-          if (!tr) continue;
-          const [vx, vy] = viewport.convertToViewportPoint(tr[4], tr[5]);
-          calloutPos[num] = { x: (vx / viewport.width) * 100, y: (vy / viewport.height) * 100 };
-        }
-      } catch (err) { /* テキスト抽出に失敗しても画像だけは登録する */ }
-
-      // 注釈(アノテーション)側にも文字が入っている場合があるため、そちらも拾う
-      // (吹き出しの文字がFreeText注釈などで別レイヤーになっているケースへの対応)
-      try {
-        const annots = await page.getAnnotations();
-        for (const a of annots) {
-          const text = (a.contents || a.fieldValue || '').toString();
-          if (!text) continue;
-          pageText += text;
-          const m = text.match(/^(\d{1,3})\s*[.．]/);
-          if (!m || !a.rect) continue;
-          const num = parseInt(m[1], 10);
-          if (calloutPos[num]) continue; // 既にテキスト抽出側で取れていれば優先
-          // rect: [x1,y1,x2,y2] (PDF座標、左下基準) → 左上あたりの点を採用
-          const [vx, vy] = viewport.convertToViewportPoint(a.rect[0], a.rect[3]);
-          calloutPos[num] = { x: (vx / viewport.width) * 100, y: (vy / viewport.height) * 100 };
-        }
-      } catch (err) { /* 注釈が無い/取得失敗でも無視 */ }
-      pageCalloutPositions.push(calloutPos);
-
-      // ① まずページタイトル(「7F平面図」等)から階数を判定
-      let floorLabels = parseFloorLabelsFromTitle(pageText);
-
-      // ② タイトルから取れない場合、吹き出しの番号(「05.」等)とWordの番号を突き合わせて階数を逆算する
-      if (!floorLabels.length && hasNumMap) {
-        const calloutNums = Object.keys(calloutPos).map(n => parseInt(n, 10));
-        const inferred = new Set();
-        calloutNums.forEach(n => { if (numToFloorLabel[n]) inferred.add(numToFloorLabel[n]); });
-        if (inferred.size) floorLabels = [...inferred];
-      }
-
-      const dispName = floorLabels.length ? floorLabels.join('・') : `${i}階`;
-      newDrawings.push({ name: dispName, image: canvas.toDataURL('image/jpeg', 0.9), floorLabels, calloutPositions: calloutPos });
-    }
+    const newDrawings = await analyzePdfPages(pdf, pdfjsLib, numToFloorLabel);
     if (!newDrawings.length) throw new Error('PDFにページが見つかりませんでした');
     const allAutoDetected = newDrawings.every(d => d.floorLabels.length);
 
@@ -2505,7 +3135,7 @@ async function handleJSONImportNew(input) {
             floorIndex: resolvedFloorIndex, photo: ph.photo||null,
             isPortrait: ph.isPortrait || false,
             inspectionItem: ph.inspectionItem||'', comment: ph.comment||'', date: ph.date||'',
-            status: ph.status || '', _floorLabel: ph._floorLabel || null, _pinnedByCallout: ph._pinnedByCallout || false, originalNum: (typeof ph.originalNum === 'number' ? ph.originalNum : undefined)
+            status: ph.status || '', _floorLabel: ph._floorLabel || null, _pinnedByCallout: ph._pinnedByCallout || false, originalNum: (typeof ph.originalNum === 'number' ? ph.originalNum : undefined), retakeOf: ph.retakeOf || null, pdfLabel: ph.pdfLabel || '', annotations: ph.annotations || []
           });
         });
       });
@@ -2580,6 +3210,792 @@ function splitPhotosBySize(compressedPhotos, baseProjectJsonSize) {
   return chunks.length ? chunks : [[]];
 }
 
+// ══════════════════════════════════════════════════════════════════
+// Excelレポート直接転記機能
+// (施工フォト変換ツール.py で行っていた処理を、テンプレートのZIP構造を
+//  直接書き換える形でJSに移植。openpyxl等の全体再構築を経由しないため、
+//  VBA/チェックボックス/VML等は元のまま保たれ、復元処理が不要になる)
+// ══════════════════════════════════════════════════════════════════
+const EXCEL_NS = {
+  ss: 'http://schemas.openxmlformats.org/spreadsheetml/2006/main',
+  rel: 'http://schemas.openxmlformats.org/package/2006/relationships',
+  offRel: 'http://schemas.openxmlformats.org/officeDocument/2006/relationships',
+};
+
+function excelEscapeXml(s) {
+  return (s == null ? '' : String(s))
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// シート名→ファイルパスの対応を取得(前回データ取込の実装と同じ考え方)
+async function excelGetSheetMap(zip) {
+  const wbDoc = await (async () => {
+    const f = zip.file('xl/workbook.xml'); if (!f) return null;
+    return new DOMParser().parseFromString(await f.async('string'), 'application/xml');
+  })();
+  const relsDoc = await (async () => {
+    const f = zip.file('xl/_rels/workbook.xml.rels'); if (!f) return null;
+    return new DOMParser().parseFromString(await f.async('string'), 'application/xml');
+  })();
+  if (!wbDoc || !relsDoc) return [];
+  const relMap = {};
+  for (const r of relsDoc.getElementsByTagNameNS(EXCEL_NS.rel, 'Relationship')) {
+    relMap[r.getAttribute('Id')] = r.getAttribute('Target');
+  }
+  const sheets = [];
+  for (const s of wbDoc.getElementsByTagNameNS(EXCEL_NS.ss, 'sheet')) {
+    const rid = s.getAttributeNS(EXCEL_NS.offRel, 'id');
+    const target = relMap[rid];
+    if (!target) continue;
+    const path = target.startsWith('/') ? target.slice(1) : 'xl/' + target;
+    sheets.push({ name: s.getAttribute('name'), path });
+  }
+  return sheets;
+}
+
+// シートXML文字列から、列幅(px)・行高(px)を計算する関数を作る
+// ▼ 実測に基づく補正: 「文字幅→px」の変換式は実際のExcel表示幅よりわずかに小さく出るため、
+// 列幅計算そのものに補正をかける。枠サイズの算出とセル境界(アンカー)の算出の両方で
+// 必ずこの同じ関数を使うことで、実際のExcelで見た時にズレ・はみ出しが出ないようにする。
+// (以前は枠サイズの計算にだけ補正をかけていたが、アンカー側は無補正のままだったため、
+//  LibreOfficeでは正しく見えても実際のExcelでは隣のセルにはみ出す結果になっていた)
+const COL_WIDTH_CALIBRATION = 1.12;
+function buildColRowSizers(sheetXmlStr) {
+  const fmtMatch = sheetXmlStr.match(/<sheetFormatPr([^\/]*)\/>/);
+  const fmtAttrs = fmtMatch ? fmtMatch[1] : '';
+  const defaultColWidth = parseFloat((fmtAttrs.match(/\sdefaultColWidth="([\d.]+)"/) || [])[1] || 8.43);
+  const defaultRowHeight = parseFloat((fmtAttrs.match(/\sdefaultRowHeight="([\d.]+)"/) || [])[1] || 15);
+
+  const colWidths = {};
+  for (const m of sheetXmlStr.matchAll(/<col min="(\d+)" max="(\d+)"[^>]*\swidth="([\d.]+)"[^>]*\/>/g)) {
+    const min = parseInt(m[1], 10), max = parseInt(m[2], 10), w = parseFloat(m[3]);
+    for (let c = min; c <= max; c++) colWidths[c] = w;
+  }
+  const rowHeights = {};
+  for (const m of sheetXmlStr.matchAll(/<row r="(\d+)"[^>]*\sht="([\d.]+)"[^>]*>/g)) {
+    rowHeights[parseInt(m[1], 10)] = parseFloat(m[2]);
+  }
+  function colWidthPx(colIdx0) {
+    const w = colWidths[colIdx0 + 1] != null ? colWidths[colIdx0 + 1] : defaultColWidth;
+    const px = Math.round(w * 7 * COL_WIDTH_CALIBRATION + 5);
+    return px > 0 ? px : 64;
+  }
+  function rowHeightPx(rowIdx0) {
+    const h = rowHeights[rowIdx0 + 1] != null ? rowHeights[rowIdx0 + 1] : defaultRowHeight;
+    const px = Math.round(h * 96 / 72);
+    return px > 0 ? px : 20;
+  }
+  return { colWidthPx, rowHeightPx };
+}
+function resolveColPosition(colWidthPx, targetPx) {
+  let col = 0, remaining = targetPx;
+  for (let i = 0; i < 200; i++) {
+    const w = colWidthPx(col);
+    if (remaining < w) return { col, off: remaining };
+    remaining -= w; col++;
+  }
+  return { col, off: remaining };
+}
+function resolveRowPosition(rowHeightPx, targetPx) {
+  let row = 0, remaining = targetPx;
+  for (let i = 0; i < 2000; i++) {
+    const h = rowHeightPx(row);
+    if (remaining < h) return { row, off: remaining };
+    remaining -= h; row++;
+  }
+  return { row, off: remaining };
+}
+function excelPixelsToEMU(px) { return Math.round(px * 9525); }
+
+// 指定の左上(0-indexed anchorRow/anchorCol)から始まる結合セルを探し、その実ピクセルサイズを返す
+function getFrameSizePx(sheetXmlStr, sizers, anchorRow0, anchorCol0) {
+  const targetRow = anchorRow0 + 1, targetCol = anchorCol0 + 1;
+  const mergeMatch = sheetXmlStr.match(/<mergeCells[^>]*>([\s\S]*?)<\/mergeCells>/);
+  if (!mergeMatch) return null;
+  for (const m of mergeMatch[1].matchAll(/<mergeCell ref="([A-Z]+)(\d+):([A-Z]+)(\d+)"\/>/g)) {
+    const minCol = excelColLetterToNum(m[1]), minRow = parseInt(m[2], 10);
+    const maxCol = excelColLetterToNum(m[3]), maxRow = parseInt(m[4], 10);
+    if (minRow === targetRow && minCol === targetCol) {
+      let w = 0; for (let c = minCol - 1; c < maxCol; c++) w += sizers.colWidthPx(c);
+      let h = 0; for (let r = minRow - 1; r < maxRow; r++) h += sizers.rowHeightPx(r);
+      return { w, h };
+    }
+  }
+  return null;
+}
+function excelColLetterToNum(letters) {
+  let n = 0;
+  for (const ch of letters) n = n * 26 + (ch.charCodeAt(0) - 64);
+  return n;
+}
+
+// セルの現在のスタイル番号(s="N")を取得する
+function getCellStyleIdx(sheetXmlStr, cellRef) {
+  const m = sheetXmlStr.match(new RegExp(`<c r="${cellRef}"([^>]*?)(?:/>|>)`));
+  if (!m) return null;
+  const sMatch = m[1].match(/\ss="(\d+)"/);
+  return sMatch ? parseInt(sMatch[1], 10) : 0;
+}
+// styles.xmlを解析し、セルのスタイル番号からフォント特性(サイズ・フォント名・太字・斜体)を取得できるようにする
+function buildStylesLookup(stylesXmlStr) {
+  const cellXfsMatch = stylesXmlStr.match(/<cellXfs[^>]*>([\s\S]*?)<\/cellXfs>/);
+  const xfs = cellXfsMatch ? [...cellXfsMatch[1].matchAll(/<xf\b[^>]*\/?>/g)].map(m => m[0]) : [];
+  const fontsMatch = stylesXmlStr.match(/<fonts[^>]*>([\s\S]*?)<\/fonts>/);
+  const fonts = fontsMatch ? [...fontsMatch[1].matchAll(/<font>[\s\S]*?<\/font>/g)].map(m => m[0]) : [];
+  return { xfs, fonts };
+}
+function getFontPropsForStyle(stylesLookup, styleIdx) {
+  const xf = stylesLookup.xfs[styleIdx];
+  if (!xf) return {};
+  const fontIdMatch = xf.match(/fontId="(\d+)"/);
+  if (!fontIdMatch) return {};
+  const font = stylesLookup.fonts[parseInt(fontIdMatch[1], 10)];
+  if (!font) return {};
+  const sz = (font.match(/<sz val="([\d.]+)"/) || [])[1];
+  const name = (font.match(/<name val="([^"]+)"/) || [])[1];
+  const bold = /<b\/>/.test(font);
+  const italic = /<i\/>/.test(font);
+  return { sz, name, bold, italic };
+}
+
+// 既存の空セル(<c r="X" s="Y"/>等)を、スタイルを保ったままインライン文字列に置き換える
+// fontPropsを渡すと、元のフォントサイズ・フォント名・太字/斜体を保ったまま、文字色だけ黒に固定する
+// (テンプレートには「未入力時は赤字で見やすく」という placeholder的な赤色が設定されているため)
+function setCellInlineString(sheetXmlStr, cellRef, value, fontProps) {
+  const esc = excelEscapeXml(value);
+  let textRun = `<t xml:space="preserve">${esc}</t>`;
+  if (fontProps) {
+    let rPr = '<rPr>';
+    if (fontProps.bold) rPr += '<b/>';
+    if (fontProps.italic) rPr += '<i/>';
+    rPr += '<color rgb="FF000000"/>'; // 常に黒字で書き込む(テンプレートの赤字placeholderを上書き)
+    if (fontProps.sz) rPr += `<sz val="${fontProps.sz}"/>`;
+    if (fontProps.name) rPr += `<rFont val="${excelEscapeXml(fontProps.name)}"/>`;
+    rPr += '</rPr>';
+    textRun = `<r>${rPr}${textRun}</r>`;
+  }
+  const cellRegex = new RegExp(`<c r="${cellRef}"([^>]*?)(?:/>|>[\\s\\S]*?</c>)`);
+  const m = sheetXmlStr.match(cellRegex);
+  if (m) {
+    let attrs = m[1].replace(/\st="[^"]*"/, '');
+    const newCell = `<c r="${cellRef}"${attrs} t="inlineStr"><is>${textRun}</is></c>`;
+    return sheetXmlStr.replace(cellRegex, newCell);
+  }
+  // 想定外だがセル自体が存在しない場合、行の中の適切な位置に新規追加する
+  const rowNum = parseInt(cellRef.match(/\d+/)[0], 10);
+  const targetCol = cellRef.match(/^[A-Z]+/)[0];
+  const newCellXml = `<c r="${cellRef}" t="inlineStr"><is>${textRun}</is></c>`;
+  const rowRegex = new RegExp(`(<row r="${rowNum}"[^>]*>)([\\s\\S]*?)(</row>)`);
+  const rowMatch = sheetXmlStr.match(rowRegex);
+  if (rowMatch) {
+    const cellMatches = [...rowMatch[2].matchAll(/<c r="([A-Z]+)\d+"[^>]*(?:\/>|>[\s\S]*?<\/c>)/g)];
+    let inserted = false, newRowContent = '';
+    for (const cm of cellMatches) {
+      if (!inserted && excelColLetterToNum(cm[1]) > excelColLetterToNum(targetCol)) {
+        newRowContent += newCellXml; inserted = true;
+      }
+      newRowContent += cm[0];
+    }
+    if (!inserted) newRowContent += newCellXml;
+    return sheetXmlStr.replace(rowRegex, rowMatch[1] + newRowContent + rowMatch[3]);
+  }
+  return sheetXmlStr.replace(/<sheetData>/, `<sheetData><row r="${rowNum}">${newCellXml}</row>`);
+}
+
+// 画像を挿入するTwoCellAnchorのXMLブロックを組み立てる
+// 注釈図形(点線丸・矢印)用のtwoCellAnchor XMLを生成する(写真と同じ行・列基準で位置を計算する)
+function buildShapeAnchorXml(sizers, offX, anchorRow0, offY, wPx, hPx, shapeId, shapeName, shapeXmlInner) {
+  const from = resolveColPosition(sizers.colWidthPx, offX);
+  let absFromY = 0;
+  for (let r = 0; r < anchorRow0; r++) absFromY += sizers.rowHeightPx(r);
+  absFromY += offY;
+  const fromRow = resolveRowPosition(sizers.rowHeightPx, absFromY);
+  const to = resolveColPosition(sizers.colWidthPx, offX + wPx);
+  const absToY = absFromY + hPx;
+  const toRow = resolveRowPosition(sizers.rowHeightPx, absToY);
+  return `<xdr:twoCellAnchor editAs="oneCell"><xdr:from><xdr:col>${from.col}</xdr:col><xdr:colOff>${excelPixelsToEMU(from.off)}</xdr:colOff><xdr:row>${fromRow.row}</xdr:row><xdr:rowOff>${excelPixelsToEMU(fromRow.off)}</xdr:rowOff></xdr:from><xdr:to><xdr:col>${to.col}</xdr:col><xdr:colOff>${excelPixelsToEMU(to.off)}</xdr:colOff><xdr:row>${toRow.row}</xdr:row><xdr:rowOff>${excelPixelsToEMU(toRow.off)}</xdr:rowOff></xdr:to>${shapeXmlInner(shapeId, shapeName, excelPixelsToEMU(offX), excelPixelsToEMU(absFromY), excelPixelsToEMU(wPx), excelPixelsToEMU(hPx))}<xdr:clientData/></xdr:twoCellAnchor>`;
+}
+// 点線丸(楕円)のExcel用shape XML
+function buildEllipseShapeXml(id, name, xEmu, yEmu, cxEmu, cyEmu, rotation, color, lw, dash) {
+  const rotAttr = rotation ? ` rot="${Math.round(rotation * 60000)}"` : '';
+  return `<xdr:sp macro="" textlink=""><xdr:nvSpPr><xdr:cNvPr id="${id}" name="${excelEscapeXml(name)}"/><xdr:cNvSpPr/></xdr:nvSpPr><xdr:spPr><a:xfrm${rotAttr}><a:off x="${xEmu}" y="${yEmu}"/><a:ext cx="${cxEmu}" cy="${cyEmu}"/></a:xfrm><a:prstGeom prst="ellipse"><a:avLst/></a:prstGeom><a:noFill/><a:ln w="${lw}" cap="rnd"><a:solidFill><a:srgbClr val="${color}"/></a:solidFill><a:prstDash val="${dash}"/></a:ln></xdr:spPr><xdr:txBody><a:bodyPr/><a:lstStyle/><a:p><a:endParaRPr lang="ja-JP"/></a:p></xdr:txBody></xdr:sp>`;
+}
+// 矢印(直線コネクタ)のExcel用shape XML
+function buildArrowShapeXml(id, name, xEmu, yEmu, cxEmu, cyEmu, rotation, flipH, flipV, color, lw) {
+  const rotAttr = rotation ? ` rot="${Math.round(rotation * 60000)}"` : '';
+  const flipAttr = `${flipH ? ' flipH="1"' : ''}${flipV ? ' flipV="1"' : ''}`;
+  return `<xdr:cxnSp macro=""><xdr:nvCxnSpPr><xdr:cNvPr id="${id}" name="${excelEscapeXml(name)}"/><xdr:cNvCxnSpPr/></xdr:nvCxnSpPr><xdr:spPr><a:xfrm${rotAttr}${flipAttr}><a:off x="${xEmu}" y="${yEmu}"/><a:ext cx="${cxEmu}" cy="${cyEmu}"/></a:xfrm><a:prstGeom prst="straightConnector1"><a:avLst/></a:prstGeom><a:ln w="${lw}"><a:solidFill><a:srgbClr val="${color}"/></a:solidFill><a:tailEnd type="triangle" w="med" len="med"/></a:ln></xdr:spPr></xdr:cxnSp>`;
+}
+
+function buildPicAnchorXml(sizers, offX, anchorRow0, offY, imgWpx, imgHpx, relId, picId, picName) {
+  const from = resolveColPosition(sizers.colWidthPx, offX);
+  let absFromY = 0;
+  for (let r = 0; r < anchorRow0; r++) absFromY += sizers.rowHeightPx(r);
+  absFromY += offY;
+  const fromRow = resolveRowPosition(sizers.rowHeightPx, absFromY);
+  const to = resolveColPosition(sizers.colWidthPx, offX + imgWpx);
+  const absToY = absFromY + imgHpx;
+  const toRow = resolveRowPosition(sizers.rowHeightPx, absToY);
+  const xEmu = excelPixelsToEMU(offX), yEmu = excelPixelsToEMU(absFromY);
+  const cxEmu = excelPixelsToEMU(imgWpx), cyEmu = excelPixelsToEMU(imgHpx);
+  return `<xdr:twoCellAnchor editAs="oneCell"><xdr:from><xdr:col>${from.col}</xdr:col><xdr:colOff>${excelPixelsToEMU(from.off)}</xdr:colOff><xdr:row>${fromRow.row}</xdr:row><xdr:rowOff>${excelPixelsToEMU(fromRow.off)}</xdr:rowOff></xdr:from><xdr:to><xdr:col>${to.col}</xdr:col><xdr:colOff>${excelPixelsToEMU(to.off)}</xdr:colOff><xdr:row>${toRow.row}</xdr:row><xdr:rowOff>${excelPixelsToEMU(toRow.off)}</xdr:rowOff></xdr:to><xdr:pic><xdr:nvPicPr><xdr:cNvPr id="${picId}" name="${excelEscapeXml(picName)}"/><xdr:cNvPicPr><a:picLocks noChangeAspect="1"/></xdr:cNvPicPr></xdr:nvPicPr><xdr:blipFill><a:blip r:embed="${relId}"/><a:stretch><a:fillRect/></a:stretch></xdr:blipFill><xdr:spPr><a:xfrm><a:off x="${xEmu}" y="${yEmu}"/><a:ext cx="${cxEmu}" cy="${cyEmu}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></xdr:spPr></xdr:pic><xdr:clientData/></xdr:twoCellAnchor>`;
+}
+
+// 写真データ(dataURL)から、EXIF補正・向き補正済みの実ピクセルサイズと、埋め込み用の縮小JPEGバイト列を得る
+async function prepareImageForEmbed(photo) {
+  const img = await loadImageWithExifFix(photo.photo);
+  let srcCanvas = document.createElement('canvas');
+  srcCanvas.width = img.naturalWidth || img.width;
+  srcCanvas.height = img.naturalHeight || img.height;
+  let pw = srcCanvas.width, ph2 = srcCanvas.height;
+  let needRotate = false;
+  // isPortraitフラグと実サイズが矛盾する場合(横長canvasに縦写真が変換保存されている等)は90度回転して戻す
+  if (photo.isPortrait && pw > ph2) needRotate = true;
+
+  const ctx0 = srcCanvas.getContext('2d');
+  if (needRotate) {
+    srcCanvas.width = ph2; srcCanvas.height = pw;
+    const c2 = srcCanvas.getContext('2d');
+    c2.translate(srcCanvas.width / 2, srcCanvas.height / 2);
+    c2.rotate(Math.PI / 2);
+    c2.drawImage(img, -pw / 2, -ph2 / 2);
+    [pw, ph2] = [ph2, pw];
+  } else {
+    ctx0.drawImage(img, 0, 0);
+  }
+
+  // ファイルサイズ抑制のため、長辺1600pxを上限に縮小して保存(表示サイズとは別)
+  const MAX = 1600;
+  let outW = pw, outH = ph2;
+  if (outW > MAX || outH > MAX) {
+    const scale = Math.min(MAX / outW, MAX / outH);
+    outW = Math.round(outW * scale); outH = Math.round(outH * scale);
+  }
+  const outCanvas = document.createElement('canvas');
+  outCanvas.width = outW; outCanvas.height = outH;
+  outCanvas.getContext('2d').drawImage(srcCanvas, 0, 0, outW, outH);
+  const dataUrl = outCanvas.toDataURL('image/jpeg', 0.9);
+  const base64 = dataUrl.split(',')[1];
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return { bytes, width: pw, height: ph2 };
+}
+
+// 特記事項コメントを「。」の直後で1文ずつに分割する(1文=1セルに書き込むため)
+function splitCommentIntoSentences(comment) {
+  if (!comment) return [];
+  const segments = comment.split('。');
+  const lines = [];
+  for (let i = 0; i < segments.length; i++) {
+    const seg = segments[i];
+    if (seg === '' && i === segments.length - 1) continue; // 末尾の句点による空セグメントは無視
+    lines.push(i < segments.length - 1 ? seg + '。' : seg);
+  }
+  return lines;
+}
+
+// Word出力用: 句点で分けた後、さらに1行に収まる文字数(目安18文字)で折り返す
+// (セル内で自動改行されると「1罫線=1行」の見た目が崩れるため、あらかじめ改行しておく)
+function wrapLinesForWordCell(lines, maxChars) {
+  const wrapped = [];
+  for (const line of lines) {
+    let rest = line;
+    while (rest.length > maxChars) {
+      wrapped.push(rest.slice(0, maxChars));
+      rest = rest.slice(maxChars);
+    }
+    wrapped.push(rest);
+  }
+  return wrapped;
+}
+
+// ══ Word報告書生成(ゼロから.docxを組み立てる方式) ══
+// 既存のWordテンプレートには手描きの矢印注釈など複製が難しい要素が含まれるため、
+// 「写真｜番号・場所・コメント・対応区分スタンプ」という同じ構成を持つ、新しいシンプルな
+// Word文書を組み立てる方式にしている(既存の報告書を読み込んで改変するわけではない)。
+async function prepareImageForWordEmbed(photo) {
+  // Excel側のprepareImageForEmbedと同じ考え方(EXIF補正・向き補正・1600px上限)だが、
+  // Wordでは実寸(px)をそのまま使うのでcm変換用の情報も返す
+  const img = await loadImageWithExifFix(photo.photo);
+  let srcCanvas = document.createElement('canvas');
+  srcCanvas.width = img.naturalWidth || img.width;
+  srcCanvas.height = img.naturalHeight || img.height;
+  let pw = srcCanvas.width, ph = srcCanvas.height;
+  let needRotate = photo.isPortrait && pw > ph;
+  const ctx0 = srcCanvas.getContext('2d');
+  if (needRotate) {
+    srcCanvas.width = ph; srcCanvas.height = pw;
+    const c2 = srcCanvas.getContext('2d');
+    c2.translate(srcCanvas.width / 2, srcCanvas.height / 2);
+    c2.rotate(Math.PI / 2);
+    c2.drawImage(img, -pw / 2, -ph / 2);
+    [pw, ph] = [ph, pw];
+  } else {
+    ctx0.drawImage(img, 0, 0);
+  }
+  const MAX = 1600;
+  let outW = pw, outH = ph;
+  if (outW > MAX || outH > MAX) {
+    const scale = Math.min(MAX / outW, MAX / outH);
+    outW = Math.round(outW * scale); outH = Math.round(outH * scale);
+  }
+  const outCanvas = document.createElement('canvas');
+  outCanvas.width = outW; outCanvas.height = outH;
+  outCanvas.getContext('2d').drawImage(srcCanvas, 0, 0, outW, outH);
+  const dataUrl = outCanvas.toDataURL('image/jpeg', 0.9);
+  const base64 = dataUrl.split(',')[1];
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return { bytes, width: pw, height: ph };
+}
+
+function wordStatusColor(status) {
+  if (status === '要検討') return 'FF0000';
+  if (status === '経過観察') return '00B050';
+  return null;
+}
+
+async function generateWordReport(project, photos, onProgress) {
+  const zip = new JSZip();
+  zip.file('[Content_Types].xml',
+`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+<Default Extension="xml" ContentType="application/xml"/>
+<Default Extension="jpeg" ContentType="image/jpeg"/>
+<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+<Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>
+<Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/>
+<Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>
+<Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>
+</Types>`);
+  zip.file('_rels/.rels',
+`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
+<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/>
+<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/>
+</Relationships>`);
+  zip.file('docProps/core.xml',
+`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:title>${excelEscapeXml(project.name)}</dc:title></cp:coreProperties>`);
+  zip.file('docProps/app.xml',
+`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties"><Application>施工フォト</Application></Properties>`);
+  zip.file('word/styles.xml',
+`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+<w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="ＭＳ 明朝" w:eastAsia="ＭＳ 明朝" w:hAnsi="ＭＳ 明朝" w:cs="ＭＳ 明朝"/><w:sz w:val="21"/><w:szCs w:val="21"/></w:rPr></w:rPrDefault></w:docDefaults>
+<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/></w:style>
+</w:styles>`);
+
+  const EMU_PER_PX = 9525;
+  const MAX_IMG_W_EMU = 2900000; // 約8cm(写真セルが本物と同じ約48%幅になったため、それに合わせて拡大)
+  const relEntries = [];
+  let relCounter = 1;
+  let picIdCounter = 1;
+
+  const rowsXml = [];
+  for (let i = 0; i < photos.length; i++) {
+    const ph = photos[i];
+    if (onProgress) onProgress(`写真${ph.num || i+1}を処理中... (${i+1}/${photos.length})`);
+    let drawingXml = '';
+    if (ph.photo) {
+      const { bytes, width: pw, height: ph2h } = await prepareImageForWordEmbed(ph);
+      const mediaName = `image${picIdCounter}.jpeg`;
+      zip.file(`word/media/${mediaName}`, bytes);
+      const relId = `rId${relCounter++}`;
+      relEntries.push({ id: relId, target: `media/${mediaName}` });
+
+      let cx = pw * EMU_PER_PX, cy = ph2h * EMU_PER_PX;
+      if (cx > MAX_IMG_W_EMU) { const s = MAX_IMG_W_EMU / cx; cx = Math.round(cx*s); cy = Math.round(cy*s); }
+      const picId = picIdCounter++;
+      // 元の報告書にあった点線丸・矢印などの注釈を、写真に対する%位置から実サイズに戻して重ねて出力する
+      const ellipseAnnoXml = (ph.annotations || []).filter(an => an.type === 'ellipse').map(an => {
+        const annoId = picIdCounter++;
+        const offX = Math.round((an.x / 100) * cx), offY = Math.round((an.y / 100) * cy);
+        const annoCx = Math.max(1, Math.round((an.w / 100) * cx)), annoCy = Math.max(1, Math.round((an.h / 100) * cy));
+        const rotAttr = an.rotation ? ` rot="${Math.round(an.rotation * 60000)}"` : '';
+        const color = an.lineColor || 'FF0000', lw = an.lineWidthEmu || 19050, dash = an.dashType || 'sysDash';
+        return `<w:r><w:drawing><wp:anchor distT="0" distB="0" distL="114300" distR="114300" simplePos="0" relativeHeight="${8000+annoId}" behindDoc="0" locked="0" layoutInCell="1" allowOverlap="1"><wp:simplePos x="0" y="0"/><wp:positionH relativeFrom="column"><wp:posOffset>${offX}</wp:posOffset></wp:positionH><wp:positionV relativeFrom="paragraph"><wp:posOffset>${offY}</wp:posOffset></wp:positionV><wp:extent cx="${annoCx}" cy="${annoCy}"/><wp:effectExtent l="0" t="0" r="0" b="0"/><wp:wrapNone/><wp:docPr id="${8000+annoId}" name="Annotation ${annoId}"/><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.microsoft.com/office/word/2010/wordprocessingShape"><wps:wsp xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape"><wps:cNvSpPr/><wps:spPr><a:xfrm${rotAttr}><a:off x="0" y="0"/><a:ext cx="${annoCx}" cy="${annoCy}"/></a:xfrm><a:prstGeom prst="ellipse"><a:avLst/></a:prstGeom><a:noFill/><a:ln w="${lw}" cap="rnd"><a:solidFill><a:srgbClr val="${color}"/></a:solidFill><a:prstDash val="${dash}"/></a:ln></wps:spPr><wps:bodyPr/></wps:wsp></a:graphicData></a:graphic></wp:anchor></w:drawing></w:r>`;
+      }).join('');
+      // 矢印(直線コネクタ)。近似位置での再現(元がページ絶対座標のため多少ズレる場合がある)
+      const arrowAnnoXml = (ph.annotations || []).filter(an => an.type === 'arrow').map(an => {
+        const annoId = picIdCounter++;
+        const offX = Math.round((an.x / 100) * cx), offY = Math.round((an.y / 100) * cy);
+        const annoCx = Math.max(1, Math.round((an.w / 100) * cx)), annoCy = Math.max(1, Math.round((an.h / 100) * cy));
+        const rotAttr = an.rotation ? ` rot="${Math.round(an.rotation * 60000)}"` : '';
+        const flipAttr = `${an.flipH ? ' flipH="1"' : ''}${an.flipV ? ' flipV="1"' : ''}`;
+        const color = an.lineColor || 'FF0000', lw = an.lineWidthEmu || 19050;
+        return `<w:r><w:drawing><wp:anchor distT="0" distB="0" distL="114300" distR="114300" simplePos="0" relativeHeight="${8000+annoId}" behindDoc="0" locked="0" layoutInCell="1" allowOverlap="1"><wp:simplePos x="0" y="0"/><wp:positionH relativeFrom="column"><wp:posOffset>${offX}</wp:posOffset></wp:positionH><wp:positionV relativeFrom="paragraph"><wp:posOffset>${offY}</wp:posOffset></wp:positionV><wp:extent cx="${annoCx}" cy="${annoCy}"/><wp:effectExtent l="0" t="0" r="0" b="0"/><wp:wrapNone/><wp:docPr id="${8000+annoId}" name="Arrow ${annoId}"/><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.microsoft.com/office/word/2010/wordprocessingShape"><wps:wsp xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape"><wps:cNvCnPr/><wps:spPr><a:xfrm${rotAttr}${flipAttr}><a:off x="0" y="0"/><a:ext cx="${annoCx}" cy="${annoCy}"/></a:xfrm><a:prstGeom prst="straightConnector1"><a:avLst/></a:prstGeom><a:noFill/><a:ln w="${lw}"><a:solidFill><a:srgbClr val="${color}"/></a:solidFill><a:round/><a:headEnd/><a:tailEnd type="triangle" w="med" len="med"/></a:ln></wps:spPr><wps:bodyPr/></wps:wsp></a:graphicData></a:graphic></wp:anchor></w:drawing></w:r>`;
+      }).join('');
+      const annotationXml = ellipseAnnoXml + arrowAnnoXml;
+      drawingXml = `<w:p><w:pPr><w:spacing w:before="115"/><w:jc w:val="center"/></w:pPr><w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="${cx}" cy="${cy}"/><wp:effectExtent l="0" t="0" r="0" b="0"/><wp:docPr id="${picId}" name="Picture ${picId}"/><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="0" name="pic"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="${relId}" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r>${annotationXml}</w:p>`;
+    } else {
+      drawingXml = `<w:p/>`;
+    }
+
+    const RULED_BDR = '<w:pBdr><w:top w:val="single" w:sz="6" w:space="1" w:color="auto"/><w:bottom w:val="single" w:sz="6" w:space="1" w:color="auto"/><w:between w:val="single" w:sz="6" w:space="1" w:color="auto"/></w:pBdr>';
+    const numPadded = ph.num != null ? String(ph.num).padStart(2, '0') : '';
+    const numLabel = `${numPadded}　${excelEscapeXml(ph.inspectionItem || '')}`;
+    const commentLines = wrapLinesForWordCell(splitCommentIntoSentences(ph.comment || ''), 18);
+    const color = wordStatusColor(ph.status);
+    // スタンプの仕様は本物のWordから実測した値(サイズ956310x657225EMU、回転なし、
+    // 白塗り、線幅25400EMU=2pt、文字サイズ36=18pt)に合わせている
+    const stampId = 9000 + picIdCounter;
+    const stampFontSz = (ph.status && ph.status.length >= 4) ? '28' : '36'; // 4文字以上(経過観察等)は14pt、3文字(要検討)は18pt
+    const stampDrawing = color
+      ? `<w:r><w:drawing><wp:anchor distT="0" distB="0" distL="114300" distR="114300" simplePos="0" relativeHeight="${stampId}" behindDoc="0" locked="0" layoutInCell="1" allowOverlap="1">
+<wp:simplePos x="0" y="0"/>
+<wp:positionH relativeFrom="column"><wp:posOffset>1900000</wp:posOffset></wp:positionH>
+<wp:positionV relativeFrom="paragraph"><wp:posOffset>-454025</wp:posOffset></wp:positionV>
+<wp:extent cx="956310" cy="657225"/>
+<wp:effectExtent l="0" t="0" r="15240" b="28575"/>
+<wp:wrapNone/>
+<wp:docPr id="${stampId}" name="Stamp ${stampId}"/>
+<a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.microsoft.com/office/word/2010/wordprocessingShape">
+<wps:wsp xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape">
+<wps:cNvSpPr/>
+<wps:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="956310" cy="657225"/></a:xfrm><a:prstGeom prst="roundRect"><a:avLst><a:gd name="adj" fmla="val 16667"/></a:avLst></a:prstGeom><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill><a:ln w="25400"><a:solidFill><a:srgbClr val="${color}"/></a:solidFill></a:ln></wps:spPr>
+<wps:txbx><w:txbxContent><w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:b/><w:color w:val="${color}"/><w:sz w:val="${stampFontSz}"/></w:rPr><w:t>${excelEscapeXml(ph.status)}</w:t></w:r></w:p></w:txbxContent></wps:txbx>
+<wps:bodyPr rot="0" wrap="square" lIns="72000" tIns="72000" rIns="72000" bIns="72000" anchor="ctr"><a:noAutofit/></wps:bodyPr>
+</wps:wsp>
+</a:graphicData></a:graphic>
+</wp:anchor></w:drawing></w:r>`
+      : '';
+
+    // 本物の報告書は、罫線(段落)を1行あたり合計9〜11本前後並べて記入欄を埋めている。
+    // 番号の上にも1本線が来るよう先頭に空行を入れる。行間は自然な行送りよりわずかに広めにして
+    // (本物と同じく明示指定はしていないが、写真の高さに近づけるためatLeastで少し余裕を持たせる)、
+    // スタンプは最後の罫線に「下端を合わせる」形で配置する。
+    const TARGET_LINES = 10;
+    const RULED_PPR = `<w:pPr>${RULED_BDR}<w:spacing w:before="0" w:after="0" w:line="320" w:lineRule="atLeast"/></w:pPr>`;
+    const ruledParas = [];
+    ruledParas.push(`<w:p>${RULED_PPR}<w:r><w:t xml:space="preserve">${numLabel}</w:t></w:r></w:p>`);
+    ruledParas.push(`<w:p>${RULED_PPR}</w:p>`);
+    commentLines.forEach(line => {
+      ruledParas.push(`<w:p>${RULED_PPR}<w:r><w:t xml:space="preserve">${excelEscapeXml(line)}</w:t></w:r></w:p>`);
+      ruledParas.push(`<w:p>${RULED_PPR}</w:p>`);
+    });
+    while (ruledParas.length < TARGET_LINES) ruledParas.push(`<w:p>${RULED_PPR}</w:p>`);
+    // スタンプは最後の罫線(=写真の下端付近)に、スタンプの下端が合うように負のオフセットで配置する
+    if (color) {
+      ruledParas[ruledParas.length - 1] = `<w:p>${RULED_PPR}${stampDrawing}</w:p>`;
+    }
+    const allRuledParas = ruledParas.join('');
+
+    rowsXml.push(`<w:tr><w:trPr><w:cantSplit/><w:trHeight w:hRule="exact" w:val="4536"/></w:trPr>
+<w:tc><w:tcPr><w:tcW w:w="4786" w:type="dxa"/><w:tcBorders><w:top w:val="nil"/><w:left w:val="nil"/><w:bottom w:val="nil"/><w:right w:val="nil"/></w:tcBorders></w:tcPr>${drawingXml}</w:tc>
+<w:tc><w:tcPr><w:tcW w:w="4606" w:type="dxa"/></w:tcPr>
+${allRuledParas}
+</w:tc>
+</w:tr>`);
+  }
+
+  const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<w:body>
+<w:p><w:pPr><w:jc w:val="center"/><w:rPr><w:b/><w:sz w:val="32"/></w:rPr></w:pPr><w:r><w:rPr><w:b/><w:sz w:val="32"/></w:rPr><w:t xml:space="preserve">${excelEscapeXml(project.name)}　関係写真</w:t></w:r></w:p>
+<w:p/>
+<w:tbl>
+<w:tblPr><w:tblW w:w="9392" w:type="dxa"/></w:tblPr>
+<w:tblGrid><w:gridCol w:w="4786"/><w:gridCol w:w="4606"/></w:tblGrid>
+${rowsXml.join('')}
+</w:tbl>
+<w:p/>
+<w:p><w:r><w:rPr><w:sz w:val="18"/></w:rPr><w:t>・本写真は現地調査時に撮影したものです。</w:t></w:r></w:p>
+<w:sectPr><w:footerReference w:type="default" r:id="rIdFooter"/><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="720" w:right="720" w:bottom="720" w:left="720" w:header="851" w:footer="850" w:gutter="0"/></w:sectPr>
+</w:body>
+</w:document>`;
+  zip.file('word/document.xml', documentXml);
+
+  // フッター(全ページ下部に凡例を表示、本物の報告書と同じ文言)
+  zip.file('word/footer1.xml',
+`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:ftr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+<w:p><w:pPr><w:rPr><w:sz w:val="18"/></w:rPr></w:pPr><w:r><w:rPr><w:sz w:val="18"/></w:rPr><w:t>要検討・・・本事象について建築基準法に定める判定基準に該当するため、特定行政庁へ提出しております。</w:t></w:r></w:p>
+<w:p><w:pPr><w:rPr><w:sz w:val="18"/></w:rPr></w:pPr><w:r><w:rPr><w:sz w:val="18"/></w:rPr><w:t>経過観察・・・本事象について建築基準法に定める判定基準には該当しませんが、計画的な修繕が望まれます。</w:t></w:r></w:p>
+</w:ftr>`);
+
+  const relsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rIdStyles" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+<Relationship Id="rIdFooter" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/>
+${relEntries.map(r => `<Relationship Id="${r.id}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="${r.target}"/>`).join('\n')}
+</Relationships>`;
+  zip.file('word/_rels/document.xml.rels', relsXml);
+
+  if (onProgress) onProgress('ファイルを書き出し中...');
+  const blob = await zip.generateAsync({ type: 'blob', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+  return { blob };
+}
+
+// ══ メイン処理: テンプレートzip + プロジェクトデータ → 完成した.xlsmのBlob ══
+async function generateExcelReport(templateArrayBuffer, project, photos, onProgress) {
+  const zip = await JSZip.loadAsync(templateArrayBuffer);
+  const sheetMap = await excelGetSheetMap(zip);
+  if (!sheetMap.length) throw new Error('テンプレートのシート構成を読み取れませんでした');
+
+  const photoSheets = sheetMap.filter(s => s.name.startsWith('写真台紙')).sort((a, b) => {
+    const na = parseInt((a.name.match(/\d+/) || [])[0]) || 1;
+    const nb = parseInt((b.name.match(/\d+/) || [])[0]) || 1;
+    return na - nb;
+  });
+  if (!photoSheets.length) throw new Error('テンプレートに「写真台紙」シートが見つかりません');
+
+  const maxPhotos = photoSheets.length * 2;
+  let usePhotos = photos;
+  let truncated = false;
+  if (photos.length > maxPhotos) {
+    usePhotos = photos.slice(0, maxPhotos);
+    truncated = true;
+  }
+
+  // フォント特性の解決用に styles.xml を読み込む(番号・調査項目を黒字で書き込むため)
+  const stylesFile = zip.file('xl/styles.xml');
+  const stylesLookup = stylesFile ? buildStylesLookup(await stylesFile.async('string')) : null;
+
+  // 画像用の連番(既存メディアと衝突しないよう、既存の最大番号の続きから採番)
+  const existingMedia = Object.keys(zip.files).filter(n => /^xl\/media\/image\d+\./.test(n));
+  let nextImageNum = 1;
+  for (const n of existingMedia) {
+    const m = n.match(/image(\d+)\./);
+    if (m) nextImageNum = Math.max(nextImageNum, parseInt(m[1], 10) + 1);
+  }
+  let picIdCounter = 20001; // 既存シェイプ(チェックボックス等)のidと衝突しない範囲
+
+  for (let si = 0; si < photoSheets.length; si++) {
+    const sheetInfo = photoSheets[si];
+    const ph1 = usePhotos[si * 2] || null;
+    const ph2 = usePhotos[si * 2 + 1] || null;
+    if (!ph1 && !ph2) continue;
+    if (onProgress) onProgress(`${sheetInfo.name} を作成中...`);
+
+    let sheetXml = await zip.file(sheetInfo.path).async('string');
+    function writeCellBlack(ref, value) {
+      const styleIdx = getCellStyleIdx(sheetXml, ref);
+      const fontProps = (stylesLookup && styleIdx != null) ? getFontPropsForStyle(stylesLookup, styleIdx) : null;
+      sheetXml = setCellInlineString(sheetXml, ref, value, fontProps);
+    }
+    if (ph1) {
+      writeCellBlack('C4', ph1.num != null ? ph1.num : '');
+      writeCellBlack('D4', ph1.inspectionItem || '');
+      splitCommentIntoSentences(ph1.comment || '').forEach((line, idx) => writeCellBlack(`E${7 + idx * 2}`, line));
+    }
+    if (ph2) {
+      writeCellBlack('C20', ph2.num != null ? ph2.num : '');
+      writeCellBlack('D20', ph2.inspectionItem || '');
+      splitCommentIntoSentences(ph2.comment || '').forEach((line, idx) => writeCellBlack(`E${23 + idx * 2}`, line));
+    }
+    zip.file(sheetInfo.path, sheetXml);
+
+    const sizers = buildColRowSizers(sheetXml);
+    const sheetFileName = sheetInfo.path.split('/').pop();
+    const sheetDir = sheetInfo.path.split('/').slice(0, -1).join('/');
+    const relsPath = `${sheetDir}/_rels/${sheetFileName}.rels`;
+
+    let drawingTarget = null;
+    let relsXml = null;
+    const relsFile = zip.file(relsPath);
+    if (relsFile) {
+      relsXml = await relsFile.async('string');
+      const m = relsXml.match(/<Relationship[^>]*Type="[^"]*\/drawing"[^>]*Target="([^"]+)"[^>]*\/>/);
+      if (m) drawingTarget = m[1];
+    }
+    if (!drawingTarget) continue; // 描画領域が無いシートは画像挿入をスキップ(テキストのみ反映)
+    const drawingPath = drawingTarget.startsWith('../')
+      ? 'xl/' + drawingTarget.replace(/^(\.\.\/)+/, '')
+      : drawingTarget;
+
+    let drawingXml = await zip.file(drawingPath).async('string');
+    // r名前空間が無ければ追加(画像のr:embed参照に必要)
+    if (!/xmlns:r=/.test(drawingXml.match(/<xdr:wsDr[^>]*>/)[0])) {
+      drawingXml = drawingXml.replace('<xdr:wsDr', '<xdr:wsDr xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"');
+    }
+
+    const drawingDir = drawingPath.split('/').slice(0, -1).join('/');
+    const drawingFileName = drawingPath.split('/').pop();
+    const drawingRelsPath = `${drawingDir}/_rels/${drawingFileName}.rels`;
+    let drawingRelsXml = null;
+    const drawingRelsFile = zip.file(drawingRelsPath);
+    if (drawingRelsFile) drawingRelsXml = await drawingRelsFile.async('string');
+    else drawingRelsXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\r\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>';
+    const existingRids = [...drawingRelsXml.matchAll(/Id="rId(\d+)"/g)].map(m => parseInt(m[1], 10));
+    let nextRid = existingRids.length ? Math.max(...existingRids) + 1 : 1;
+
+    for (const [slotIdx, ph] of [[0, ph1], [1, ph2]]) {
+      if (!ph || !ph.photo) continue;
+      if (onProgress) onProgress(`${sheetInfo.name} 写真${ph.num || ''} を挿入中...`);
+
+      const { bytes, width: pw, height: ph2h } = await prepareImageForEmbed(ph);
+      const mediaName = `image${nextImageNum++}.jpeg`;
+      zip.file(`xl/media/${mediaName}`, bytes);
+
+      const relId = `rId${nextRid++}`;
+      drawingRelsXml = drawingRelsXml.replace('</Relationships>',
+        `<Relationship Id="${relId}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/${mediaName}"/></Relationships>`);
+
+      const anchorRow0 = slotIdx === 0 ? 4 : 20;
+      // 枠サイズも同じcolWidthPx(補正込み)から計算されるため、アンカー計算と完全に一致する
+      const frame = getFrameSizePx(sheetXml, sizers, anchorRow0, 0) || { w: 398, h: 390 };
+      const isPortrait = !!ph.isPortrait;
+      let imgW, imgH, offX, offY;
+      if (isPortrait) {
+        // 高さ基準で合わせるが、それで幅が枠を超える場合は幅基準に切り替える(はみ出し防止)
+        let scale = (frame.h * 0.98) / ph2h;
+        if (pw * scale > frame.w * 0.98) scale = (frame.w * 0.98) / pw;
+        imgW = Math.max(1, Math.round(pw * scale));
+        imgH = Math.max(1, Math.round(ph2h * scale));
+        offX = Math.round((frame.w - imgW) / 2);
+        offY = Math.round((frame.h - imgH) / 2);
+      } else {
+        // 幅基準で合わせるが、それで高さが枠を超える場合は高さ基準に切り替える(はみ出し防止)
+        let scale = (frame.w * 0.98) / pw;
+        if (ph2h * scale > frame.h * 0.98) scale = (frame.h * 0.98) / ph2h;
+        imgW = Math.max(1, Math.round(pw * scale));
+        imgH = Math.max(1, Math.round(ph2h * scale));
+        offX = Math.round((frame.w - imgW) / 2);
+        offY = Math.round(frame.h * 0.02);
+      }
+
+      const picXml = buildPicAnchorXml(sizers, offX, anchorRow0, offY, imgW, imgH, relId, picIdCounter++, `Picture ${ph.num || ''}`);
+      drawingXml = drawingXml.replace('</xdr:wsDr>', picXml + '</xdr:wsDr>');
+
+      // 元のWord報告書から取り込んだ点線丸・矢印の注釈を、写真と同じ位置基準で重ねて埋め込む
+      for (const an of (ph.annotations || [])) {
+        const annoOffX = offX + Math.round((an.x / 100) * imgW);
+        const annoOffY = offY + Math.round((an.y / 100) * imgH);
+        const annoW = Math.max(1, Math.round((an.w / 100) * imgW));
+        const annoH = Math.max(1, Math.round((an.h / 100) * imgH));
+        const shapeId = picIdCounter++;
+        const color = an.lineColor || 'FF0000', lw = an.lineWidthEmu || 19050;
+        let shapeXml;
+        if (an.type === 'ellipse') {
+          shapeXml = buildShapeAnchorXml(sizers, annoOffX, anchorRow0, annoOffY, annoW, annoH, shapeId, `Annotation ${shapeId}`,
+            (id, name, x, y, cx, cy) => buildEllipseShapeXml(id, name, x, y, cx, cy, an.rotation, color, lw, an.dashType || 'sysDash'));
+        } else if (an.type === 'arrow') {
+          shapeXml = buildShapeAnchorXml(sizers, annoOffX, anchorRow0, annoOffY, annoW, annoH, shapeId, `Arrow ${shapeId}`,
+            (id, name, x, y, cx, cy) => buildArrowShapeXml(id, name, x, y, cx, cy, an.rotation, an.flipH, an.flipV, color, lw));
+        } else continue;
+        drawingXml = drawingXml.replace('</xdr:wsDr>', shapeXml + '</xdr:wsDr>');
+      }
+    }
+    zip.file(drawingPath, drawingXml);
+    zip.file(drawingRelsPath, drawingRelsXml);
+  }
+
+  // jpeg拡張子がContent_Typesに未登録なら追加
+  let ctXml = await zip.file('[Content_Types].xml').async('string');
+  if (!/Extension="jpeg"/.test(ctXml)) {
+    ctXml = ctXml.replace('</Types>', '<Default Extension="jpeg" ContentType="image/jpeg"/></Types>');
+    zip.file('[Content_Types].xml', ctXml);
+  }
+
+  if (onProgress) onProgress('ファイルを書き出し中...');
+  const blob = await zip.generateAsync({ type: 'blob', mimeType: 'application/vnd.ms-excel.sheet.macroEnabled.12' });
+  return { blob, truncated, maxPhotos };
+}
+
+// ══ UI: Word出力ボタン → テンプレート不要でそのまま生成・ダウンロード ══
+// ══ Word/Excel出力: 対象写真の選択画面 ══
+let exportSelectMode = null; // 'word' | 'excel'
+let pendingExcelPhotos = null;
+function openExportSelect(mode) {
+  const photos = (activeProject?.photos || []).slice().sort((a, b) => a.num - b.num);
+  if (!photos.length) { alert('写真がありません'); return; }
+  exportSelectMode = mode;
+  document.getElementById('export-select-title').textContent = mode === 'word' ? 'Wordに出力する写真を選択' : 'Excelに出力する写真を選択';
+  const list = document.getElementById('export-select-list');
+  list.innerHTML = photos.map(ph => `
+    <label style="display:flex;align-items:center;gap:10px;padding:8px 4px;border-bottom:1px solid #F0F1F5;">
+      <input type="checkbox" class="export-select-checkbox" data-id="${ph.id}" checked style="width:18px;height:18px;flex-shrink:0;">
+      ${ph.photo ? `<img src="${ph.photo}" style="width:44px;height:44px;object-fit:cover;border-radius:6px;flex-shrink:0;">` : `<div style="width:44px;height:44px;border-radius:6px;background:#F4F6FB;flex-shrink:0;"></div>`}
+      <div style="min-width:0;overflow:hidden;">
+        <div style="font-size:12px;font-weight:700;">No.${ph.num}</div>
+        <div style="font-size:11px;color:#9CA3AF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(ph.inspectionItem||'')}</div>
+      </div>
+    </label>
+  `).join('');
+  document.getElementById('overlay-export-select').classList.add('open');
+}
+function setAllExportSelect(checked) {
+  document.querySelectorAll('.export-select-checkbox').forEach(cb => cb.checked = checked);
+}
+function closeExportSelect(e) {
+  if (e && !e.target.classList.contains('overlay')) return;
+  document.getElementById('overlay-export-select').classList.remove('open');
+}
+async function confirmExportSelect() {
+  const selectedIds = new Set(Array.from(document.querySelectorAll('.export-select-checkbox:checked')).map(cb => cb.dataset.id));
+  if (!selectedIds.size) { alert('1枚以上選択してください'); return; }
+  const photos = (activeProject?.photos || []).filter(ph => selectedIds.has(ph.id)).sort((a, b) => a.num - b.num);
+  document.getElementById('overlay-export-select').classList.remove('open');
+  if (exportSelectMode === 'word') {
+    await runWordReportFlow(photos);
+  } else if (exportSelectMode === 'excel') {
+    pendingExcelPhotos = photos;
+    document.getElementById('excel-template-input').click();
+  }
+}
+
+async function startWordReportFlow() {
+  openExportSelect('word');
+}
+async function runWordReportFlow(photos) {
+  if (!photos.length) { alert('写真がありません'); return; }
+
+  const loadingEl = document.createElement('div');
+  loadingEl.style = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:600;text-align:center;padding:20px;';
+  loadingEl.textContent = '📝 Wordを作成中...';
+  document.body.appendChild(loadingEl);
+
+  try {
+    const result = await generateWordReport(activeProject, photos, (msg) => { loadingEl.textContent = '📝 ' + msg; });
+    downloadBlob(result.blob, `関係写真_${activeProject.name}.docx`);
+    alert(`Word報告書を作成しました。\n写真${photos.length}枚を転記しました。`);
+  } catch (err) {
+    console.error('Word生成エラー:', err);
+    alert('Wordの作成に失敗しました: ' + (err && err.message ? err.message : err));
+  } finally {
+    document.body.removeChild(loadingEl);
+  }
+}
+
+
+// ══ UI: Excel連携ボタン → 対象写真を選択 → テンプレート選択 → 即座に転記・ダウンロード ══
+function startExcelReportFlow() {
+  openExportSelect('excel');
+}
+async function handleExcelTemplateSelected(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const photos = pendingExcelPhotos || activeProject?.photos || [];
+
+  const loadingEl = document.createElement('div');
+  loadingEl.style = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:600;text-align:center;padding:20px;';
+  loadingEl.textContent = '📊 Excelを作成中...';
+  document.body.appendChild(loadingEl);
+
+  try {
+    const buf = await file.arrayBuffer();
+    const sortedPhotos = [...photos].sort((a, b) => a.num - b.num);
+    const result = await generateExcelReport(buf, activeProject, sortedPhotos, (msg) => { loadingEl.textContent = '📊 ' + msg; });
+    downloadBlob(result.blob, `photo_report_${activeProject.name}.xlsm`);
+    let msg = `Excelレポートを作成しました。\n写真${Math.min(sortedPhotos.length, result.maxPhotos)}枚を転記しました。`;
+    if (result.truncated) msg += `\n\n⚠️ テンプレートの写真台紙シート数(最大${result.maxPhotos}枚分)を超えたため、超過分は含まれていません。`;
+    alert(msg);
+  } catch (err) {
+    console.error('Excel生成エラー:', err);
+    alert('Excelの作成に失敗しました: ' + (err && err.message ? err.message : err));
+  } finally {
+    document.body.removeChild(loadingEl);
+    input.value = '';
+    pendingExcelPhotos = null;
+  }
+}
+
 async function exportJSON() {
   const photos = activeProject?.photos || [];
   if (!photos.length) { alert('写真がありません'); return; }
@@ -2608,7 +4024,7 @@ async function exportJSON() {
         floor: (activeProject.drawings&&activeProject.drawings[ph.floorIndex||0])?activeProject.drawings[ph.floorIndex||0].name:'',
         inspectionItem: ph.inspectionItem||'', comment: ph.comment||'', date: ph.date,
         status: ph.status || '',
-        _floorLabel: ph._floorLabel || null, _pinnedByCallout: ph._pinnedByCallout || false, originalNum: (typeof ph.originalNum === 'number' ? ph.originalNum : undefined),
+        _floorLabel: ph._floorLabel || null, _pinnedByCallout: ph._pinnedByCallout || false, originalNum: (typeof ph.originalNum === 'number' ? ph.originalNum : undefined), retakeOf: ph.retakeOf || null, pdfLabel: ph.pdfLabel || '', annotations: ph.annotations || [],
         pinX: Math.round(ph.x*10)/10, pinY: Math.round(ph.y*10)/10,
         isPortrait: ph.isPortrait || false,
         photo: await compressImageForExport(ph.photo, 900, 0.6),
@@ -2690,11 +4106,12 @@ const AFTER_TOUR_STEPS = [
   { id:'tab-btn-pdf', target:()=>document.getElementById('tab-btn-pdf'),
     title:'🖨️ PDF出力', text:'タップすると報告書PDFを作れるよ', type:'tap' },
   { id:'tab-btn-excel', target:()=>document.getElementById('tab-btn-excel'),
-    title:'📤 Excel連携', text:'データをExcelに書き出せるよ', type:'tap' },
+    title:'📊 Excel連携', text:'タップすると「Excelレポート作成(ひな形に直接転記)」「データ書き出し(他端末へ転送)」から選べるよ', type:'tap' },
 ];
 let afterTourStep = 0, afterTourActive = false;
 
 function startAfterTour() {
+  document.getElementById('kenta-bubble').classList.add('hidden');
   afterTourActive = true; afterTourStep = 0; showAfterTourStep();
 }
 function showAfterTourStep() {
@@ -2740,6 +4157,7 @@ function nextAfterTourStep() {
 function endAfterTour() {
   afterTourActive = false;
   clearTourUI();
+  localStorage.setItem('after_tour_done', '1');
 }
 
 // ══ 前回データ取込ガイド（「前回データ取込」ボタンを実際にタップして開いた時に始まる） ══
@@ -2754,6 +4172,7 @@ const IMPORT_TOUR_STEPS = [
 let importTourStep = 0, importTourActive = false;
 
 function startImportTour() {
+  document.getElementById('kenta-bubble').classList.add('hidden');
   importTourActive = true; importTourStep = 0; showImportTourStep();
 }
 function showImportTourStep() {
@@ -2805,6 +4224,71 @@ function importTourAdvance(stepId) {
 function endImportTour() {
   importTourActive = false;
   clearTourUI();
+  localStorage.setItem('import_tour_done', '1');
+}
+
+// ══ 写真一覧の使い方ガイド(初回のみ、タップ→次へで進む) ══
+const PHOTO_LIST_TOUR_STEPS = [
+  { id:'photo-tap-edit', target:()=>document.querySelector('#photo-sort-list .photo-item .photo-info'),
+    title:'📝 タップして編集', text:'コメント部分をタップすると、番号や調査項目、コメントを編集できるよ', type:'tap' },
+  { id:'photo-retake-btn', target:()=>document.querySelector('#photo-sort-list [data-retake-id]'),
+    title:'🔄 撮り直す', text:'同じ場所を今回も撮り直したい時はこのボタン。前回の写真は残したまま、新しい番号で追加されるよ', type:'tap' },
+  { id:'photo-insert-btn', target:()=>document.querySelector('#photo-sort-list [data-insert-after-id]'),
+    title:'➕ ここに挿入', text:'この写真の直後に、新しい発見箇所を追加したい時はこのボタン。図面をタップして撮影すると、この番号のすぐ後ろに挿し込まれるよ', type:'tap' },
+];
+let photoListTourStep = 0, photoListTourActive = false;
+function maybeStartPhotoListTour() {
+  if (localStorage.getItem('photo_list_tour_done')) return;
+  if (!(activeProject && activeProject.photos && activeProject.photos.length)) return;
+  document.getElementById('kenta-bubble').classList.add('hidden');
+  photoListTourActive = true; photoListTourStep = 0;
+  setTimeout(() => showPhotoListTourStep(), 500);
+}
+function showPhotoListTourStep() {
+  clearTourUI();
+  if (!photoListTourActive || photoListTourStep >= PHOTO_LIST_TOUR_STEPS.length) { endPhotoListTour(); return; }
+  setTimeout(() => {
+    const step = PHOTO_LIST_TOUR_STEPS[photoListTourStep];
+    const el = step.target();
+    if (!el) { photoListTourStep++; showPhotoListTourStep(); return; }
+    const rect = el.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) { photoListTourStep++; showPhotoListTourStep(); return; }
+    tourHighlight = document.createElement('div');
+    tourHighlight.className = 'tour-highlight';
+    tourHighlight.style.cssText = `left:${rect.left-4}px;top:${rect.top-4}px;width:${rect.width+8}px;height:${rect.height+8}px;`;
+    document.body.appendChild(tourHighlight);
+
+    tourBubble = document.createElement('div');
+    tourBubble.className = 'tour-bubble';
+    const isBelow = rect.top < window.innerHeight * 0.5;
+    tourBubble.classList.add(isBelow ? 'arrow-top' : 'arrow-bottom');
+    const bubbleW = 220;
+    let left = rect.left + rect.width/2 - bubbleW/2;
+    left = Math.max(10, Math.min(left, window.innerWidth - bubbleW - 10));
+    if (isBelow) {
+      tourBubble.style.cssText = `left:${left}px;top:${rect.bottom+12}px;width:${bubbleW}px;`;
+    } else {
+      tourBubble.style.cssText = `left:${left}px;bottom:${window.innerHeight-rect.top+12}px;width:${bubbleW}px;`;
+    }
+    tourBubble.innerHTML = `
+      <div class="tour-title">${step.title}</div>
+      <div class="tour-text">${step.text}</div>
+      <div style="margin-top:8px;text-align:right;">
+        <button onclick="nextPhotoListTourStep()" style="background:#1C4ED8;color:#fff;border:none;border-radius:6px;padding:5px 14px;font-size:12px;font-weight:600;cursor:pointer;">次へ</button>
+      </div>
+    `;
+    document.body.appendChild(tourBubble);
+  }, 300);
+}
+function nextPhotoListTourStep() {
+  photoListTourStep++;
+  if (photoListTourStep >= PHOTO_LIST_TOUR_STEPS.length) { endPhotoListTour(); return; }
+  showPhotoListTourStep();
+}
+function endPhotoListTour() {
+  photoListTourActive = false;
+  clearTourUI();
+  localStorage.setItem('photo_list_tour_done', '1');
 }
 
 // ツアー中(通常/撮影後/取込ガイド)に、ハイライト対象や吹き出し以外の「何もない場所」を
@@ -2813,10 +4297,11 @@ function getCurrentTourTargetEl() {
   if (tourActive) { const s = TOUR_STEPS[tourStep]; return s && s.target(); }
   if (afterTourActive) { const s = AFTER_TOUR_STEPS[afterTourStep]; return s && s.target(); }
   if (importTourActive) { const s = IMPORT_TOUR_STEPS[importTourStep]; return s && s.target(); }
+  if (photoListTourActive) { const s = PHOTO_LIST_TOUR_STEPS[photoListTourStep]; return s && s.target(); }
   return null;
 }
 document.addEventListener('click', (e) => {
-  if (!tourActive && !afterTourActive && !importTourActive) return;
+  if (!tourActive && !afterTourActive && !importTourActive && !photoListTourActive) return;
   if (tourBubble && tourBubble.contains(e.target)) return; // 吹き出し自体の操作はそのまま
   // 隠しファイル入力への.click()呼び出しは実クリックとしてdocumentまでバブリングされるため、
   // 「何もない場所のクリック」と誤認識しないよう無視する
@@ -2826,11 +4311,12 @@ document.addEventListener('click', (e) => {
   if (tourActive) endTour();
   if (afterTourActive) endAfterTour();
   if (importTourActive) endImportTour();
+  if (photoListTourActive) endPhotoListTour();
 }, true);
 
 function startTour() {
-  // ▼開発中は毎回ツアーが始まるようにしている。本番公開時は下記コメントの条件に戻すこと▼
-  // if (localStorage.getItem('tour_done')) return;
+  if (localStorage.getItem('tour_done')) return;
+  document.getElementById('kenta-bubble').classList.add('hidden'); // ケンタ君の吹き出しと被らないよう先に閉じる
   tourActive = true; tourStep = 0; showTourStep();
 }
 
@@ -2939,7 +4425,7 @@ const KENTA_SCRIPTS = {
   camera:        ['白いボタンを押して撮影してね📷','撮り直したい場合は「撮り直す」をタップしてね！'],
   comment:       ['調査項目と特記事項を入力して「保存」をタップしてね✏️'],
   preview:       ['写真を長押しして「写真に保存」するとカメラロールにも保存されるよ📥'],
-  export:        ['Excel連携ボタンを押したよ！JSONファイルがダウンロードされるよ📤','このファイルをPCに転送してね。AirDrop・メール・LINEなど何でもOK！','PC側では「プロジェクト一覧」画面右上の「📥 インポート」ボタンからこのファイルを選んでね','取り込むと写真もピン位置もそのままPCで開けるよ💻✨'],
+  export:        ['「データ書き出し」でJSONファイルがダウンロードされるよ📤','このファイルをPCに転送してね。AirDrop・メール・LINEなど何でもOK！','PC側では「プロジェクト一覧」画面右上の「📥 インポート」ボタンからこのファイルを選んでね','取り込むと写真もピン位置もそのままPCで開けるよ💻✨'],
 };
 let kentaQueue = [], kentaIndex = 0;
 function kentaShow(scriptKey) {
@@ -2966,7 +4452,7 @@ function kentaNext() {
   if (kentaIndex >= kentaQueue.length) {
     document.getElementById('kenta-bubble').classList.add('hidden');
     // floorNameDoneの最後のメッセージ送り後にAfterTourを起動
-    if (kentaCurrentScene === 'floorNameDone') setTimeout(() => startAfterTour(), 300);
+    if (kentaCurrentScene === 'floorNameDone' && !localStorage.getItem('after_tour_done')) setTimeout(() => startAfterTour(), 300);
     return;
   }
   document.getElementById('kenta-msg').textContent = kentaQueue[kentaIndex];
